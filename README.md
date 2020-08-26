@@ -22,6 +22,8 @@ A stepper motor module for the Bpod State Machine r2.
 |          | Digi-Key |  1  | [1568-1465-ND](https://www.digikey.com/products/en?keywords=1568-1465-ND)                       | Teensy 3.6                  |
 |          | Digi-Key |  1  | [2100-20150007-002-ND](https://www.digikey.com/products/en?keywords=2100-20150007-002-ND)       | Stepper motor driver        |
 |          | Digi-Key |  1  | [2100-201835-ND](https://www.digikey.com/products/en?keywords=2100-201835-ND)                   | Heat sink                   |
+|          | Digi-Key |  2  | [A98334-ND](https://www.digikey.com/products/en?keywords=A98334-ND)                             | Terminal block, 1x3         |
+|          | Digi-Key |  1  | [A98081-ND](https://www.digikey.com/products/en?keywords=A98081-ND)                             | Terminal block, 1x4         |
 
 
 ## Credits ##
