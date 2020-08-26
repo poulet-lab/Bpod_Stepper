@@ -5,8 +5,8 @@ A stepper motor module for the Bpod State Machine r2.
 * Concept & Firmware by Florian Rau
 * PCB layout by Christopher Schultz and Florian Rau
 * PCB layout partially based on:
-  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders
-  * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott
+  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders (GPL v3)
+  * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott (CC BY-SA 4.0)
 
 ## Bill of Materials
 | Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
