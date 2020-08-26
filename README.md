@@ -1,12 +1,6 @@
 # Bpod_Stepper
 A stepper motor module for the Bpod State Machine r2.
 
-## Credits ##
-* Concept & Firmware by Florian Rau
-* PCB layout by Christopher Schultz and Florian Rau
-* PCB layout partially based on:
-  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
-  * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
 
 ## Bill of Materials
 | Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
@@ -28,3 +22,11 @@ A stepper motor module for the Bpod State Machine r2.
 |          | Digi-Key |  1  | [1568-1465-ND](https://www.digikey.com/products/en?keywords=1568-1465-ND)                       | Teensy 3.6                  |
 |          | Digi-Key |  1  | [2100-20150007-002-ND](https://www.digikey.com/products/en?keywords=2100-20150007-002-ND)       | Stepper motor driver        |
 |          | Digi-Key |  1  | [2100-201835-ND](https://www.digikey.com/products/en?keywords=2100-201835-ND)                   | Heat sink                   |
+
+
+## Credits ##
+* Concept & firmware by Florian Rau
+* PCB layout by Christopher Schultz and Florian Rau
+* PCB layout partially based on:
+  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
