@@ -1,5 +1,5 @@
 # Bpod_Stepper
-A stepper motor module for Bpod.
+A stepper motor module for the Bpod State Machine r2.
 
 The PCB is based on:
 * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders
