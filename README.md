@@ -21,5 +21,3 @@ Stepper Motor Module for Bpod
 |          | Digi-Key |  1  | [1568-1465-ND](https://www.digikey.com/products/en?keywords=1568-1465-ND)                       | Teensy 3.6                  |
 |          | Digi-Key |  1  | [2100-20150007-002-ND](https://www.digikey.com/products/en?keywords=2100-20150007-002-ND)       | Stepper motor driver        |
 |          | Digi-Key |  1  | [2100-201835-ND](https://www.digikey.com/products/en?keywords=2100-201835-ND)                   | Heat sink                   |
-
-Click [here](https://www.digikey.com/short/zr1rzb) for a pre-assembled shopping cart at [digikey.com](https://www.digikey.com).
