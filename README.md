@@ -1,5 +1,10 @@
 # Bpod_Stepper
-Stepper Motor Module for Bpod
+A stepper motor module for Bpod.
+
+The PCB is based on:
+* [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders
+* [SilentStepStick Protector](https://github.com/watterott/SilentStepStick/tree/master/hardware) by Watterott
+
 
 ## Bill of Materials
 | Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
