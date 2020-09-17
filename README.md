@@ -30,5 +30,7 @@ A stepper motor module for the Bpod State Machine r2.
 * Concept & firmware by Florian Rau
 * PCB layout by Christopher Schultz and Florian Rau
 * PCB layout partially based on:
-  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Josh Sanders ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
   * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
+* Firmare uses the following libraries:
+  * [ArCOM](https://github.com/sanworks/ArCOM) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
