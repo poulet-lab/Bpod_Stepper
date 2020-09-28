@@ -1,7 +1,7 @@
 # Bpod Stepper Motor Module
 A stepper motor module for the Bpod State Machine r2.
 
-![](board.png)
+![](images/board.png)
 
 ## Bill of Materials
 | Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
