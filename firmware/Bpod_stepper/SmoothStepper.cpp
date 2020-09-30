@@ -77,9 +77,8 @@ void SmoothStepper::moveSteps(long nSteps) {
   else
     digitalWrite(_pinDirection, LOW  ^ _invertDirection);
 
-  if (nSteps == 0) {                                          // nothing to do for nSteps == 0
+  if (nSteps == 0)                                            // nothing to do for nSteps == 0
     return;
-  }
 
   if (nSteps == 1) {                                          // a single step doesn't require fancy formulas
     step();

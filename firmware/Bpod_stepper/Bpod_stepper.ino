@@ -39,13 +39,16 @@ char* eventNames[] = {"Start", "Stop"};
 #define uStepRes       16
 
 // Variables
-byte nEventNames = (sizeof(eventNames) / sizeof(char *));
-byte opCode      = 0;
-long nSteps      = 0;
+byte nEventNames   = (sizeof(eventNames) / sizeof(char *));
+byte opCode        = 0;
+long nSteps        = 0;
+long uStepsPerRev  = stepsPerRev * uStepRes;
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
 {
+  Serial.begin(9600);
+  
   Serial1.begin(1312500);
   stepper.setPinEnable(pinEnable);                // We do want to use the enable pin
   stepper.setInvertEnable(true);                  // enable pin on TMC2100 is inverted
@@ -81,30 +84,34 @@ void loop()
 {
   if (Serial1COM.available()) {
     opCode = Serial1COM.readByte();
-    if (opCode == 255) {
+    if (opCode == 0) {                                            // Disable Driver
+      stepper.disableDriver();
+    }
+    else if (opCode == 1) {                                       // Enable Driver
+      stepper.enableDriver();
+    }
+    else if (opCode == 2) {                                       // Set acceleration
+      float acc = (float) Serial1COM.readUint8();                 //   Read value
+      stepper.setAcceleration(acc * uStepRes);                    //   Set acceleration
+    }
+    else if (opCode == 3) {                                       // Set speed
+      float vmax = (float) Serial1COM.readUint8();                //   Read value
+      stepper.setMaxRPM(vmax);                                    //   Set Speed
+    }
+    else if (opCode == 4) {                                       // Run full steps
+      nSteps = (long) Serial1COM.readInt16() * uStepRes;          //   Read value, correct for uSteps
+      runSteps();                                                 //   Run steps
+    }
+    else if (opCode == 5) {                                       // Run uSteps
+      nSteps = (long) Serial1COM.readInt16();                     //   Read value, correct for uSteps
+      runSteps();                                                 //   Run steps
+    }
+    else if (opCode == 6) {                                       // Run degrees
+      nSteps = (long) Serial1COM.readInt16() * uStepsPerRev / 360;
+      runSteps();
+    }
+    else if (opCode == 255) {                                     // Return module information
       returnModuleInfo();
-    }
-    else if (opCode == 0) {                                   // Disable Driver
-        stepper.disableDriver();
-    }
-    else if (opCode == 1) {                                   // Enable Driver
-        stepper.enableDriver();
-    }
-    else if (opCode == 2) {                                   // Run steps (CW)
-        nSteps = Serial1COM.readByte() * uStepRes;
-        runSteps();
-    }
-    else if (opCode == 3) {                                   // Run steps (CCW)
-        nSteps = -1 * (int)Serial1COM.readUint8() * uStepRes;
-        runSteps();
-    }
-    else if (opCode == 4) {                                   // Set acceleration
-        float acc = (float)Serial1COM.readUint8();            //   Read value
-        stepper.setAcceleration(acc * uStepRes);              //   Set acceleration
-    }
-    else if (opCode == 4) {                                   // Set speed
-        float vmax = Serial1COM.readByte();                   //   Read value
-        stepper.setMaxRPM(vmax);                              //   Set Speed
     }
   }
 }
