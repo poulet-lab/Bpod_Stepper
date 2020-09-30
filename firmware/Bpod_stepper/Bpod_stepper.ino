@@ -39,7 +39,7 @@ char* eventNames[] = {"Start", "Stop"};
 #define uStepRes       16
 
 // Variables
-byte nEventNames   = (sizeof(eventNames) / sizeof(char *));
+byte nEventNames   = sizeof(eventNames) / sizeof(char *);
 byte opCode        = 0;
 long nSteps        = 0;
 long uStepsPerRev  = stepsPerRev * uStepRes;
