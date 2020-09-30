@@ -33,6 +33,10 @@ void SmoothStepper::setInvertEnable(bool invertEnable) {
   _invertEnable = invertEnable;
 }
 
+void SmoothStepper::setInvertDirection(bool invertDirection) {
+  _invertDirection = invertDirection;
+}
+
 void SmoothStepper::setAcceleration(float a) {
   if (a <= 0.0)                               // limit acceleration to positive values
     return;
@@ -68,10 +72,10 @@ void SmoothStepper::moveSteps(long nSteps) {
 
   if (nSteps < 0) {
     nSteps = nSteps * -1;
-    digitalWrite(_pinDirection, HIGH);
+    digitalWrite(_pinDirection, HIGH ^ _invertDirection);
   }
   else
-    digitalWrite(_pinDirection, LOW);
+    digitalWrite(_pinDirection, LOW  ^ _invertDirection);
 
   if (nSteps == 0) {                                          // nothing to do for nSteps == 0
     return;
