@@ -52,9 +52,10 @@ void setup()
   Serial1.begin(1312500);
   stepper.setPinEnable(pinEnable);                // We do want to use the enable pin
   stepper.setInvertEnable(true);                  // enable pin on TMC2100 is inverted
+  stepper.setInvertDirection(false);              // invert direction pin?
   stepper.setStepsPerRev(stepsPerRev * uStepRes); // TMC2100 is driven by 16 microsteps/step
-  stepper.setMaxSpeed(200 * uStepRes);            // Set a sensible max speed
-  stepper.setAcceleration(200 * uStepRes);        // Set default acceleration
+  stepper.setMaxSpeed(uStepsPerRev);              // Set a sensible max speed (default: 360°/s)
+  stepper.setAcceleration(uStepsPerRev);          // Set default acceleration (default: 360°/s^2)
   stepper.disableDriver();
 
   // Set all configuration pins to tri-state
