@@ -12,6 +12,8 @@ class SmoothStepper {
     void moveSteps(long nSteps);
     void setPinEnable(uint8_t pinEnable);
 
+    void setInvertEnable(bool invert);
+
     // set the acceleration (steps / s^2)
     void setAcceleration(float acceleration);
 
@@ -43,6 +45,7 @@ class SmoothStepper {
     float _c0;                        // duration of first interval (µs)
     unsigned int _pulseWidth = 1;     // duration of step pulses (µs)
     unsigned int _stepsPerRev = 200;  // steps per full revolution
+    bool _invertEnable = false;       // invert the enable pin?
 };
 
 #endif

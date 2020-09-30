@@ -17,6 +17,10 @@ void SmoothStepper::setPinEnable(uint8_t pinEnable) {
   pinMode(_pinEnable, OUTPUT);
 }
 
+void SmoothStepper::setInvertEnable(bool invertEnable) {
+  _invertEnable = invertEnable;
+}
+
 void SmoothStepper::setAcceleration(float a) {
   if (a <= 0.0)                               // limit acceleration to positive values
     return;
@@ -89,11 +93,11 @@ void SmoothStepper::moveSteps(long nSteps) {
 }
 
 void SmoothStepper::enableDriver() {
-  digitalWrite(_pinEnable, LOW);
+  digitalWrite(_pinEnable, HIGH ^ _invertEnable);
 }
 
 void SmoothStepper::disableDriver() {
-  digitalWrite(_pinEnable, HIGH);
+  digitalWrite(_pinEnable, LOW  ^ _invertEnable);
 }
 
 void SmoothStepper::step() {
