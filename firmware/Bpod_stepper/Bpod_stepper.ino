@@ -53,7 +53,6 @@ void setup()
   stepper.setPinEnable(pinEnable);                // We do want to use the enable pin
   stepper.setInvertEnable(true);                  // enable pin on TMC2100 is inverted
   stepper.setInvertDirection(false);              // invert direction pin?
-  stepper.setStepsPerRev(stepsPerRev * uStepRes); // TMC2100 is driven by 16 microsteps/step
   stepper.setMaxSpeed(uStepsPerRev);              // Set a sensible max speed (default: 360°/s)
   stepper.setAcceleration(uStepsPerRev);          // Set default acceleration (default: 360°/s^2)
   stepper.disableDriver();
@@ -91,13 +90,13 @@ void loop()
     else if (opCode == 1) {                                       // Enable Driver
       stepper.enableDriver();
     }
-    else if (opCode == 2) {                                       // Set acceleration
-      float acc = (float) Serial1COM.readUint8();                 //   Read value
+    else if (opCode == 2) {                                       // Set acceleration (full steps / s^2)
+      float acc = (float) Serial1COM.readInt16();                 //   Read value
       stepper.setAcceleration(acc * uStepRes);                    //   Set acceleration
     }
-    else if (opCode == 3) {                                       // Set speed
-      float vmax = (float) Serial1COM.readUint8();                //   Read value
-      stepper.setMaxRPM(vmax);                                    //   Set Speed
+    else if (opCode == 3) {                                       // Set speed (full steps / s)
+      float vmax = (float) Serial1COM.readInt16();                //   Read value
+      stepper.setMaxSpeed(vmax * uStepRes);                       //   Set Speed
     }
     else if (opCode == 4) {                                       // Run full steps
       nSteps = (long) Serial1COM.readInt16() * uStepRes;          //   Read value, correct for uSteps

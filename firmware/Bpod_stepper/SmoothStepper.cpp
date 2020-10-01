@@ -50,16 +50,6 @@ void SmoothStepper::setMaxSpeed(float vMax) {
   _vMax = vMax;                               // set private variable
 }
 
-void SmoothStepper::setMaxRPM(float maxRPM) {
-  if (maxRPM <= 0.0)                          // limit maxRPM
-    return;
-  _vMax = maxRPM/60.0 * (float)_stepsPerRev;  // set private variable
-}
-
-void SmoothStepper::setStepsPerRev(unsigned int stepsPerRev) {
-  _stepsPerRev = stepsPerRev;
-}
-
 void SmoothStepper::setPulseWidth(unsigned int pulseWidth) {
   _pulseWidth = pulseWidth;
 }

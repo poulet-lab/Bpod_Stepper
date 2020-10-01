@@ -42,12 +42,6 @@ class SmoothStepper {
     // set the maximum speed (steps / s)
     void setMaxSpeed(float maxSpeed);
 
-    // set the maximum speed (rounds / min)
-    void setMaxRPM(float maxRPM);
-
-    // set the number of steps per revolution
-    void setStepsPerRev(unsigned int stepsPerRev);
-
     // set the duration of step pulses (µs)
     void setPulseWidth(unsigned int pulseWidth);
 
