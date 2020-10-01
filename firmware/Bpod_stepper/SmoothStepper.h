@@ -12,8 +12,24 @@ See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
+_______________________________________________________________________________
+
+
+REVISION HISTORY
+
+version 1.0   Initial release
+
+_______________________________________________________________________________
+
+
+SmoothStepper uses algorithms from the following publication:
+
+Austin D (2005) Generate stepper-motor speed profiles in real time.
+EE Times-India: 01/2005:1-5.
+
+_______________________________________________________________________________
+*/
 #ifndef SmoothStepper_h
 #define SmoothStepper_h
 
@@ -23,9 +39,6 @@ class SmoothStepper {
   public:
     // constructor
     SmoothStepper(uint8_t pinStep, uint8_t pinDirection);
-    
-    // move by n steps
-    void moveSteps(long nSteps);
 
     // set enable pin
     void setPinEnable(uint8_t pinEnable);
@@ -35,6 +48,9 @@ class SmoothStepper {
 
     // invert direction pin
     void setInvertDirection(bool invert);
+
+    // set the number of steps per revolution
+    void setStepsPerRev(unsigned long stepsPerRev);
 
     // set the acceleration (steps / s^2)
     void setAcceleration(float acceleration);
@@ -50,6 +66,13 @@ class SmoothStepper {
 
     // disables the stepper motor  driver (via _pinEnable)
     void disableDriver();
+
+    // move by n steps
+    void moveSteps(long nSteps);
+
+    // move by n degrees
+    void moveDegrees(float degrees);
+
     
   private:
     void step();                      // step function
@@ -60,7 +83,7 @@ class SmoothStepper {
     float _vMax;                      // maximum speed (steps / s)
     float _c0;                        // duration of first interval (µs)
     unsigned int _pulseWidth = 1;     // duration of step pulses (µs)
-    unsigned int _stepsPerRev = 200;  // steps per full revolution
+    unsigned long _stepsPerRev = 200; // steps per revolution
     bool _invertEnable = false;       // invert the enable pin?
     bool _invertDirection = false;    // invert the direction pin?
 };
