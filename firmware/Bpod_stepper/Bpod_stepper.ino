@@ -57,13 +57,12 @@ void setup()
   stepper.setAcceleration(uStepsPerRev);          // Set default acceleration (default: 360°/s^2)
   stepper.disableDriver();
 
-  // Set all configuration pins to tri-state
+  // Set CFG1 and CFG2 to tri-state
   // In case of the TMC2100 driver, this equals stealthChop mode with 1/16 steps
   // See https://learn.watterott.com/silentstepstick/pinconfig/tmc2100/#step-configuration
   pinMode(pinCFG1, INPUT); 
   pinMode(pinCFG2, INPUT);
-  pinMode(pinCFG3, INPUT);
-
+  
   // Fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
   for (int i = 750; i > 0; i--) {
