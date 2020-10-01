@@ -39,10 +39,11 @@ char* eventNames[] = {"Start", "Stop", "Limit"};
 #define uStepRes       16
 
 // Variables
-byte nEventNames   = sizeof(eventNames) / sizeof(char *);
-byte opCode        = 0;
-long nSteps        = 0;
-long uStepsPerRev  = stepsPerRev * uStepRes;
+byte nEventNames  = sizeof(eventNames) / sizeof(char *);
+byte opCode       = 0;
+long nSteps       = 0;
+long uStepsPerRev = stepsPerRev * uStepRes;
+byte pinLimit[]   = {pinLimit1, pinLimit2};
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
@@ -105,12 +106,11 @@ void loop()
       nSteps = (long) Serial1COM.readInt16() * uStepsPerRev / 360;
       runSteps();
     }
-    else if (opCode == 'L') {                                     // Run to limit switch
+    else if (opCode == 'L') {                                     // Search for limit switch
       byte ID  = Serial1COM.readUint8();                          //   Which limit switch? (1 or 2)
       long dir = Serial1COM.readUint8();                          //   Direction (0 = CW, 1 = CCW)
-      if ((ID == 0) || (ID > 2) || (dir > 1))   return;           //   Check arguments
-      byte pin[] = {pinLimit1, pinLimit2};                        //   Pin array
-      runLimit(pin[ID-1], -1*(dir*2-1));                          //   Search for the limit switch
+      if ((ID == 0) || (ID > 2) || (dir > 1))  return;            //   Check arguments
+      searchLimit(pinLimit[ID-1], -1*(dir*2-1));                  //   Search for limit switch
     }
     else if (opCode == 255) {                                     //   Return module information
       returnModuleInfo();
@@ -128,7 +128,7 @@ void runSteps() {
   digitalWrite(pinLED, LOW);                                      // Disable the onboard LED
 }
 
-void runLimit(byte pin, long dir) {
+void searchLimit(byte pin, long dir) {
   digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
   stepper.enableDriver();                                         // Enable the driver
   while (digitalRead(pin)) {                                      // While pin high:
