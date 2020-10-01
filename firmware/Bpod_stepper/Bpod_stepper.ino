@@ -43,7 +43,8 @@ byte nEventNames  = sizeof(eventNames) / sizeof(char *);
 byte opCode       = 0;
 long nSteps       = 0;
 long uStepsPerRev = stepsPerRev * uStepRes;
-byte pinLimit[]   = {pinLimit1, pinLimit2};
+byte pinLimit[]   = {pinLimit1, pinLimit2};       // Array of pins for limit switches
+bool invertLimit  = true;                         // Are limit switches active low?
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
@@ -131,7 +132,7 @@ void runSteps() {
 void searchLimit(byte pin, long dir) {
   digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
   stepper.enableDriver();                                         // Enable the driver
-  while (digitalRead(pin)) {                                      // While pin high:
+  while (!digitalRead(pin) ^ invertLimit) {                       // While pin high:
     delay(10);                                                    //   Period
     stepper.moveSteps(dir);                                       //   Move by one step
   }                                                               //
