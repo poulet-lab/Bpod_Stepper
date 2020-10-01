@@ -21,11 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class SmoothStepper {
   public:
+    // constructor
     SmoothStepper(uint8_t pinStep, uint8_t pinDirection);
+    
+    // move by n steps
     void moveSteps(long nSteps);
+
+    // set enable pin
     void setPinEnable(uint8_t pinEnable);
 
+    // invert enable pin
     void setInvertEnable(bool invert);
+
+    // invert direction pin
     void setInvertDirection(bool invert);
 
     // set the acceleration (steps / s^2)
@@ -50,7 +58,7 @@ class SmoothStepper {
     void disableDriver();
     
   private:
-    void step();                      // 
+    void step();                      // step function
     uint8_t _pinStep;                 // pin number: step
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
