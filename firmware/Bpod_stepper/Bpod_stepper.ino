@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Module setup
 ArCOM Serial1COM(Serial1);              // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
 char moduleName[] = "Stepper";          // Name of module for manual override UI and state machine assembler
-char* eventNames[] = {"Start", "Stop"};
+char* eventNames[] = {"Start", "Stop", "Limit"};
 
 // Constants
 #define FirmwareVersion 1
@@ -47,8 +47,6 @@ SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
 {
-  Serial.begin(9600);
-  
   Serial1.begin(1312500);
   stepper.setPinEnable(pinEnable);                // We do want to use the enable pin
   stepper.setInvertEnable(true);                  // enable pin on TMC2100 is inverted
@@ -62,6 +60,10 @@ void setup()
   // See https://learn.watterott.com/silentstepstick/pinconfig/tmc2100/#step-configuration
   pinMode(pinCFG1, INPUT); 
   pinMode(pinCFG2, INPUT);
+
+  // configure limit switches to use pull-up
+  pinMode(pinLimit1, INPUT_PULLUP);
+  pinMode(pinLimit2, INPUT_PULLUP);
   
   // Fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
@@ -83,51 +85,59 @@ void loop()
 {
   if (Serial1COM.available()) {
     opCode = Serial1COM.readByte();
-    if (opCode == 0) {                                            // Disable Driver
-      stepper.disableDriver();
-    }
-    else if (opCode == 1) {                                       // Enable Driver
-      stepper.enableDriver();
-    }
-    else if (opCode == 2) {                                       // Set acceleration (full steps / s^2)
+    if (opCode == 'A') {                                          // Set acceleration (full steps / s^2)
       float acc = (float) Serial1COM.readInt16();                 //   Read value
       stepper.setAcceleration(acc * uStepRes);                    //   Set acceleration
     }
-    else if (opCode == 3) {                                       // Set speed (full steps / s)
+    else if (opCode == 'V') {                                     // Set speed (full steps / s)
       float vmax = (float) Serial1COM.readInt16();                //   Read value
       stepper.setMaxSpeed(vmax * uStepRes);                       //   Set Speed
     }
-    else if (opCode == 4) {                                       // Run full steps
+    else if (opCode == 'S') {                                     // Run full steps
       nSteps = (long) Serial1COM.readInt16() * uStepRes;          //   Read value, correct for uSteps
       runSteps();                                                 //   Run steps
     }
-    else if (opCode == 5) {                                       // Run uSteps
+    else if (opCode == 'U') {                                     // Run uSteps
       nSteps = (long) Serial1COM.readInt16();                     //   Read value, correct for uSteps
       runSteps();                                                 //   Run steps
     }
-    else if (opCode == 6) {                                       // Run degrees
+    else if (opCode == 'D') {                                     // Run degrees
       nSteps = (long) Serial1COM.readInt16() * uStepsPerRev / 360;
       runSteps();
     }
-    else if (opCode == 255) {                                     // Return module information
+    else if (opCode == 'L') {                                     // Run to limit switch
+      byte ID  = Serial1COM.readUint8();                          //   Which limit switch? (1 or 2)
+      long dir = Serial1COM.readUint8();                          //   Direction (0 = CW, 1 = CCW)
+      if ((ID == 0) || (ID > 2) || (dir > 1))   return;           //   Check arguments
+      byte pin[] = {pinLimit1, pinLimit2};                        //   Pin array
+      runLimit(pin[ID-1], -1*(dir*2-1));                          //   Search for the limit switch
+    }
+    else if (opCode == 255) {                                     //   Return module information
       returnModuleInfo();
     }
   }
 }
 
-float rpm2sps(float rpm) {
-  float sps = (rpm * stepsPerRev * uStepRes) / 60;
-  return sps;
-}
-
 void runSteps() {
-  stepper.enableDriver();
   digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
+  stepper.enableDriver();                                         // Enable the driver
   Serial1COM.writeByte(1);                                        // Send event 1: Start
   stepper.moveSteps(nSteps);                                      // Set destination
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
+  stepper.disableDriver();                                        // Disable the driver
   digitalWrite(pinLED, LOW);                                      // Disable the onboard LED
-  stepper.disableDriver();
+}
+
+void runLimit(byte pin, long dir) {
+  digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
+  stepper.enableDriver();                                         // Enable the driver
+  while (digitalRead(pin)) {                                      // While pin high:
+    delay(10);                                                    //   Period
+    stepper.moveSteps(dir);                                       //   Move by one step
+  }                                                               //
+  Serial1COM.writeByte(3);                                        // Send event 3: Limit
+  stepper.disableDriver();                                        // Disable the driver
+  digitalWrite(pinLED, LOW);                                      // Disable the onboard LED
 }
 
 void returnModuleInfo() {
@@ -137,7 +147,7 @@ void returnModuleInfo() {
   Serial1COM.writeCharArray(moduleName, sizeof(moduleName) - 1);  // Module name
   Serial1COM.writeByte(1);                                        // 1 if more info follows, 0 if not
   Serial1COM.writeByte('#');                                      // Op code for: Number of behavior events this module can generate
-  Serial1COM.writeByte(2);                                        // 2 states ("Start" and "Stop")
+  Serial1COM.writeByte(3);                                        // 3 states ("Start", "Stop" and "Limit")
   Serial1COM.writeByte(1);                                        // 1 if more info follows, 0 if not
   Serial1COM.writeByte('E');                                      // Op code for: Behavior event names
   Serial1COM.writeByte(nEventNames);
