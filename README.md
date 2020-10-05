@@ -25,7 +25,7 @@ A stepper motor module for the Bpod State Machine r2.
   * Byte 2: angle (most significant byte).
   
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
-* **'L' / Ascii 76: search limit switch** (degrees)  
+* **'L' / Ascii 76: search limit switch**  
   Must be followed by two bytes:
   * Byte 1: specifies the limit switch to monitor (1 or 2), 
   * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
