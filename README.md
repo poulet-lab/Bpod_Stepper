@@ -30,7 +30,7 @@ A stepper motor module for the Bpod State Machine r2.
   * Byte 1: specifies the limit switch to monitor (1 or 2), 
   * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
   
-  This will move the motor until one of the limit switches has been reached.
+  This will advance the motor at constant, low speed until one of the limit switches has been reached.
 * **Byte 255: return module info** (reserved)
 
 
