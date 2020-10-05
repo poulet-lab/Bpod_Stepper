@@ -3,6 +3,37 @@ A stepper motor module for the Bpod State Machine r2.
 
 ![](images/board.png)
 
+
+## State Machine Command Interface
+* **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
+    Must be followed by one Int16:
+  * Byte 1: acceleration (least significant byte),
+  * Byte 2: acceleration (most significant byte).
+* **'V' / Ascii 86: set maximum velocity** (steps / s)  
+    Must be followed by one Int16:
+  * Byte 1: velocity (least significant byte),
+  * Byte 2: velocity (most significant byte).
+* **'S' / Ascii 83: move by a number of steps** (steps)  
+  Must be followed by one Int16:
+  * Byte 1: number of steps (least significant byte),
+  * Byte 2: number of steps (most significant byte).
+  
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
+* **'D' / Ascii 68: move by a defined angle** (degrees)  
+  Must be followed by one Int16:
+  * Byte 1: angle (least significant byte),
+  * Byte 2: angle (most significant byte).
+  
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
+* **'L' / Ascii 76: search limit switch** (degrees)  
+  Must be followed by two bytes:
+  * Byte 1: specifies the limit switch to monitor (1 or 2), 
+  * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
+  
+  This will move the motor until one of the limit switches has been reached.
+* **Byte 255: return module info** (reserved)
+
+
 ## Bill of Materials
 | Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
 | :------- | :------  | :-: | :---------------------------------------------------------------------------------------------- | :-------------------------  |
