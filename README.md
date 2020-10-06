@@ -3,6 +3,10 @@ A stepper motor module for the Bpod State Machine r2.
 
 ![](images/module.png)
 
+This module allows for controlling a stepper motor from a Bpod finite state machine.
+The firmware is designed for smooth acceleration and deceleration profiles.
+Combined with a _SilentStepStick_ driver and its _stealthChop_ mode, the motor can be operated virtually noiseless.
+
 ## State Machine Command Interface
 * **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
     Must be followed by one Int16:
