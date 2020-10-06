@@ -1,9 +1,9 @@
 # Bpod Stepper Motor Module
 A stepper motor module for the Bpod State Machine r2.
 
-![](images/module.png)
+![Bpod Stepper Motor Module](images/module.png)
 
-This module allows for controlling a stepper motor from a Bpod finite state machine.
+This module allows for controlling a stepper motor from a _Bpod finite state machine_.
 The firmware is designed for smooth acceleration and deceleration profiles.
 Combined with a _SilentStepStick_ driver and its _stealthChop_ mode, the motor can be operated virtually noiseless.
 
@@ -62,7 +62,7 @@ Combined with a _SilentStepStick_ driver and its _stealthChop_ mode, the motor c
 |          | Digi-Key |  2  | [A98334-ND](https://www.digikey.com/products/en?keywords=A98334-ND)                             | Terminal block, 1x3         |
 |          | Digi-Key |  1  | [A98081-ND](https://www.digikey.com/products/en?keywords=A98081-ND)                             | Terminal block, 1x4         |
 
-![](images/board.png)
+![PCB of the Bpod Stepper Motor Module](images/board.png)
 
 ## Credits ##
 * Concept & firmware by Florian Rau
