@@ -17,22 +17,22 @@ A stepper motor module for the Bpod State Machine r2.
   * Byte 1: number of steps (least significant byte),
   * Byte 2: number of steps (most significant byte).
   
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
-  Returns event ID 1 on movement start and ID 2 on movement end.
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
+  Returned events: 1 = movement start, 2 = movement end.
 * **'D' / Ascii 68: move by a defined angle** (degrees)  
   Must be followed by one Int16:
   * Byte 1: angle (least significant byte),
   * Byte 2: angle (most significant byte).
   
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
-  Returns event ID 1 on movement start and ID 2 on movement end.
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
+  Returned events: 1 = movement start, 2 = movement end.
 * **'L' / Ascii 76: search limit switch**  
   Must be followed by two bytes:
   * Byte 1: specifies the limit switch to monitor (1 or 2), 
   * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
   
-  This will advance the motor at constant, low speed until one of the limit switches has been reached.
-  Returns event ID 3 when the limit switch has been reached.
+  This will advance the motor at constant, low speed until one of the limit switches has been reached.  
+  Returned events: 3 = limit switch reached.
 * **Byte 255: return module info** (reserved)
 
 
