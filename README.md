@@ -1,8 +1,7 @@
 # Bpod Stepper Motor Module
 A stepper motor module for the Bpod State Machine r2.
 
-![](images/board.png)
-
+![](images/module.png)
 
 ## State Machine Command Interface
 * **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
@@ -56,6 +55,7 @@ A stepper motor module for the Bpod State Machine r2.
 |          | Digi-Key |  2  | [A98334-ND](https://www.digikey.com/products/en?keywords=A98334-ND)                             | Terminal block, 1x3         |
 |          | Digi-Key |  1  | [A98081-ND](https://www.digikey.com/products/en?keywords=A98081-ND)                             | Terminal block, 1x4         |
 
+![](images/board.png)
 
 ## Credits ##
 * Concept & firmware by Florian Rau
