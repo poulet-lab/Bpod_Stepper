@@ -1,7 +1,7 @@
 # Bpod Stepper Motor Module
 <img align="right" src="images/module.png" width="350px">
 
-Combining a firmware designed for smooth acceleration profiles with a _SilentStepStick_ driver and its _stealthChop_ mode, the module allows for virtually noiseless operation of a stepper motor from a _Bpod finite state machine_.
+Combining a firmware designed for smooth acceleration profiles with a _SilentStepStick_ driver and its _stealthChop_ mode, this module allows for virtually noiseless operation of a stepper motor from a _Bpod state machine r2_.
 
 ## State Machine Command Interface
 * **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
