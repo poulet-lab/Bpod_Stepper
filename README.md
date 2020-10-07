@@ -1,7 +1,7 @@
 # Bpod Stepper Motor Module
 <img align="right" src="images/module.png" width="350px">
 
-Combining a firmware designed for smooth acceleration profiles with a _SilentStepStick_ driver and its _stealthChop_ mode, this module allows for virtually noiseless operation of a stepper motor from a _Bpod state machine r2_.
+Combining smooth acceleration profiles with a _SilentStepStick_ driver, this module allows for virtually noiseless operation of a stepper motor from a _Bpod state machine r2_.
 
 ## State Machine Command Interface
 * **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
@@ -59,7 +59,7 @@ Combining a firmware designed for smooth acceleration profiles with a _SilentSte
 |          | Digi-Key |  1  | [A98081-ND](https://www.digikey.com/products/en?keywords=A98081-ND)                             | Terminal block, 1x4         |
 
 ## Credits ##
-<img align="right" src="images/board.png" width="250px">
+<img align="right" src="images/board.png" width="350px">
 
 * Concept & firmware by Florian Rau
 * PCB layout by Christopher Schultz and Florian Rau
