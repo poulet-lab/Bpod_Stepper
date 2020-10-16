@@ -18,7 +18,8 @@ _______________________________________________________________________________
 
 REVISION HISTORY
 
-version 1.0   Initial release
+version 1.0.0   initial release
+version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
 
 _______________________________________________________________________________
 
@@ -50,7 +51,7 @@ class SmoothStepper {
     void setInvertDirection(bool invert);
 
     // set the number of steps per revolution
-    void setStepsPerRev(unsigned long stepsPerRev);
+    void setStepsPerRev(uint32_t stepsPerRev);
 
     // set the acceleration (steps / s^2)
     void setAcceleration(float acceleration);
@@ -59,7 +60,7 @@ class SmoothStepper {
     void setMaxSpeed(float maxSpeed);
 
     // set the duration of step pulses (µs)
-    void setPulseWidth(unsigned int pulseWidth);
+    void setPulseWidth(uint16_t pulseWidth);
 
     // enables the stepper motor  driver (via _pinEnable)
     void enableDriver();
@@ -68,24 +69,24 @@ class SmoothStepper {
     void disableDriver();
 
     // move by n steps
-    void moveSteps(long nSteps);
+    void moveSteps(int32_t nSteps);
 
     // move by n degrees
     void moveDegrees(float degrees);
 
-    
+
   private:
     void step();                      // step function
-    uint8_t _pinStep;                 // pin number: step
+    bool _invertDirection = false;    // invert the direction pin?
+    bool _invertEnable = false;       // invert the enable pin?
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
+    uint8_t _pinStep;                 // pin number: step
+    uint16_t _pulseWidth = 1;         // duration of step pulses (µs)
+    uint32_t _stepsPerRev = 200;      // steps per revolution
     float _a;                         // acceleration (steps / s^2)
     float _vMax;                      // maximum speed (steps / s)
     float _c0;                        // duration of first interval (µs)
-    unsigned int _pulseWidth = 1;     // duration of step pulses (µs)
-    unsigned long _stepsPerRev = 200; // steps per revolution
-    bool _invertEnable = false;       // invert the enable pin?
-    bool _invertDirection = false;    // invert the direction pin?
 };
 
 #endif
