@@ -15433,9 +15433,9 @@ DIN A4, landscape with extra doc field</description>
 <label x="144.78" y="309.88" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="IC2" gate="G$1" pin="R"/>
-<wire x1="71.12" y1="83.82" x2="63.5" y2="83.82" width="0.1524" layer="91"/>
-<label x="73.66" y="83.82" size="1.778" layer="95"/>
+<pinref part="IC2" gate="G$1" pin="D"/>
+<wire x1="63.5" y1="86.36" x2="73.66" y2="86.36" width="0.1524" layer="91"/>
+<label x="73.66" y="86.36" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="RX1" class="0">
@@ -15445,9 +15445,9 @@ DIN A4, landscape with extra doc field</description>
 <label x="144.78" y="312.42" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="IC2" gate="G$1" pin="D"/>
-<wire x1="63.5" y1="86.36" x2="68.58" y2="86.36" width="0.1524" layer="91"/>
-<label x="73.66" y="86.36" size="1.778" layer="95"/>
+<pinref part="IC2" gate="G$1" pin="R"/>
+<wire x1="63.5" y1="83.82" x2="73.66" y2="83.82" width="0.1524" layer="91"/>
+<label x="73.66" y="83.82" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$7" class="0">
