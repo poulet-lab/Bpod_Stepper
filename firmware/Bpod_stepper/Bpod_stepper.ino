@@ -38,13 +38,11 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define pinLimit2      11
 #define pinLED         13
 
-
 // Variables
 byte  nEventNames = sizeof(eventNames) / sizeof(char *);
 byte  inByte      = 0;
 byte  opCode      = 0;
-byte  opSource    = 0;
-boolean newOp     = false;
+bool  newOp       = false;
 long  nSteps      = 0;
 long  alpha       = 0;
 long  stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
@@ -135,10 +133,10 @@ void loop()
       switch (inByte) {
         case 'A':                                                 // Return acceleration
           usbCOM.writeInt16((int16_t)a);
-        break;
+          break;
         case 'S':                                                 // Return speed
           usbCOM.writeInt16((int16_t)vMax);
-        break;
+          break;
       }
     }
     else if ((opCode == 212) && (&COM == &usbCOM)) {              // USB Handshake
