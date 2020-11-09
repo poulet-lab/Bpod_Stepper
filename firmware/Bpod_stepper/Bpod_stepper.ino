@@ -14,10 +14,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Note: This file is part of the Sanworks fork of the Bpod_stepper repository. It has been modified from the original source.
+
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
 
 // Module setup
+ArCOM usbCOM(Serial);                                 // Wrap Serial (USB on Teensy 3.X)
 ArCOM Serial1COM(Serial1);                            // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
 char  moduleName[] = "Stepper";                       // Name of module for manual override UI and state machine assembler
 const char* eventNames[] = {"Start", "Stop", "Limit"};
@@ -36,9 +39,13 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define pinLimit2      11
 #define pinLED         13
 
+
 // Variables
 byte  nEventNames = sizeof(eventNames) / sizeof(char *);
+byte  inByte      = 0;
 byte  opCode      = 0;
+byte  opSource    = 0;
+boolean newOp     = false;
 long  nSteps      = 0;
 long  alpha       = 0;
 long  stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
@@ -93,33 +100,76 @@ void setup()
 
 void loop()
 {
-  if (Serial1COM.available()) {
+  if (usbCOM.available()>0) {
+    opCode = usbCOM.readByte();
+    opSource = 0; newOp = true;
+  } else if (Serial1COM.available()) {
     opCode = Serial1COM.readByte();
+    opSource = 1; newOp = true;
+  }
+  if (newOp) {
     if (opCode == 'A') {                                          // Set acceleration (steps / s^2)
-      a = (float) Serial1COM.readInt16();                         //   Read value
+      if (opSource == 0) {
+        a = (float) usbCOM.readInt16();                           //   Read value
+      } else if (opSource == 1) {
+        a = (float) Serial1COM.readInt16();                       //   Read value
+      }
       stepper.setAcceleration(a);                                 //   Set acceleration
     }
     else if (opCode == 'V') {                                     // Set speed (steps / s)
-      vMax = (float) Serial1COM.readInt16();                      //   Read Int16
+      if (opSource == 0) {
+        vMax = (float) usbCOM.readInt16();                        //   Read Int16
+      } else if (opSource == 1) {
+        vMax = (float) Serial1COM.readInt16();                    //   Read Int16
+      }
       stepper.setMaxSpeed(vMax);                                  //   Set Speed
     }
     else if (opCode == 'S') {                                     // Run steps (pos = CW, neg = CCW)
-      nSteps = (long) Serial1COM.readInt16();                     //   Read Int16, correct for uSteps
+      if (opSource == 0) {
+        nSteps = (long) usbCOM.readInt16(); 
+      } else if (opSource == 1) {
+        nSteps = (long) Serial1COM.readInt16();                   //   Read Int16, correct for uSteps
+      }
       runSteps();                                                 //   Run steps
     }
     else if (opCode == 'D') {                                     // Run degrees (pos = CW, neg = CCW)
-      alpha = (long) Serial1COM.readInt16();                      //   Read Int16
+      if (opSource == 0) {
+        alpha = (long) usbCOM.readInt16();                        //   Read Int16
+      } else if (opSource == 1) {
+        alpha = (long) Serial1COM.readInt16();                    //   Read Int16
+      }
       runDegrees();
     }
     else if (opCode == 'L') {                                     // Search for limit switch
-      limitID   = Serial1COM.readUint8();                         //   Which limit switch? (1 or 2)
-      direction = Serial1COM.readUint8();                         //   Direction (0 = CCW, 1 = CW)
+      if (opSource == 0) {
+        limitID   = usbCOM.readUint8();                       //   Which limit switch? (1 or 2)
+        direction = usbCOM.readUint8();                       //   Direction (0 = CCW, 1 = CW)        
+      } else if (opSource == 1) {
+        limitID   = Serial1COM.readUint8();                       //   Which limit switch? (1 or 2)
+        direction = Serial1COM.readUint8();                       //   Direction (0 = CCW, 1 = CW)
+      }
       if ((limitID==0) || (limitID>2) || (direction>1))  return;  //   Check arguments
       findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);   //   Search for limit switch
     }
-    else if (opCode == 255) {                                     // Return module information
+    else if ((opCode == 'G') && (opSource == 0)) {                //   Get parameters (send via USB)
+      inByte = usbCOM.readByte();
+      switch (inByte) {
+        case 'A':                                                 // Return acceleration
+          usbCOM.writeInt16((int16_t)a);
+        break;
+        case 'S':                                                 // Return speed
+          usbCOM.writeInt16((int16_t)vMax);
+        break;
+      }
+    }
+    else if ((opCode == 212) && (opSource == 0)) {                // USB Handshake
+      usbCOM.writeByte(211);
+      usbCOM.writeUint32(FirmwareVersion);
+    }
+    else if ((opCode == 255) && (opSource == 1)) {                // Return module information (if command arrived via UART)
       returnModuleInfo();
     }
+    newOp = false;
   }
 }
 
