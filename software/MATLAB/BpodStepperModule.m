@@ -66,7 +66,7 @@ classdef BpodStepperModule < handle
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
         function turnDegrees(obj, nDegrees) % Move stepper motor a set number of degrees. nDegrees = positive for clockwise, negative for counterclockwise
-            obj.Port.write('D', 'uint8', nSteps, 'int16');
+            obj.Port.write('D', 'uint8', nDegrees, 'int16');
         end
         function findLimitSwitch(obj, switchID, Dir) % Turn stepper motor until limit switch is reached. switchID = 1 or 2. Dir = 0 (clockwire) or 1 (counterclockwise)
             obj.Port.write(['L' switchID Dir], 'uint8');
