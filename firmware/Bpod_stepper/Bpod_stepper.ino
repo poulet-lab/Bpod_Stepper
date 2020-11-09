@@ -96,52 +96,52 @@ void setup()
 
 void loop()
 {
-  if (usbCOM.available()>0)
-    COM = &usbCOM;
-  else if (Serial1COM.available())
-    COM = &Serial1COM;
-  else
-    return;
+  if (usbCOM.available()>0)                                       // Byte available at usbCOM?
+    COM = &usbCOM;                                                //   Point *COM to usbCOM
+  else if (Serial1COM.available())                                // Byte available at Serial1COM?
+    COM = &Serial1COM;                                            //   Point *COM to Serial1COM
+  else                                                            // Otherwise
+    return;                                                       //   Skip to next iteration of loop()
   
   opCode = COM->readByte();
-  if (opCode == 'A') {                                          // Set acceleration (steps / s^2)
-    a = (float) COM->readInt16();                               //   Read value
-    stepper.setAcceleration(a);                                 //   Set acceleration
+  if (opCode == 'A') {                                            // Set acceleration (steps / s^2)
+    a = (float) COM->readInt16();                                 //   Read value
+    stepper.setAcceleration(a);                                   //   Set acceleration
   }
-  else if (opCode == 'V') {                                     // Set speed (steps / s)
-    vMax = (float) COM->readInt16();                            //   Read Int16
-    stepper.setMaxSpeed(vMax);                                  //   Set Speed
+  else if (opCode == 'V') {                                       // Set speed (steps / s)
+    vMax = (float) COM->readInt16();                              //   Read Int16
+    stepper.setMaxSpeed(vMax);                                    //   Set Speed
   }
-  else if (opCode == 'S') {                                     // Run steps (pos = CW, neg = CCW)
-    nSteps = (long) COM->readInt16();                           //   Read Int16
-    runSteps();                                                 //   Run steps
+  else if (opCode == 'S') {                                       // Run steps (pos = CW, neg = CCW)
+    nSteps = (long) COM->readInt16();                             //   Read Int16
+    runSteps();                                                   //   Run steps
   }
-  else if (opCode == 'D') {                                     // Run degrees (pos = CW, neg = CCW)
-    alpha = (long) COM->readInt16();                            //   Read Int16
-    runDegrees();                                               //   Run degrees
+  else if (opCode == 'D') {                                       // Run degrees (pos = CW, neg = CCW)
+    alpha = (long) COM->readInt16();                              //   Read Int16
+    runDegrees();                                                 //   Run degrees
   }
-  else if (opCode == 'L') {                                     // Search for limit switch
-    limitID   = COM->readUint8();                               //   Which limit switch? (1 or 2)
-    direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)        
-    if ((limitID==0) || (limitID>2) || (direction>1))  return;  //   Check arguments
-    findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);   //   Search for limit switch
+  else if (opCode == 'L') {                                       // Search for limit switch
+    limitID   = COM->readUint8();                                 //   Which limit switch? (1 or 2)
+    direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)        
+    if ((limitID==0) || (limitID>2) || (direction>1))  return;    //   Check arguments
+    findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);     //   Search for limit switch
   }
-  else if ((opCode == 'G') && (&COM == &usbCOM)) {              // Get parameters (send via USB)
-    inByte = usbCOM.readByte();
+  else if ((opCode == 'G') && (&COM == &usbCOM)) {                // Get parameters (send via USB)
+    inByte = usbCOM.readByte();                                   //   Read Byte
     switch (inByte) {
-      case 'A':                                                 // Return acceleration
+      case 'A':                                                   //   Return acceleration
         usbCOM.writeInt16((int16_t)a);
         break;
-      case 'S':                                                 // Return speed
+      case 'S':                                                   //   Return speed
         usbCOM.writeInt16((int16_t)vMax);
         break;
     }
   }
-  else if ((opCode == 212) && (&COM == &usbCOM)) {              // USB Handshake
+  else if ((opCode == 212) && (&COM == &usbCOM)) {                // USB Handshake
     usbCOM.writeByte(211);
     usbCOM.writeUint32(FirmwareVersion);
   }
-  else if ((opCode == 255) && (&COM == &Serial1COM)) {          // Return module information (if command arrived via UART)
+  else if ((opCode == 255) && (&COM == &Serial1COM)) {            // Return module information (if command arrived via UART)
     returnModuleInfo();
   }
 }
