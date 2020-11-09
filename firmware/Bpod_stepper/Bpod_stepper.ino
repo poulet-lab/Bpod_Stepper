@@ -42,7 +42,6 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 byte  nEventNames = sizeof(eventNames) / sizeof(char *);
 byte  inByte      = 0;
 byte  opCode      = 0;
-bool  newOp       = false;
 long  nSteps      = 0;
 long  alpha       = 0;
 long  stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
@@ -97,56 +96,53 @@ void setup()
 
 void loop()
 {
-  if (usbCOM.available()>0) {
+  if (usbCOM.available()>0)
     COM = &usbCOM;
-    newOp = true;
-  } else if (Serial1COM.available()) {
+  else if (Serial1COM.available())
     COM = &Serial1COM;
-    newOp = true;
+  else
+    return;
+  
+  opCode = COM->readByte();
+  if (opCode == 'A') {                                          // Set acceleration (steps / s^2)
+    a = (float) COM->readInt16();                               //   Read value
+    stepper.setAcceleration(a);                                 //   Set acceleration
   }
-  if (newOp) {
-    opCode = COM->readByte();
-    if (opCode == 'A') {                                          // Set acceleration (steps / s^2)
-      a = (float) COM->readInt16();                               //   Read value
-      stepper.setAcceleration(a);                                 //   Set acceleration
+  else if (opCode == 'V') {                                     // Set speed (steps / s)
+    vMax = (float) COM->readInt16();                            //   Read Int16
+    stepper.setMaxSpeed(vMax);                                  //   Set Speed
+  }
+  else if (opCode == 'S') {                                     // Run steps (pos = CW, neg = CCW)
+    nSteps = (long) COM->readInt16();                           //   Read Int16
+    runSteps();                                                 //   Run steps
+  }
+  else if (opCode == 'D') {                                     // Run degrees (pos = CW, neg = CCW)
+    alpha = (long) COM->readInt16();                            //   Read Int16
+    runDegrees();                                               //   Run degrees
+  }
+  else if (opCode == 'L') {                                     // Search for limit switch
+    limitID   = COM->readUint8();                               //   Which limit switch? (1 or 2)
+    direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)        
+    if ((limitID==0) || (limitID>2) || (direction>1))  return;  //   Check arguments
+    findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);   //   Search for limit switch
+  }
+  else if ((opCode == 'G') && (&COM == &usbCOM)) {              // Get parameters (send via USB)
+    inByte = usbCOM.readByte();
+    switch (inByte) {
+      case 'A':                                                 // Return acceleration
+        usbCOM.writeInt16((int16_t)a);
+        break;
+      case 'S':                                                 // Return speed
+        usbCOM.writeInt16((int16_t)vMax);
+        break;
     }
-    else if (opCode == 'V') {                                     // Set speed (steps / s)
-      vMax = (float) COM->readInt16();                            //   Read Int16
-      stepper.setMaxSpeed(vMax);                                  //   Set Speed
-    }
-    else if (opCode == 'S') {                                     // Run steps (pos = CW, neg = CCW)
-      nSteps = (long) COM->readInt16();                           //   Read Int16
-      runSteps();                                                 //   Run steps
-    }
-    else if (opCode == 'D') {                                     // Run degrees (pos = CW, neg = CCW)
-      alpha = (long) COM->readInt16();                            //   Read Int16
-      runDegrees();                                               //   Run degrees
-    }
-    else if (opCode == 'L') {                                     // Search for limit switch
-      limitID   = COM->readUint8();                               //   Which limit switch? (1 or 2)
-      direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)        
-      if ((limitID==0) || (limitID>2) || (direction>1))  return;  //   Check arguments
-      findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);   //   Search for limit switch
-    }
-    else if ((opCode == 'G') && (&COM == &usbCOM)) {              // Get parameters (send via USB)
-      inByte = usbCOM.readByte();
-      switch (inByte) {
-        case 'A':                                                 // Return acceleration
-          usbCOM.writeInt16((int16_t)a);
-          break;
-        case 'S':                                                 // Return speed
-          usbCOM.writeInt16((int16_t)vMax);
-          break;
-      }
-    }
-    else if ((opCode == 212) && (&COM == &usbCOM)) {              // USB Handshake
-      usbCOM.writeByte(211);
-      usbCOM.writeUint32(FirmwareVersion);
-    }
-    else if ((opCode == 255) && (&COM == &Serial1COM)) {          // Return module information (if command arrived via UART)
-      returnModuleInfo();
-    }
-    newOp = false;
+  }
+  else if ((opCode == 212) && (&COM == &usbCOM)) {              // USB Handshake
+    usbCOM.writeByte(211);
+    usbCOM.writeUint32(FirmwareVersion);
+  }
+  else if ((opCode == 255) && (&COM == &Serial1COM)) {          // Return module information (if command arrived via UART)
+    returnModuleInfo();
   }
 }
 
