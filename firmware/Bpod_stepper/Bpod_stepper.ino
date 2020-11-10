@@ -126,22 +126,22 @@ void loop()
     if ((limitID==0) || (limitID>2) || (direction>1))  return;    //   Check arguments
     findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);     //   Search for limit switch
   }
-  else if ((opCode == 'G') && (&COM == &usbCOM)) {                // Get parameters (send via USB)
+  else if (opCode == 'G') {                                       // Get parameters
     inByte = usbCOM.readByte();                                   //   Read Byte
     switch (inByte) {
       case 'A':                                                   //   Return acceleration
-        usbCOM.writeInt16((int16_t)a);
+        COM->writeInt16((int16_t)a);
         break;
       case 'S':                                                   //   Return speed
-        usbCOM.writeInt16((int16_t)vMax);
+        COM->writeInt16((int16_t)vMax);
         break;
     }
   }
-  else if ((opCode == 212) && (&COM == &usbCOM)) {                // USB Handshake
+  else if ((opCode == 212) && (COM == &usbCOM)) {                 // USB Handshake
     usbCOM.writeByte(211);
     usbCOM.writeUint32(FirmwareVersion);
   }
-  else if ((opCode == 255) && (&COM == &Serial1COM)) {            // Return module information (if command arrived via UART)
+  else if ((opCode == 255) && (COM == &Serial1COM)) {             // Return module information (if command arrived via UART)
     returnModuleInfo();
   }
 }
