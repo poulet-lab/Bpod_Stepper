@@ -1,37 +1,37 @@
 # Bpod Stepper Motor Module
 <img align="right" src="images/module.png" width="350px">
 
-Combining smooth acceleration profiles with a _SilentStepStick_ driver, this module allows for virtually noiseless operation of a stepper motor from a _Bpod state machine r2_.
+Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## State Machine Command Interface
-* **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
+* **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)
     Must be followed by one Int16:
   * Byte 1: acceleration (least significant byte),
   * Byte 2: acceleration (most significant byte).
-* **'V' / Ascii 86: set maximum velocity** (steps / s)  
+* **'V' / Ascii 86: set maximum velocity** (steps / s)
     Must be followed by one Int16:
   * Byte 1: velocity (least significant byte),
   * Byte 2: velocity (most significant byte).
-* **'S' / Ascii 83: move by a number of steps** (steps)  
+* **'S' / Ascii 83: move by a number of steps** (steps)
   Must be followed by one Int16:
   * Byte 1: number of steps (least significant byte),
   * Byte 2: number of steps (most significant byte).
-  
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
+
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
   Returned events: 1 = movement start, 2 = movement end.
-* **'D' / Ascii 68: move by a defined angle** (degrees)  
+* **'D' / Ascii 68: move by a defined angle** (degrees)
   Must be followed by one Int16:
   * Byte 1: angle (least significant byte),
   * Byte 2: angle (most significant byte).
-  
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
+
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
   Returned events: 1 = movement start, 2 = movement end.
-* **'L' / Ascii 76: search limit switch**  
+* **'L' / Ascii 76: search limit switch**
   Must be followed by two bytes:
-  * Byte 1: specifies the limit switch to monitor (1 or 2), 
+  * Byte 1: specifies the limit switch to monitor (1 or 2),
   * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
-  
-  This will advance the motor at constant, low speed until one of the limit switches has been reached.  
+
+  This will advance the motor at constant, low speed until one of the limit switches has been reached.
   Returned events: 3 = limit switch reached.
 * **Byte 255: return module info** (reserved)
 
