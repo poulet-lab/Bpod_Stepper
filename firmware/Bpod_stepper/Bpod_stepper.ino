@@ -132,7 +132,7 @@ void loop()
       case 'A':                                                   //   Return acceleration
         COM->writeInt16((int16_t)a);
         break;
-      case 'S':                                                   //   Return speed
+      case 'V':                                                   //   Return speed
         COM->writeInt16((int16_t)vMax);
         break;
     }

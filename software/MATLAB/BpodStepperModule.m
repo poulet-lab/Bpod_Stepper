@@ -47,7 +47,7 @@ classdef BpodStepperModule < handle
             obj.Initialized = 1;
             obj.Port.write('GA', 'uint8');
             obj.MaxSpeed = obj.Port.read(1, 'int16');
-            obj.Port.write('GS', 'uint8');
+            obj.Port.write('GV', 'uint8');
             obj.Acceleration = obj.Port.read(1, 'int16');
         end
         function set.MaxSpeed(obj, newSpeed)
