@@ -74,11 +74,11 @@ void setup()
 
   // Interrupts for limit switches
   if (invertLimit) {
-    attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, FALLING);
-    attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit1), hitLimit, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, FALLING);
   } else {
-    attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, RISING);
-    attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit1), hitLimit, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, RISING);
   }
   
   // Configure the stepper library
@@ -134,10 +134,8 @@ void loop()
     stepper.setMaxSpeed(vMax);                                    //   Set Speed
   }
   else if (opCode == 'L') {                                       // Search for limit switch
-    limitID   = COM->readUint8();                                 //   Which limit switch? (1 or 2)
     direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)        
-    if ((limitID==0) || (limitID>2) || (direction>1))  return;    //   Check arguments
-    findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);     //   Search for limit switch
+    findLimit(direction);                                         //   Search for limit switch
   }
   else if (opCode == 'G') {                                       // Get parameters
     switch (COM->readByte()) {                                    //   Read Byte
@@ -180,18 +178,15 @@ void runDegrees() {
   lastDir = alpha > 0;
 }
 
-void findLimit(uint8_t pin, uint8_t dir) {
+void findLimit(uint8_t dir) {
   stepper.enableDriver();                                         // Enable the driver
-  while (!digitalRead(pin) ^ invertLimit) {                       // While pin high:
-    delay(10);                                                    //   Period
-    stepper.moveSteps(dir);                                       //   Move by one step
-  }                                                               //
-  Serial1COM.writeByte(3);                                        // Send event 3: Limit
-  stepper.disableDriver();                                        // Disable the driver
-  digitalWriteFast(pinLED, HIGH);                                 // Flash the onboard LED
-  delay(100);
-  digitalWriteFast(pinLED, LOW);
-  lastDir = dir > 0;
+  if (dir==1)
+    nSteps = 2147483647;
+  else if (dir==0)
+    nSteps = -2147483646;
+  else
+    return;
+  runSteps();
 }
 
 void returnModuleInfo() {
@@ -214,6 +209,9 @@ void returnModuleInfo() {
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
 }
 
-void limitInterrupt() {
-  stepper.stop();
+void hitLimit() {
+  if (stepper.isRunning()) {
+    stepper.stop();                                               // Stop motor
+    Serial1COM.writeByte(3);                                      // Send event 3: Limit
+  }
 }

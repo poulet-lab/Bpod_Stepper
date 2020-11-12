@@ -27,11 +27,10 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
   Returned events: 1 = movement start, 2 = movement end.
 * **'L' / Ascii 76: search limit switch**
-  Must be followed by two bytes:
-  * Byte 1: specifies the limit switch to monitor (1 or 2),
-  * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
+  Must be followed by one bytes:
+  * Byte 1: specifies the movement direction (0 = CCW, 1 = CW)
 
-  This will advance the motor at constant, low speed until one of the limit switches has been reached.
+  This will advance the motor until one of the limit switches has been reached.
   Returned events: 3 = limit switch reached.
 * **Byte 255: return module info** (reserved)
 

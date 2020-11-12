@@ -68,8 +68,8 @@ classdef BpodStepperModule < handle
         function turnDegrees(obj, nDegrees) % Move stepper motor a set number of degrees. nDegrees = positive for clockwise, negative for counterclockwise
             obj.Port.write('D', 'uint8', nDegrees, 'int16');
         end
-        function findLimitSwitch(obj, switchID, Dir) % Turn stepper motor until limit switch is reached. switchID = 1 or 2. Dir = 0 (clockwire) or 1 (counterclockwise)
-            obj.Port.write(['L' switchID Dir], 'uint8');
+        function findLimitSwitch(obj, Dir) % Turn stepper motor until limit switch is reached. Dir = 0 (clockwise) or 1 (counterclockwise)
+            obj.Port.write(['L' Dir], 'uint8');
         end
         function delete(obj)
             obj.Port = []; % Trigger the ArCOM port's destructor function (closes and releases port)
