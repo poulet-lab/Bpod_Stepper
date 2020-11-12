@@ -72,8 +72,13 @@ void setup()
   invertLimit = true;
 
   // Interrupts for limit switches
-  attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, CHANGE);
+  if (invertLimit) {
+    attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, FALLING);
+  } else {
+    attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, RISING);
+  }
   
   // Configure the stepper library
   stepper.setPinEnable(pinEnable);          // We do want to use the enable pin
