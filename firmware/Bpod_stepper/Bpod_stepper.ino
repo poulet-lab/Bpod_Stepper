@@ -88,15 +88,15 @@ void setup()
   pinMode(pinLED, OUTPUT);
   for (int i = 750; i > 0; i--) {
     delayMicroseconds(i);
-    digitalWrite(pinLED, HIGH);
+    digitalWriteFast(pinLED, HIGH);
     delayMicroseconds(750-i);
-    digitalWrite(pinLED, LOW);
+    digitalWriteFast(pinLED, LOW);
   }
   for (int i = 1; i <=2 ; i++) {
     delay(75);
-    digitalWrite(pinLED, HIGH);
+    digitalWriteFast(pinLED, HIGH);
     delay(50);
-    digitalWrite(pinLED, LOW);
+    digitalWriteFast(pinLED, LOW);
   }
 }
 
@@ -153,23 +153,23 @@ void loop()
 }
 
 void runSteps() {
-  digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
+  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
   stepper.enableDriver();                                         // Enable the driver
   Serial1COM.writeByte(1);                                        // Send event 1: Start
   stepper.moveSteps(nSteps);                                      // Set destination
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
   stepper.disableDriver();                                        // Disable the driver
-  digitalWrite(pinLED, LOW);                                      // Disable the onboard LED
+  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
 }
 
 void runDegrees() {
-  digitalWrite(pinLED, HIGH);                                     // Enable the onboard LED
+  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
   stepper.enableDriver();                                         // Enable the driver
   Serial1COM.writeByte(1);                                        // Send event 1: Start
   stepper.moveDegrees(alpha);                                     // Move by angle alpha
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
   stepper.disableDriver();                                        // Disable the driver
-  digitalWrite(pinLED, LOW);                                      // Disable the onboard LED
+  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
 }
 
 void findLimit(byte pin, long dir) {
@@ -180,9 +180,9 @@ void findLimit(byte pin, long dir) {
   }                                                               //
   Serial1COM.writeByte(3);                                        // Send event 3: Limit
   stepper.disableDriver();                                        // Disable the driver
-  digitalWrite(pinLED, HIGH);                                     // Flash the onboard LED
+  digitalWriteFast(pinLED, HIGH);                                 // Flash the onboard LED
   delay(100);
-  digitalWrite(pinLED, LOW);
+  digitalWriteFast(pinLED, LOW);
 }
 
 void returnModuleInfo() {
