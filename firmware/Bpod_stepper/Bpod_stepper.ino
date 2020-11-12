@@ -41,16 +41,16 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define pinLED         13
 
 // Variables
-byte     pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
-byte     limitID;
-byte     direction;
-byte     nEventNames = sizeof(eventNames) / sizeof(char *);
-byte     opCode      = 0;
 bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
 bool     invertLimit = false;
+uint8_t  pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
+uint8_t  limitID;
+uint8_t  direction;
+uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
+uint8_t  opCode      = 0;
+uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
-uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
 
@@ -180,7 +180,7 @@ void runDegrees() {
   lastDir = alpha > 0;
 }
 
-void findLimit(byte pin, long dir) {
+void findLimit(uint8_t pin, uint8_t dir) {
   stepper.enableDriver();                                         // Enable the driver
   while (!digitalRead(pin) ^ invertLimit) {                       // While pin high:
     delay(10);                                                    //   Period
