@@ -115,21 +115,22 @@ void loop()
     return;                                                       //   Skip to next iteration of loop()
   
   opCode = COM->readByte();
-  if (opCode == 'A') {                                            // Set acceleration (steps / s^2)
+  
+  if (opCode == 'D') {                                            // Run degrees (pos = CW, neg = CCW)
+    alpha = (long) COM->readInt16();                              //   Read Int16
+    runDegrees();                                                 //   Run degrees
+  }
+  else if (opCode == 'S') {                                       // Run steps (pos = CW, neg = CCW)
+    nSteps = (long) COM->readInt16();                             //   Read Int16
+    runSteps();                                                   //   Run steps
+  }
+  else if (opCode == 'A') {                                       // Set acceleration (steps / s^2)
     a = (float) COM->readInt16();                                 //   Read value
     stepper.setAcceleration(a);                                   //   Set acceleration
   }
   else if (opCode == 'V') {                                       // Set speed (steps / s)
     vMax = (float) COM->readInt16();                              //   Read Int16
     stepper.setMaxSpeed(vMax);                                    //   Set Speed
-  }
-  else if (opCode == 'S') {                                       // Run steps (pos = CW, neg = CCW)
-    nSteps = (long) COM->readInt16();                             //   Read Int16
-    runSteps();                                                   //   Run steps
-  }
-  else if (opCode == 'D') {                                       // Run degrees (pos = CW, neg = CCW)
-    alpha = (long) COM->readInt16();                              //   Read Int16
-    runDegrees();                                                 //   Run degrees
   }
   else if (opCode == 'L') {                                       // Search for limit switch
     limitID   = COM->readUint8();                                 //   Which limit switch? (1 or 2)
