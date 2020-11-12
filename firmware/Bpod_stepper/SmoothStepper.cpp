@@ -77,9 +77,12 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
   if (nSteps == 0)                                            // nothing to do for nSteps == 0
     return;
 
+  _isRunning = true;
   step();                                                     // first step
-  if (nSteps == 1)                                            // a single step doesn't require fancy formulas
+  if (nSteps == 1) {                                          // a single step doesn't require fancy formulas
+    _isRunning = false;
     return;
+  }
 
   // calculate transition points ("linear-factor method")
   float m  = (float) nSteps;
@@ -104,6 +107,7 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
     delayMicroseconds(ci - _pulseWidth);                      // delay for ci microseconds
     step();
   }
+  _isRunning = false;
 }
 
 void SmoothStepper::moveDegrees(float degrees) {
@@ -119,4 +123,8 @@ void SmoothStepper::step() {
 
 void SmoothStepper::stop() {
   _stop = true;
+}
+
+bool SmoothStepper::isRunning() {
+  return _isRunning;
 }

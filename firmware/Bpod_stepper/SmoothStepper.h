@@ -20,7 +20,7 @@ REVISION HISTORY
 
 version 1.0.0   initial release
 version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
-version 1.0.2   add stop routine for interrupting movement
+version 1.0.2   add stop() and isRunning()
 
 _______________________________________________________________________________
 
@@ -78,10 +78,14 @@ class SmoothStepper {
     // stop movement
     void stop();
 
+    // is the motor running?
+    bool isRunning();
+
   private:
     void step();                      // step function
     bool _invertDirection = false;    // invert the direction pin?
     bool _invertEnable = false;       // invert the enable pin?
+    volatile bool _isRunning = false; // is the motor running?
     volatile bool _stop = false;      // stop ongoing movement?
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
