@@ -46,6 +46,7 @@ byte     limitID;
 byte     direction;
 byte     nEventNames = sizeof(eventNames) / sizeof(char *);
 byte     opCode      = 0;
+bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
 bool     invertLimit = false;
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
@@ -165,6 +166,7 @@ void runSteps() {
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
   stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
+  lastDir = nSteps > 0;
 }
 
 void runDegrees() {
@@ -175,6 +177,7 @@ void runDegrees() {
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
   stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
+  lastDir = alpha > 0;
 }
 
 void findLimit(byte pin, long dir) {
@@ -188,6 +191,7 @@ void findLimit(byte pin, long dir) {
   digitalWriteFast(pinLED, HIGH);                                 // Flash the onboard LED
   delay(100);
   digitalWriteFast(pinLED, LOW);
+  lastDir = dir > 0;
 }
 
 void returnModuleInfo() {
