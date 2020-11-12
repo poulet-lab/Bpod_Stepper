@@ -135,7 +135,7 @@ void loop()
   }
   else if (opCode == 'L') {                                       // Search for limit switch
     direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)        
-    findLimit(direction);                                         //   Search for limit switch
+    findLimit();                                                  //   Search for limit switch
   }
   else if (opCode == 'G') {                                       // Get parameters
     switch (COM->readByte()) {                                    //   Read Byte
@@ -178,15 +178,11 @@ void runDegrees() {
   lastDir = alpha > 0;
 }
 
-void findLimit(uint8_t dir) {
-  stepper.enableDriver();                                         // Enable the driver
-  if (dir==1)
-    nSteps = 2147483647;
-  else if (dir==0)
-    nSteps = -2147483646;
-  else
-    return;
-  runSteps();
+void findLimit() {
+  nSteps = 2147483647;                                            // A very large number
+  if (direction == 0)                                             // CCW movement:
+    nSteps = -nSteps;                                             //   A very large, negative number
+  runSteps();                                                     // Run!
 }
 
 void returnModuleInfo() {
