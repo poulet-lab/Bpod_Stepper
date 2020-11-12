@@ -82,8 +82,7 @@ class SmoothStepper {
     void step();                      // step function
     bool _invertDirection = false;    // invert the direction pin?
     bool _invertEnable = false;       // invert the enable pin?
-    volatile bool _running = false;   // are we moving the motor?
-    volatile bool _stop = false;      // should we stop the movement?
+    volatile bool _stop = false;      // stop ongoing movement?
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
     uint8_t _pinStep;                 // pin number: step

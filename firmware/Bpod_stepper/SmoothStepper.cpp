@@ -89,12 +89,11 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
   float ci;
 
   // run the step sequence
-  _running = true;
+  _stop = false;
   for (int32_t i = 1; i < nSteps; i++) {
-    if (_stop) {
-      _stop = false;
+    if (_stop)
       break;
-    } else if (i == 1)
+    else if (i == 1)
       ci = _c0;                                               // first interval
     else if (i < n2)
       ci = ci - 2.0*ci/(4.0*(i-1)+1.0) * (n2-i+1.0)/n2;       // acceleration (eq22)
@@ -105,7 +104,6 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
     delayMicroseconds(ci - _pulseWidth);                      // delay for ci microseconds
     step();
   }
-  _running = false;
 }
 
 void SmoothStepper::moveDegrees(float degrees) {
@@ -120,6 +118,5 @@ void SmoothStepper::step() {
 }
 
 void SmoothStepper::stop() {
-  if (_running)
-    _stop = true;
+  _stop = true;
 }
