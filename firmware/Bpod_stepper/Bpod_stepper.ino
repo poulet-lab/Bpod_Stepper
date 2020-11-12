@@ -41,17 +41,18 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define pinLED         13
 
 // Variables
-byte  nEventNames = sizeof(eventNames) / sizeof(char *);
-byte  opCode      = 0;
-long  nSteps      = 0;
-long  alpha       = 0;
-long  stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
-float vMax        = (float) stepsPerRev/2;  // Set default speed
-float a           = (float) stepsPerRev;    // Set default acceleration
-byte  pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
-bool  invertLimit;
-byte  limitID;
-byte  direction;
+byte     pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
+byte     limitID;
+byte     direction;
+byte     nEventNames = sizeof(eventNames) / sizeof(char *);
+byte     opCode      = 0;
+bool     invertLimit = false;
+int32_t  nSteps      = 0;
+int32_t  alpha       = 0;
+uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
+float    vMax        = (float) stepsPerRev/2;  // Set default speed
+float    a           = (float) stepsPerRev;    // Set default acceleration
+
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
@@ -116,11 +117,11 @@ void loop()
   opCode = COM->readByte();
   
   if (opCode == 'D') {                                            // Run degrees (pos = CW, neg = CCW)
-    alpha = (long) COM->readInt16();                              //   Read Int16
+    alpha = (int32_t) COM->readInt16();                           //   Read Int16
     runDegrees();                                                 //   Run degrees
   }
   else if (opCode == 'S') {                                       // Run steps (pos = CW, neg = CCW)
-    nSteps = (long) COM->readInt16();                             //   Read Int16
+    nSteps = (int32_t) COM->readInt16();                          //   Read Int16
     runSteps();                                                   //   Run steps
   }
   else if (opCode == 'A') {                                       // Set acceleration (steps / s^2)
