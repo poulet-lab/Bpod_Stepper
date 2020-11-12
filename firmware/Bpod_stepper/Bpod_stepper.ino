@@ -16,8 +16,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
-#include <avr/io.h>
-#include <avr/interrupt.h>
 
 // Module setup
 ArCOM usbCOM(Serial);                                 // Wrap Serial (USB on Teensy 3.X)
@@ -70,10 +68,6 @@ void setup()
   pinMode(pinLimit1, INPUT_PULLUP);
   pinMode(pinLimit2, INPUT_PULLUP);
   invertLimit = true;
-
-  // Interrupts for limit switches
-  attachInterrupt(digitalPinToInterrupt(pinLimit1), limitInterrupt, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(pinLimit2), limitInterrupt, CHANGE);
   
   // Configure the stepper library
   stepper.setPinEnable(pinEnable);          // We do want to use the enable pin
@@ -83,7 +77,7 @@ void setup()
   stepper.setMaxSpeed(vMax);                // Set max speed
   stepper.setAcceleration(a);               // Set acceleration
   stepper.disableDriver();                  // Disable the driver
- 
+  
   // Extra fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
   for (int i = 750; i > 0; i--) {
@@ -203,8 +197,4 @@ void returnModuleInfo() {
     }
   }
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
-}
-
-void limitInterrupt() {
-  stepper.stop();
 }
