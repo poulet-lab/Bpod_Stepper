@@ -42,7 +42,6 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 
 // Variables
 byte  nEventNames = sizeof(eventNames) / sizeof(char *);
-byte  inByte      = 0;
 byte  opCode      = 0;
 long  nSteps      = 0;
 long  alpha       = 0;
@@ -139,8 +138,7 @@ void loop()
     findLimit(pinLimit[limitID-1], (long) direction * 2 - 1);     //   Search for limit switch
   }
   else if (opCode == 'G') {                                       // Get parameters
-    inByte = COM->readByte();                                     //   Read Byte
-    switch (inByte) {
+    switch (COM->readByte()) {                                    //   Read Byte
       case 'A':                                                   //   Return acceleration
         COM->writeInt16((int16_t)a);
         break;
