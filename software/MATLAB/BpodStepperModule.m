@@ -24,6 +24,7 @@ classdef BpodStepperModule < handle
         Port % ArCOM Serial port
         MaxSpeed
         Acceleration
+        StepsPerRevolution
     end
     properties (SetAccess = protected)
         FirmwareVersion = 0;
@@ -47,8 +48,10 @@ classdef BpodStepperModule < handle
             obj.Initialized = 1;
             obj.Port.write('GA', 'uint8');
             obj.MaxSpeed = obj.Port.read(1, 'int16');
-            obj.Port.write('GS', 'uint8');
+            obj.Port.write('GV', 'uint8');
             obj.Acceleration = obj.Port.read(1, 'int16');
+            obj.Port.write('GR', 'uint8');
+            obj.StepsPerRevolution = obj.Port.read(1, 'uint32');
         end
         function set.MaxSpeed(obj, newSpeed)
             if obj.Initialized
@@ -62,14 +65,20 @@ classdef BpodStepperModule < handle
             end
             obj.Acceleration = newAccel;
         end
+        function set.StepsPerRevolution(obj, newStepsPerRev)
+            if obj.Initialized
+                obj.Port.write('R', 'uint8', newStepsPerRev, 'uint32');
+            end
+            obj.StepsPerRevolution = newStepsPerRev;
+        end
         function step(obj, nSteps) % Move stepper motor a set number of steps. nSteps = positive for clockwise steps, negative for counterclockwise
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
         function turnDegrees(obj, nDegrees) % Move stepper motor a set number of degrees. nDegrees = positive for clockwise, negative for counterclockwise
-            obj.Port.write('D', 'uint8', nSteps, 'int16');
+            obj.Port.write('D', 'uint8', nDegrees, 'int16');
         end
-        function findLimitSwitch(obj, switchID, Dir) % Turn stepper motor until limit switch is reached. switchID = 1 or 2. Dir = 0 (clockwire) or 1 (counterclockwise)
-            obj.Port.write(['L' switchID Dir], 'uint8');
+        function findLimitSwitch(obj, Dir) % Turn stepper motor until limit switch is reached. Dir = 0 (clockwise) or 1 (counterclockwise)
+            obj.Port.write(['L' Dir], 'uint8');
         end
         function delete(obj)
             obj.Port = []; % Trigger the ArCOM port's destructor function (closes and releases port)
