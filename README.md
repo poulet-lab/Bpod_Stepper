@@ -4,35 +4,35 @@
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## State Machine Command Interface
-* **'D' / ASCII 68: move by a defined angle** (degrees)
+* **Byte 68 / ASCII 'D': move by a defined angle** (degrees)  
   Must be followed by one Int16:
   * Byte 1: angle (least significant byte),
   * Byte 2: angle (most significant byte).
 
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
-* **'S' / ASCII 83: move by a number of steps** (steps)
+* **Byte 83 / ASCII 'S': move by a number of steps** (steps)  
   Must be followed by one Int16:
   * Byte 1: number of steps (least significant byte),
   * Byte 2: number of steps (most significant byte).
 
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
+  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
-* **'L' / ASCII 76: search limit switch**
+* **Byte 76 / ASCII 'L': search limit switch**  
   Must be followed by one byte:
   * Byte 1: specifies the movement direction (0 = CCW, 1 = CW)
 
-  This will advance the motor until one of the limit switches has been reached.
+  This will advance the motor until one of the limit switches has been reached.  
   Returned events: 3 = limit switch reached.
-* **'A' / ASCII 65: set acceleration** (steps / s<sup>2</sup>)
+* **Byte 65 / ASCII 'A': set acceleration** (steps / s<sup>2</sup>)  
   Must be followed by one Int16:
   * Byte 1: acceleration (least significant byte),
   * Byte 2: acceleration (most significant byte).
-* **'V' / ASCII 86: set maximum velocity** (steps / s)
+* **Byte 86 / ASCII 'V': set maximum velocity** (steps / s)  
   Must be followed by one Int16:
   * Byte 1: velocity (least significant byte),
   * Byte 2: velocity (most significant byte).
-* **'G' / ASCII 71: get parameter**
+* **Byte 71 / ASCII 'G': get parameter**  
   Must be followed by one of the following bytes:
   * 'A' / ASCII 65: get acceleration (steps / s<sup>2</sup>)  
     Returns one Int16
@@ -40,6 +40,7 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
     Returns one Int16
   * 'R' / ASCII 82: get steps per revolution  
     Returns one uInt32
+* **Byte 212: USB Handshake** (reserved)
 * **Byte 255: return module info** (reserved)
 
 
