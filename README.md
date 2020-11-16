@@ -34,11 +34,11 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
   * Byte 2: velocity (most significant byte).
 * **'G' / ASCII 71: get parameter**
   Must be followed by one of the following bytes:
-  * 'A' / ASCII 65: get acceleration (steps / s<sup>2</sup>)
+  * 'A' / ASCII 65: get acceleration (steps / s<sup>2</sup>)  
     Returns one Int16
-  * 'V' / ASCII 86: get maximum velocity (steps / s)
+  * 'V' / ASCII 86: get maximum velocity (steps / s)  
     Returns one Int16
-  * 'R' / ASCII 82: get steps per revolution
+  * 'R' / ASCII 82: get steps per revolution  
     Returns one uInt32
 * **Byte 255: return module info** (reserved)
 
