@@ -6,8 +6,8 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the 
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+This program is distributed  WITHOUT ANY WARRANTY and without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -20,6 +20,7 @@ REVISION HISTORY
 
 version 1.0.0   initial release
 version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
+version 1.0.2   add stop() and isRunning()
 
 _______________________________________________________________________________
 
@@ -75,10 +76,15 @@ class SmoothStepper {
     void moveDegrees(float degrees);
 
 
+    // is the motor running?
+    bool isRunning();
+
   private:
     void step();                      // step function
     bool _invertDirection = false;    // invert the direction pin?
     bool _invertEnable = false;       // invert the enable pin?
+    volatile bool _isRunning = false; // is the motor running?
+    volatile bool _stop = false;      // stop ongoing movement?
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
     uint8_t _pinStep;                 // pin number: step
