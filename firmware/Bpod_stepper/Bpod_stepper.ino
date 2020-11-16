@@ -16,6 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
 // Module setup
 ArCOM usbCOM(Serial);                                 // Wrap Serial (USB on Teensy 3.X)
@@ -114,43 +116,55 @@ void loop()
     return;                                                       //   Skip to next iteration of loop()
 
   opCode = COM->readByte();
-
-  if (opCode == 'D') {                                            // Run degrees (pos = CW, neg = CCW)
-    alpha = (int32_t) COM->readInt16();                           //   Read Int16
-    runDegrees();                                                 //   Run degrees
-  }
-  else if (opCode == 'S') {                                       // Run steps (pos = CW, neg = CCW)
-    nSteps = (int32_t) COM->readInt16();                          //   Read Int16
-    runSteps();                                                   //   Run steps
-  }
-  else if (opCode == 'A') {                                       // Set acceleration (steps / s^2)
-    a = (float) COM->readInt16();                                 //   Read value
-    stepper.setAcceleration(a);                                   //   Set acceleration
-  }
-  else if (opCode == 'V') {                                       // Set speed (steps / s)
-    vMax = (float) COM->readInt16();                              //   Read Int16
-    stepper.setMaxSpeed(vMax);                                    //   Set Speed
-  }
-  else if (opCode == 'L') {                                       // Search for limit switch
-    direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)
-    findLimit();                                                  //   Search for limit switch
-  }
-  else if (opCode == 'G') {                                       // Get parameters
-    switch (COM->readByte()) {                                    //   Read Byte
-      case 'A':                                                   //   Return acceleration
-        COM->writeInt16((int16_t)a);
-        break;
-      case 'V':                                                   //   Return speed
-        COM->writeInt16((int16_t)vMax);
-        break;
-    }
-  }
-  else if ((opCode == 212) && (COM == &usbCOM)) {                 // USB Handshake
-    COM->writeByte(211);
-    COM->writeUint32(FirmwareVersion);
-  }
-  else if ((opCode == 255) && (COM == &Serial1COM)) {             // Return module information (if command arrived via UART)
-    returnModuleInfo();
+  switch(opCode) {
+    case 'D':                                                       // Run degrees (pos = CW, neg = CCW)
+      alpha = (int32_t) COM->readInt16();                           //   Read Int16
+      runDegrees();                                                 //   Run degrees
+      break;
+    case 'S':                                                       // Run steps (pos = CW, neg = CCW)
+      nSteps = (int32_t) COM->readInt16();                          //   Read Int16
+      runSteps();                                                   //   Run steps
+      break;
+    case 'A':                                                       // Set acceleration (steps / s^2)
+      a = (float) COM->readInt16();                                 //   Read value
+      stepper.setAcceleration(a);                                   //   Set acceleration
+      break;
+    case 'V':                                                       // Set speed (steps / s)
+      vMax = (float) COM->readInt16();                              //   Read Int16
+      stepper.setMaxSpeed(vMax);                                    //   Set Speed
+      break;
+    case 'R':                                                       // Set steps per revolution
+      stepsPerRev = COM->readUint32();                              //   Read Int32
+      stepper.setStepsPerRev(stepsPerRev);                          // Update SmoothStepper object
+      break;
+    case 'L':                                                       // Search for limit switch
+      direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)
+      findLimit();                                                  //   Search for limit switch
+      break;
+    case 'G':                                                       // Get parameters
+      switch (COM->readByte()) {                                    //   Read Byte
+        case 'A':                                                   //   Return acceleration
+          COM->writeInt16((int16_t)a);
+          break;
+        case 'V':                                                   //   Return speed
+          COM->writeInt16((int16_t)vMax);
+          break;
+        case 'R':                                                   //   Return steps per rev
+          COM->writeUint32((uint32_t)stepsPerRev);
+          break;
+      }
+      break;
+    case 212:
+      if (COM == &usbCOM) {                 // USB Handshake
+        COM->writeByte(211);
+        COM->writeUint32(FirmwareVersion);
+      }
+      break;
+    case 255:
+      if (COM == &Serial1COM) {             // Return module information (if command arrived via UART)
+        returnModuleInfo();
+      }
+      break;
   }
 }
 
