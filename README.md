@@ -6,39 +6,39 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 ## State Machine Command Interface
 * **Byte 68 / ASCII 'D': move by a defined angle** (degrees)  
   Must be followed by one Int16:
-  * Byte 1: angle (least significant byte),
-  * Byte 2: angle (most significant byte).
+  * **Byte 1:** angle (least significant byte),
+  * **Byte 2:** angle (most significant byte).
 
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
 * **Byte 83 / ASCII 'S': move by a number of steps** (steps)  
   Must be followed by one Int16:
-  * Byte 1: number of steps (least significant byte),
-  * Byte 2: number of steps (most significant byte).
+  * **Byte 1:** number of steps (least significant byte),
+  * **Byte 2:** number of steps (most significant byte).
 
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
 * **Byte 76 / ASCII 'L': search limit switch**  
   Must be followed by one byte:
-  * Byte 1: specifies the movement direction (0 = CCW, 1 = CW)
+  * **Byte 1:** specifies the movement direction (0 = CCW, 1 = CW)
 
   This will advance the motor until one of the limit switches has been reached.  
   Returned events: 3 = limit switch reached.
 * **Byte 65 / ASCII 'A': set acceleration** (steps / s<sup>2</sup>)  
   Must be followed by one Int16:
-  * Byte 1: acceleration (least significant byte),
-  * Byte 2: acceleration (most significant byte).
+  * **Byte 1:** acceleration (least significant byte),
+  * **Byte 2:** acceleration (most significant byte).
 * **Byte 86 / ASCII 'V': set maximum velocity** (steps / s)  
   Must be followed by one Int16:
-  * Byte 1: velocity (least significant byte),
-  * Byte 2: velocity (most significant byte).
+  * **Byte 1:** velocity (least significant byte),
+  * **Byte 2:** velocity (most significant byte).
 * **Byte 71 / ASCII 'G': get parameter**  
   Must be followed by one of the following bytes:
-  * 'A' / ASCII 65: get acceleration (steps / s<sup>2</sup>)  
+  * **'A' / ASCII 65:** get acceleration (steps / s<sup>2</sup>)  
     Returns one Int16
-  * 'V' / ASCII 86: get maximum velocity (steps / s)  
+  * **'V' / ASCII 86:** get maximum velocity (steps / s)  
     Returns one Int16
-  * 'R' / ASCII 82: get steps per revolution  
+  * **'R' / ASCII 82:** get steps per revolution  
     Returns one uInt32
 * **Byte 212: USB Handshake** (reserved)
 * **Byte 255: return module info** (reserved)
