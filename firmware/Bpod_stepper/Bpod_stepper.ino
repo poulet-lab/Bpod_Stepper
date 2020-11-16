@@ -117,51 +117,51 @@ void loop()
 
   opCode = COM->readByte();
   switch(opCode) {
-    case 'D':                                                       // Run degrees (pos = CW, neg = CCW)
-      alpha = (int32_t) COM->readInt16();                           //   Read Int16
-      runDegrees();                                                 //   Run degrees
+    case 'D':                                                     // Run degrees (pos = CW, neg = CCW)
+      alpha = (int32_t) COM->readInt16();                         //   Read Int16
+      runDegrees();                                               //   Run degrees
       break;
-    case 'S':                                                       // Run steps (pos = CW, neg = CCW)
-      nSteps = (int32_t) COM->readInt16();                          //   Read Int16
-      runSteps();                                                   //   Run steps
+    case 'S':                                                     // Run steps (pos = CW, neg = CCW)
+      nSteps = (int32_t) COM->readInt16();                        //   Read Int16
+      runSteps();                                                 //   Run steps
       break;
-    case 'A':                                                       // Set acceleration (steps / s^2)
-      a = (float) COM->readInt16();                                 //   Read value
-      stepper.setAcceleration(a);                                   //   Set acceleration
+    case 'L':                                                     // Search for limit switch
+      direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
+      findLimit();                                                //   Search for limit switch
       break;
-    case 'V':                                                       // Set speed (steps / s)
-      vMax = (float) COM->readInt16();                              //   Read Int16
-      stepper.setMaxSpeed(vMax);                                    //   Set Speed
+    case 'A':                                                     // Set acceleration (steps / s^2)
+      a = (float) COM->readInt16();                               //   Read value
+      stepper.setAcceleration(a);                                 //   Set acceleration
       break;
-    case 'R':                                                       // Set steps per revolution
-      stepsPerRev = COM->readUint32();                              //   Read Int32
-      stepper.setStepsPerRev(stepsPerRev);                          // Update SmoothStepper object
+    case 'V':                                                     // Set speed (steps / s)
+      vMax = (float) COM->readInt16();                            //   Read Int16
+      stepper.setMaxSpeed(vMax);                                  //   Set Speed
       break;
-    case 'L':                                                       // Search for limit switch
-      direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)
-      findLimit();                                                  //   Search for limit switch
+    case 'R':                                                     // Set steps per revolution
+      stepsPerRev = COM->readUint32();                            //   Read Int32
+      stepper.setStepsPerRev(stepsPerRev);                        //   Update SmoothStepper object
       break;
-    case 'G':                                                       // Get parameters
-      switch (COM->readByte()) {                                    //   Read Byte
-        case 'A':                                                   //   Return acceleration
+    case 'G':                                                     // Get parameters
+      switch (COM->readByte()) {                                  //   Read Byte
+        case 'A':                                                 //   Return acceleration
           COM->writeInt16((int16_t)a);
           break;
-        case 'V':                                                   //   Return speed
+        case 'V':                                                 //   Return speed
           COM->writeInt16((int16_t)vMax);
           break;
-        case 'R':                                                   //   Return steps per rev
+        case 'R':                                                 //   Return steps per rev
           COM->writeUint32((uint32_t)stepsPerRev);
           break;
       }
       break;
-    case 212:
-      if (COM == &usbCOM) {                 // USB Handshake
+    case 212:                                                     // USB Handshake
+      if (COM == &usbCOM) {                                       //   Check if connected via USB
         COM->writeByte(211);
         COM->writeUint32(FirmwareVersion);
       }
       break;
-    case 255:
-      if (COM == &Serial1COM) {             // Return module information (if command arrived via UART)
+    case 255:                                                     // Return module information
+      if (COM == &Serial1COM) {                                   //   Check if connected via UART
         returnModuleInfo();
       }
       break;
