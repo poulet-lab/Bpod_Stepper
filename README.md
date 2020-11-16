@@ -3,7 +3,7 @@
 
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
-## State Machine Command Interface
+## Serial Command Interface
 * **Byte 68 / ASCII 'D': move by a defined angle** (degrees)  
   Must be followed by one Int16:
   * **Byte 1:** angle (least significant byte),
