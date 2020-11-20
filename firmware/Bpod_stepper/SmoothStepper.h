@@ -21,6 +21,7 @@ REVISION HISTORY
 version 1.0.0   initial release
 version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
 version 1.0.2   add stop() and isRunning()
+version 1.0.3   keep track of position
 
 _______________________________________________________________________________
 
@@ -75,6 +76,14 @@ class SmoothStepper {
     // move by n degrees
     void moveDegrees(float degrees);
 
+    // reset position to zero
+    void resetPosition();
+
+    // get position (degrees)
+    uint32_t getPosition();
+
+    // stop movement
+    void stop();
 
     // is the motor running?
     bool isRunning();
@@ -83,6 +92,7 @@ class SmoothStepper {
     void step();                      // step function
     bool _invertDirection = false;    // invert the direction pin?
     bool _invertEnable = false;       // invert the enable pin?
+    bool _direction = true;           // direction (true = CW, false = CCW)
     volatile bool _isRunning = false; // is the motor running?
     volatile bool _stop = false;      // stop ongoing movement?
     uint8_t _pinDirection;            // pin number: direction
@@ -90,6 +100,7 @@ class SmoothStepper {
     uint8_t _pinStep;                 // pin number: step
     uint16_t _pulseWidth = 1;         // duration of step pulses (µs)
     uint32_t _stepsPerRev = 200;      // steps per revolution
+    uint32_t _position = 0;           // current position (steps)
     float _a;                         // acceleration (steps / s^2)
     float _vMax;                      // maximum speed (steps / s)
     float _c0;                        // duration of first interval (µs)
