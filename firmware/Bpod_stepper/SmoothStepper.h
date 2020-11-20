@@ -75,6 +75,8 @@ class SmoothStepper {
     // move by n degrees
     void moveDegrees(float degrees);
 
+    // stop movement
+    void stop();
 
     // is the motor running?
     bool isRunning();
