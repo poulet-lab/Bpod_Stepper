@@ -89,6 +89,7 @@ void setup()
   stepper.setMaxSpeed(vMax);                // Set max speed
   stepper.setAcceleration(a);               // Set acceleration
   stepper.disableDriver();                  // Disable the driver
+  stepper.resetPosition();                  // Reset position of motor
 
   // Extra fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
@@ -129,6 +130,9 @@ void loop()
       direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
       findLimit();                                                //   Search for limit switch
       break;
+    case 'Z':                                                     // Reset position to zero
+      stepper.resetPosition();
+      break;
     case 'A':                                                     // Set acceleration (steps / s^2)
       a = (float) COM->readInt16();                               //   Read value
       stepper.setAcceleration(a);                                 //   Set acceleration
@@ -143,6 +147,9 @@ void loop()
       break;
     case 'G':                                                     // Get parameters
       switch (COM->readByte()) {                                  //   Read Byte
+        case 'P':                                                 //   Return position
+          COM->writeUint16((uint16_t) stepper.getPosition());
+          break;
         case 'A':                                                 //   Return acceleration
           COM->writeInt16((int16_t)a);
           break;

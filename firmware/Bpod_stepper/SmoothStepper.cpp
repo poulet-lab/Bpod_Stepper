@@ -67,12 +67,13 @@ void SmoothStepper::disableDriver() {
 }
 
 void SmoothStepper::moveSteps(int32_t nSteps) {
-  if (nSteps < 0) {
+  _direction = (nSteps >= 0);
+  if (_direction)
+    digitalWrite(_pinDirection, LOW  ^ _invertDirection);
+  else {
     nSteps = nSteps * -1;
     digitalWrite(_pinDirection, HIGH ^ _invertDirection);
   }
-  else
-    digitalWrite(_pinDirection, LOW  ^ _invertDirection);
 
   if (nSteps == 0)                                            // nothing to do for nSteps == 0
     return;
@@ -110,6 +111,14 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
   _isRunning = false;
 }
 
+void SmoothStepper::resetPosition() {
+  _position = 0;
+}
+
+uint32_t SmoothStepper::getPosition() {
+  return _position;
+}
+
 void SmoothStepper::moveDegrees(float degrees) {
   int32_t nSteps = round(degrees * _stepsPerRev / 360.0);
   moveSteps(nSteps);
@@ -119,6 +128,13 @@ void SmoothStepper::step() {
   digitalWrite(_pinStep, HIGH);
   delayMicroseconds(_pulseWidth);
   digitalWrite(_pinStep, LOW);
+
+  if (!_direction && _position==0)
+    _position = _stepsPerRev;
+  else if (!_direction)
+    _position--;
+  else
+    _position = (_position + 1) % _stepsPerRev; 
 }
 
 void SmoothStepper::stop() {
