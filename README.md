@@ -20,6 +20,13 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
 
+* **80 / ASCII 'P': move to absolute position** (steps)  
+  Must be followed by:
+
+  * **Int16:** absolute position (steps).
+
+  Returned events: 1 = movement start, 2 = movement end.
+
 * **76 / ASCII 'L': search limit switch**  
   Must be followed by:
 
