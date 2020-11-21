@@ -22,7 +22,7 @@ version 1.0.0   initial release
 version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
 version 1.0.2   add stop() and isRunning()
 version 1.0.3   keep track of position
-version 1.0.4	add movePosition() and getDirection()
+version 1.0.4   add movePosition() and getDirection()
 
 _______________________________________________________________________________
 
