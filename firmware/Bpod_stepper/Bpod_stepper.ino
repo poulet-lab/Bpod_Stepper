@@ -51,6 +51,7 @@ uint8_t  opCode      = 0;
 uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
+int32_t  position    = 0;
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
 
@@ -126,6 +127,10 @@ void loop()
       nSteps = (int32_t) COM->readInt16();                        //   Read Int16
       runSteps();                                                 //   Run steps
       break;
+    case 'P':                                                     // Run to absolute position
+      position = (int32_t) COM->readInt16();                      //   Read Int16
+      runPosition();                                              //   Run to absolute position
+      break;
     case 'L':                                                     // Search for limit switch
       direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
       findLimit();                                                //   Search for limit switch
@@ -195,6 +200,17 @@ void runDegrees() {
   stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
   lastDir = alpha > 0;
+}
+
+void runPosition() {
+  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
+  stepper.enableDriver();                                         // Enable the driver
+  Serial1COM.writeByte(1);                                        // Send event 1: Start
+  stepper.movePosition(position);                                 // Move by angle alpha
+  Serial1COM.writeByte(2);                                        // Send event 2: Stop
+  stepper.disableDriver();                                        // Disable the driver
+  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
+  lastDir = stepper.getDirection();
 }
 
 void findLimit() {

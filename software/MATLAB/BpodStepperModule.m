@@ -79,6 +79,9 @@ classdef BpodStepperModule < handle
             obj.Port.write('GP', 'uint8');
             out = obj.Port.read(1, 'uint16');
         end
+        function set.Position(obj,position)
+            obj.Port.write('P', 'uint8', position, 'int16');
+        end
         function resetPosition(obj)
             obj.Port.write('Z', 'uint8');
         end
