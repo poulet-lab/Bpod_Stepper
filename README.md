@@ -27,6 +27,8 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 
   Returned events: 1 = movement start, 2 = movement end.
 
+* **90 / ASCII 'Z': reset absolute position to zero**
+
 * **76 / ASCII 'L': search limit switch**  
   Must be followed by:
 
@@ -47,7 +49,9 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 
 * **71 / ASCII 'G': get parameter**  
   Must be followed by one of the following bytes:
-  
+
+  * **65 / ASCII 'A':** get absolute position (steps)  
+    Returns one Int16.  
   * **65 / ASCII 'A':** get acceleration (steps / s<sup>2</sup>)  
     Returns one Int16.
   * **86 / ASCII 'V':** get maximum velocity (steps / s)  
