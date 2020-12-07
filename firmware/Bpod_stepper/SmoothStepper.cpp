@@ -6,8 +6,8 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the 
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+This program is distributed  WITHOUT ANY WARRANTY and without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -66,20 +66,28 @@ void SmoothStepper::disableDriver() {
   digitalWrite(_pinEnable, LOW  ^ _invertEnable);
 }
 
+bool SmoothStepper::getDirection() {
+  return _direction;
+}
+
 void SmoothStepper::moveSteps(int32_t nSteps) {
-  if (nSteps < 0) {
+  _direction = (nSteps >= 0);
+  if (_direction)
+    digitalWrite(_pinDirection, LOW  ^ _invertDirection);
+  else {
     nSteps = nSteps * -1;
     digitalWrite(_pinDirection, HIGH ^ _invertDirection);
   }
-  else
-    digitalWrite(_pinDirection, LOW  ^ _invertDirection);
 
   if (nSteps == 0)                                            // nothing to do for nSteps == 0
     return;
 
+  _isRunning = true;
   step();                                                     // first step
-  if (nSteps == 1)                                            // a single step doesn't require fancy formulas
+  if (nSteps == 1) {                                          // a single step doesn't require fancy formulas
+    _isRunning = false;
     return;
+  }
 
   // calculate transition points ("linear-factor method")
   float m  = (float) nSteps;
@@ -89,8 +97,11 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
   float ci;
 
   // run the step sequence
+  _stop = false;
   for (int32_t i = 1; i < nSteps; i++) {
-    if (i == 1)
+    if (_stop)
+      break;
+    else if (i == 1)
       ci = _c0;                                               // first interval
     else if (i < n2)
       ci = ci - 2.0*ci/(4.0*(i-1)+1.0) * (n2-i+1.0)/n2;       // acceleration (eq22)
@@ -101,6 +112,20 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
     delayMicroseconds(ci - _pulseWidth);                      // delay for ci microseconds
     step();
   }
+  _isRunning = false;
+}
+
+void SmoothStepper::resetPosition() {
+  _position = 0;
+}
+
+uint32_t SmoothStepper::getPosition() {
+  return _position;
+}
+
+void SmoothStepper::movePosition(int32_t target) {
+  int32_t nSteps = target - _position;
+  moveSteps(nSteps);
 }
 
 void SmoothStepper::moveDegrees(float degrees) {
@@ -112,4 +137,17 @@ void SmoothStepper::step() {
   digitalWrite(_pinStep, HIGH);
   delayMicroseconds(_pulseWidth);
   digitalWrite(_pinStep, LOW);
+
+  if (_direction)
+    _position++;
+  else
+    _position--;
+}
+
+void SmoothStepper::stop() {
+  _stop = true;
+}
+
+bool SmoothStepper::isRunning() {
+  return _isRunning;
 }

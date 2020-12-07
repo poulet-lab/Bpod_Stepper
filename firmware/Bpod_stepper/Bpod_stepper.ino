@@ -6,8 +6,8 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the 
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+This program is distributed  WITHOUT ANY WARRANTY and without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -51,6 +51,7 @@ uint8_t  opCode      = 0;
 uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
+int32_t  position    = 0;
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
 
@@ -63,7 +64,7 @@ void setup()
   // Set CFG1 and CFG2 pins to tri-state
   // In case of the TMC2100 driver, this equals stealthChop mode with 1/16 steps
   // See https://learn.watterott.com/silentstepstick/pinconfig/tmc2100/#step-configuration
-  pinMode(pinCFG1, INPUT); 
+  pinMode(pinCFG1, INPUT);
   pinMode(pinCFG2, INPUT);
 
   // Configure limit switches to use internal pull-up resistors.
@@ -80,7 +81,7 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(pinLimit1), hitLimit, RISING);
     attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, RISING);
   }
-  
+
   // Configure the stepper library
   stepper.setPinEnable(pinEnable);          // We do want to use the enable pin
   stepper.setInvertEnable(true);            // Enable pin on TMC2100 is inverted
@@ -89,7 +90,8 @@ void setup()
   stepper.setMaxSpeed(vMax);                // Set max speed
   stepper.setAcceleration(a);               // Set acceleration
   stepper.disableDriver();                  // Disable the driver
- 
+  stepper.resetPosition();                  // Reset position of motor
+
   // Extra fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
   for (int i = 750; i > 0; i--) {
@@ -114,54 +116,64 @@ void loop()
     COM = &Serial1COM;                                            //   Point *COM to Serial1COM
   else                                                            // Otherwise
     return;                                                       //   Skip to next iteration of loop()
-  
+
   opCode = COM->readByte();
   switch(opCode) {
-    case 'D':                                                       // Run degrees (pos = CW, neg = CCW)
-      alpha = (int32_t) COM->readInt16();                           //   Read Int16
-      runDegrees();                                                 //   Run degrees
+    case 'D':                                                     // Run degrees (pos = CW, neg = CCW)
+      alpha = (int32_t) COM->readInt16();                         //   Read Int16
+      runDegrees();                                               //   Run degrees
       break;
-    case 'S':                                                       // Run steps (pos = CW, neg = CCW)
-      nSteps = (int32_t) COM->readInt16();                          //   Read Int16
-      runSteps();                                                   //   Run steps
+    case 'S':                                                     // Run steps (pos = CW, neg = CCW)
+      nSteps = (int32_t) COM->readInt16();                        //   Read Int16
+      runSteps();                                                 //   Run steps
       break;
-    case 'A':                                                       // Set acceleration (steps / s^2)
-      a = (float) COM->readInt16();                                 //   Read value
-      stepper.setAcceleration(a);                                   //   Set acceleration
+    case 'P':                                                     // Run to absolute position
+      position = (int32_t) COM->readInt16();                      //   Read Int16
+      runPosition();                                              //   Run to absolute position
       break;
-    case 'V':                                                       // Set speed (steps / s)
-      vMax = (float) COM->readInt16();                              //   Read Int16
-      stepper.setMaxSpeed(vMax);                                    //   Set Speed
+    case 'L':                                                     // Search for limit switch
+      direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
+      findLimit();                                                //   Search for limit switch
       break;
-    case 'R':                                                       // Set steps per revolution
-      stepsPerRev = COM->readUint32();                              //   Read Int32
-      stepper.setStepsPerRev(stepsPerRev);                          // Update SmoothStepper object     
+    case 'Z':                                                     // Reset position to zero
+      stepper.resetPosition();
       break;
-    case 'L':                                                       // Search for limit switch
-      direction = COM->readUint8();                                 //   Direction (0 = CCW, 1 = CW)        
-      findLimit();                                                  //   Search for limit switch
+    case 'A':                                                     // Set acceleration (steps / s^2)
+      a = (float) COM->readInt16();                               //   Read value
+      stepper.setAcceleration(a);                                 //   Set acceleration
       break;
-    case 'G':                                                       // Get parameters
-      switch (COM->readByte()) {                                    //   Read Byte
-        case 'A':                                                   //   Return acceleration
+    case 'V':                                                     // Set speed (steps / s)
+      vMax = (float) COM->readInt16();                            //   Read Int16
+      stepper.setMaxSpeed(vMax);                                  //   Set Speed
+      break;
+    case 'R':                                                     // Set steps per revolution
+      stepsPerRev = COM->readUint32();                            //   Read Int32
+      stepper.setStepsPerRev(stepsPerRev);                        //   Update SmoothStepper object
+      break;
+    case 'G':                                                     // Get parameters
+      switch (COM->readByte()) {                                  //   Read Byte
+        case 'P':                                                 //   Return position
+          COM->writeUint16((uint16_t) stepper.getPosition());
+          break;
+        case 'A':                                                 //   Return acceleration
           COM->writeInt16((int16_t)a);
           break;
-        case 'V':                                                   //   Return speed
+        case 'V':                                                 //   Return speed
           COM->writeInt16((int16_t)vMax);
           break;
-        case 'R':                                                   //   Return steps per rev
+        case 'R':                                                 //   Return steps per rev
           COM->writeUint32((uint32_t)stepsPerRev);
           break;
       }
       break;
-    case 212:
-      if (COM == &usbCOM) {                 // USB Handshake
+    case 212:                                                     // USB Handshake
+      if (COM == &usbCOM) {                                       //   Check if connected via USB
         COM->writeByte(211);
         COM->writeUint32(FirmwareVersion);
       }
       break;
-    case 255:
-      if (COM == &Serial1COM) {             // Return module information (if command arrived via UART)
+    case 255:                                                     // Return module information
+      if (COM == &Serial1COM) {                                   //   Check if connected via UART
         returnModuleInfo();
       }
       break;
@@ -188,6 +200,17 @@ void runDegrees() {
   stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
   lastDir = alpha > 0;
+}
+
+void runPosition() {
+  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
+  stepper.enableDriver();                                         // Enable the driver
+  Serial1COM.writeByte(1);                                        // Send event 1: Start
+  stepper.movePosition(position);                                 // Move by angle alpha
+  Serial1COM.writeByte(2);                                        // Send event 2: Stop
+  stepper.disableDriver();                                        // Disable the driver
+  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
+  lastDir = stepper.getDirection();
 }
 
 void findLimit() {

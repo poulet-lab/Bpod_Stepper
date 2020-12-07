@@ -6,8 +6,8 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the 
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+This program is distributed  WITHOUT ANY WARRANTY and without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -20,6 +20,9 @@ REVISION HISTORY
 
 version 1.0.0   initial release
 version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
+version 1.0.2   add stop() and isRunning()
+version 1.0.3   keep track of position
+version 1.0.4   add movePosition() and getDirection()
 
 _______________________________________________________________________________
 
@@ -74,16 +77,37 @@ class SmoothStepper {
     // move by n degrees
     void moveDegrees(float degrees);
 
+    // move to absolute position
+    void movePosition(int32_t target);
+
+    // reset position to zero
+    void resetPosition();
+
+    // get position (steps)
+    uint32_t getPosition();
+
+    // get direction
+    bool getDirection();
+
+    // stop movement
+    void stop();
+
+    // is the motor running?
+    bool isRunning();
 
   private:
     void step();                      // step function
     bool _invertDirection = false;    // invert the direction pin?
     bool _invertEnable = false;       // invert the enable pin?
+    bool _direction = true;           // direction (true = CW, false = CCW)
+    volatile bool _isRunning = false; // is the motor running?
+    volatile bool _stop = false;      // stop ongoing movement?
     uint8_t _pinDirection;            // pin number: direction
     uint8_t _pinEnable;               // pin number: enable
     uint8_t _pinStep;                 // pin number: step
     uint16_t _pulseWidth = 1;         // duration of step pulses (µs)
     uint32_t _stepsPerRev = 200;      // steps per revolution
+    int32_t _position = 0;            // current position (steps)
     float _a;                         // acceleration (steps / s^2)
     float _vMax;                      // maximum speed (steps / s)
     float _c0;                        // duration of first interval (µs)

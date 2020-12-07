@@ -26,6 +26,9 @@ classdef BpodStepperModule < handle
         Acceleration
         StepsPerRevolution
     end
+    properties (Dependent)
+        Position
+    end
     properties (SetAccess = protected)
         FirmwareVersion = 0;
     end
@@ -71,6 +74,18 @@ classdef BpodStepperModule < handle
             end
             obj.StepsPerRevolution = newStepsPerRev;
         end
+
+        function out = get.Position(obj)
+            obj.Port.write('GP', 'uint8');
+            out = obj.Port.read(1, 'uint16');
+        end
+        function set.Position(obj,position)
+            obj.Port.write('P', 'uint8', position, 'int16');
+        end
+        function resetPosition(obj)
+            obj.Port.write('Z', 'uint8');
+        end
+
         function step(obj, nSteps) % Move stepper motor a set number of steps. nSteps = positive for clockwise steps, negative for counterclockwise
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end

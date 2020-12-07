@@ -1,38 +1,66 @@
 # Bpod Stepper Motor Module
 <img align="right" src="images/module.png" width="350px">
 
-Combining smooth acceleration profiles with a _SilentStepStick_ driver, this module allows for virtually noiseless operation of a stepper motor from a _Bpod state machine r2_.
+Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
-## State Machine Command Interface
-* **'A' / Ascii 65: set acceleration** (steps / s<sup>2</sup>)  
-    Must be followed by one Int16:
-  * Byte 1: acceleration (least significant byte),
-  * Byte 2: acceleration (most significant byte).
-* **'V' / Ascii 86: set maximum velocity** (steps / s)  
-    Must be followed by one Int16:
-  * Byte 1: velocity (least significant byte),
-  * Byte 2: velocity (most significant byte).
-* **'S' / Ascii 83: move by a number of steps** (steps)  
-  Must be followed by one Int16:
-  * Byte 1: number of steps (least significant byte),
-  * Byte 2: number of steps (most significant byte).
-  
+## Serial Command Interface
+* **68 / ASCII 'D': move by a defined angle** (degrees)  
+  Must be followed by:
+
+  * **Int16:** angle (degrees).
+
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
-* **'D' / Ascii 68: move by a defined angle** (degrees)  
-  Must be followed by one Int16:
-  * Byte 1: angle (least significant byte),
-  * Byte 2: angle (most significant byte).
-  
+
+* **83 / ASCII 'S': move to relative position** (steps)  
+  Must be followed by:
+
+  * **Int16:** number of steps.
+
   Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
   Returned events: 1 = movement start, 2 = movement end.
-* **'L' / Ascii 76: search limit switch**  
-  Must be followed by two bytes:
-  * Byte 1: specifies the limit switch to monitor (1 or 2), 
-  * Byte 2: specifies the movement direction (0 = CCW, 1 = CW)
-  
-  This will advance the motor at constant, low speed until one of the limit switches has been reached.  
+
+* **80 / ASCII 'P': move to absolute position** (steps)  
+  Must be followed by:
+
+  * **Int16:** absolute position (steps).
+
+  Returned events: 1 = movement start, 2 = movement end.
+
+* **90 / ASCII 'Z': reset absolute position to zero**
+
+* **76 / ASCII 'L': search limit switch**  
+  Must be followed by:
+
+  * **uInt8:** specifies the movement direction (0 = CCW, 1 = CW).
+
+  This will advance the motor until one of the limit switches has been reached.  
   Returned events: 3 = limit switch reached.
+
+* **65 / ASCII 'A': set acceleration** (steps / s<sup>2</sup>)  
+  Must be followed by:
+
+  * **Int16:** acceleration (steps / s<sup>2</sup>).
+
+* **86 / ASCII 'V': set maximum velocity** (steps / s)  
+  Must be followed by:
+
+  * **Int16:** velocity (steps / s).
+
+* **71 / ASCII 'G': get parameter**  
+  Must be followed by one of the following bytes:
+
+  * **65 / ASCII 'A':** get absolute position (steps)  
+    Returns one Int16.  
+  * **65 / ASCII 'A':** get acceleration (steps / s<sup>2</sup>)  
+    Returns one Int16.
+  * **86 / ASCII 'V':** get maximum velocity (steps / s)  
+    Returns one Int16.
+  * **82 / ASCII 'R':** get steps per revolution  
+    Returns one uInt32.
+    
+* **Byte 212: USB Handshake** (reserved)
+
 * **Byte 255: return module info** (reserved)
 
 
