@@ -50,7 +50,7 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 * **71 / ASCII 'G': get parameter**  
   Must be followed by one of the following bytes:
 
-  * **65 / ASCII 'A':** get absolute position (steps)  
+  * **80 / ASCII 'P':** get absolute position (steps)  
     Returns one Int16.  
   * **65 / ASCII 'A':** get acceleration (steps / s<sup>2</sup>)  
     Returns one Int16.
