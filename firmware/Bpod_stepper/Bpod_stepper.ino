@@ -49,7 +49,6 @@ uint8_t  limitID;
 uint8_t  direction;
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
-uint32_t version     = FirmwareVersion;
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
 int32_t  position    = 0;
