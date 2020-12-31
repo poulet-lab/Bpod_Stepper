@@ -65,7 +65,7 @@ SmoothStepper stepper(pinStep, pinDir);
 void setup()
 {
   // Load variables from EEPROM
-  initializeVariables();
+  initializeVars();
   
   Serial1.begin(1312500);
 
@@ -255,51 +255,47 @@ void hitLimit() {
   }
 }
 
-uint16_t storageCRC() {                                           // Return CRC16 of EEPROM
-  uint16_t crc = 0;
-  for (uint16_t i = 2; i < EEPROM.length(); i++)
+uint16_t crcStorage() {                                           // Return CRC16 of EEPROM storage
+  uint16_t i, crc = 0;
+  
+  for (i = 2; i < EEPROM.length(); i++)                           // Adresses 0 and 1 are reserved for storage of CRC
     crc = _crc16_update(crc, EEPROM.read(i));
-  return crc;
-}
-
-uint16_t compiletimeCRC() {                                       // Return CRC16 of the time of compilation
-  uint16_t crc = 0;
-  String date = (String) __DATE__ + (String) __TIME__;
-  for (uint8_t i = 0; i < date.length(); i++)
-    crc = _crc16_update(crc, date[i]);
+    
   return crc;
 }
 
 template <typename T>
-T loadVar(uint16_t *address, const bool readEEPROM, T value) {
-  if (readEEPROM)                                                 // If readEEPROM = true
-    value = EEPROM.get(*address, value);                          //   Read variable from EEPROM
-  else                                                            // Else
-    EEPROM.put(*address, value);                                  //   Store provided value to EEPROM
+T loadVar(const bool ok2read, uint16_t *address, T value) {
+  if (ok2read)                                                       
+    value = EEPROM.get(*address, value);                          // READ variable from EEPROM
+  else                                                            
+    EEPROM.put(*address, value);                                  // WRITE variable to EEPROM
+    
   *address = *address + sizeof(value);                            // Update EEPROM address for next operation
+  
   return value;
 }
 
-void initializeVariables() {
-  bool readEEPROM;
-  uint16_t _storageCRC;
-  uint16_t _compiletimeCRC;
-  uint16_t address = 4;
+void initializeVars() {
+  bool ok2read;
+  uint16_t crcRead, crcDate = 0, address = 4;
+  const char compileTime[] = __DATE__ " " __TIME__;
+  
+  EEPROM.get(0, crcRead);                                         // Verify integrity of EEPROM storage
+  ok2read = crcRead == crcStorage();
 
-  EEPROM.get(0, _storageCRC);                                     // Check integrity of EEPROM storage
-  readEEPROM = _storageCRC == storageCRC();
+  EEPROM.get(2, crcRead);                                         // Verify age of EEPROM storage
+  for (uint8_t i = 0; i < sizeof(compileTime); i++)
+    crcDate = _crc16_update(crcDate, compileTime[i]);
+  ok2read = ok2read && (crcRead == crcDate);
 
-  if (readEEPROM) {                                               // Check age of EEPROM storage
-    EEPROM.get(2, _compiletimeCRC);
-    readEEPROM = _compiletimeCRC == compiletimeCRC();
+  stepsPerRev = loadVar(ok2read, &address, stepsPerRev);
+  invertLimit = loadVar(ok2read, &address, invertLimit);
+  vMax =        loadVar(ok2read, &address, vMax);
+  a =           loadVar(ok2read, &address, a);
+
+  if (!ok2read) {                                                 // Store new checksums
+    EEPROM.put(2, crcDate);
+    EEPROM.put(0, crcStorage());
   }
-
-  stepsPerRev = loadVar(&address, readEEPROM, stepsPerRev);
-  invertLimit = loadVar(&address, readEEPROM, invertLimit);
-  vMax =        loadVar(&address, readEEPROM, vMax);
-  a =           loadVar(&address, readEEPROM, a);
-
-  if (!readEEPROM)                                                // Store new checksums
-    EEPROM.put(2, compiletimeCRC());
-    EEPROM.put(0, storageCRC());
 }
