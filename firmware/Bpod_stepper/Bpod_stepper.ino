@@ -16,6 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
+#include <EEPROM.h>
+#include <util/crc16.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -42,23 +44,29 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 
 // Variables
 bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
-bool     invertLimit = false;
 uint8_t  pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
 uint8_t  limitID;
 uint8_t  direction;
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
-uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
+uint32_t version     = FirmwareVersion;
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
 int32_t  position    = 0;
+
+// Variables (loaded from EEPROM)
+uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
+bool     invertLimit = false;
 
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
 {
+  // Load variables from EEPROM
+  initializeVariables();
+  
   Serial1.begin(1312500);
 
   // Set CFG1 and CFG2 pins to tri-state
@@ -245,4 +253,53 @@ void hitLimit() {
     stepper.stop();                                               // Stop motor
     Serial1COM.writeByte(3);                                      // Send event 3: Limit
   }
+}
+
+uint16_t storageCRC() {                                           // Return CRC16 of EEPROM
+  uint16_t crc = 0;
+  for (uint16_t i = 2; i < EEPROM.length(); i++)
+    crc = _crc16_update(crc, EEPROM.read(i));
+  return crc;
+}
+
+uint16_t compiletimeCRC() {                                       // Return CRC16 of the time of compilation
+  uint16_t crc = 0;
+  String date = (String) __DATE__ + (String) __TIME__;
+  for (uint8_t i = 0; i < date.length(); i++)
+    crc = _crc16_update(crc, date[i]);
+  return crc;
+}
+
+template <typename T>
+T loadVar(uint16_t *address, const bool readEEPROM, T value) {
+  if (readEEPROM)                                                 // If readEEPROM = true
+    value = EEPROM.get(*address, value);                          //   Read variable from EEPROM
+  else                                                            // Else
+    EEPROM.put(*address, value);                                  //   Store provided value to EEPROM
+  *address = *address + sizeof(value);                            // Update EEPROM address for next operation
+  return value;
+}
+
+void initializeVariables() {
+  bool readEEPROM;
+  uint16_t _storageCRC;
+  uint16_t _compiletimeCRC;
+  uint16_t address = 4;
+
+  EEPROM.get(0, _storageCRC);                                     // Check integrity of EEPROM storage
+  readEEPROM = _storageCRC == storageCRC();
+
+  if (readEEPROM) {                                               // Check age of EEPROM storage
+    EEPROM.get(2, _compiletimeCRC);
+    readEEPROM = _compiletimeCRC == compiletimeCRC();
+  }
+
+  stepsPerRev = loadVar(&address, readEEPROM, stepsPerRev);
+  invertLimit = loadVar(&address, readEEPROM, invertLimit);
+  vMax =        loadVar(&address, readEEPROM, vMax);
+  a =           loadVar(&address, readEEPROM, a);
+
+  if (!readEEPROM)                                                // Store new checksums
+    EEPROM.put(2, compiletimeCRC());
+    EEPROM.put(0, storageCRC());
 }
