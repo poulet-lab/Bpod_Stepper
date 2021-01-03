@@ -16,8 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
-#include <EEPROM.h>
-#include <util/crc16.h>
+#include "EEstore.h"       // Import EEstore library
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -61,11 +60,17 @@ bool     invertLimit = false;
 
 SmoothStepper stepper(pinStep, pinDir);
 
+typedef struct{
+  uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
+  float    vMax        = (float) stepsPerRev/2;  // Set default speed
+  float    a           = (float) stepsPerRev;    // Set default acceleration
+  bool     invertLimit = false;
+}storageVars;
+storageVars p;
+EEstore<storageVars> storage(&p);
+
 void setup()
 {
-  // Load variables from EEPROM
-  initializeVars();
-  
   Serial1.begin(1312500);
 
   // Set CFG1 and CFG2 pins to tri-state
@@ -251,50 +256,5 @@ void hitLimit() {
   if (stepper.isRunning()) {
     stepper.stop();                                               // Stop motor
     Serial1COM.writeByte(3);                                      // Send event 3: Limit
-  }
-}
-
-uint16_t crcStorage() {                                           // Return CRC16 of EEPROM storage
-  uint16_t i, crc = 0;
-  
-  for (i = 2; i < EEPROM.length(); i++)                           // Adresses 0 and 1 are reserved for storage of CRC
-    crc = _crc16_update(crc, EEPROM.read(i));
-    
-  return crc;
-}
-
-template <typename T>
-T loadVar(const bool ok2read, uint16_t *address, T value) {
-  if (ok2read)                                                       
-    value = EEPROM.get(*address, value);                          // READ variable from EEPROM
-  else                                                            
-    EEPROM.put(*address, value);                                  // WRITE variable to EEPROM
-    
-  *address = *address + sizeof(value);                            // Update EEPROM address for next operation
-  
-  return value;
-}
-
-void initializeVars() {
-  bool ok2read;
-  uint16_t crcRead, crcDate = 0, address = 4;
-  const char compileTime[] = __DATE__ " " __TIME__;
-  
-  EEPROM.get(0, crcRead);                                         // Verify integrity of EEPROM storage
-  ok2read = crcRead == crcStorage();
-
-  EEPROM.get(2, crcRead);                                         // Verify age of EEPROM storage
-  for (uint8_t i = 0; i < sizeof(compileTime); i++)
-    crcDate = _crc16_update(crcDate, compileTime[i]);
-  ok2read = ok2read && (crcRead == crcDate);
-
-  stepsPerRev = loadVar(ok2read, &address, stepsPerRev);
-  invertLimit = loadVar(ok2read, &address, invertLimit);
-  vMax =        loadVar(ok2read, &address, vMax);
-  a =           loadVar(ok2read, &address, a);
-
-  if (!ok2read) {                                                 // Store new checksums
-    EEPROM.put(2, crcDate);
-    EEPROM.put(0, crcStorage());
   }
 }
