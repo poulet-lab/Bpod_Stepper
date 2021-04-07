@@ -15,7 +15,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "ArCOM.h"         // Import serial communication wrapper
-#include "SmoothStepper.h" // Import SmoothStepper library
+#include "TeensyStep.h"    // Import TeensyStep library
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -36,12 +36,11 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define pinCFG2         7
 #define pinCFG1         8
 #define pinEnable       9
-#define pinLimit1      10
-#define pinLimit2      11
-#define pinLED         13
+#define pinLimit1       10
+#define pinLimit2       11
+#define pinLED          LED_BUILTIN
 
 // Variables
-bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
 bool     invertLimit = false;
 uint8_t  pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
 uint8_t  limitID;
@@ -55,7 +54,8 @@ int32_t  position    = 0;
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
 
-SmoothStepper stepper(pinStep, pinDir);
+Stepper motor(pinStep, pinDir);
+StepControl controller;
 
 void setup()
 {
@@ -82,15 +82,10 @@ void setup()
     attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, RISING);
   }
 
-  // Configure the stepper library
-  stepper.setPinEnable(pinEnable);          // We do want to use the enable pin
-  stepper.setInvertEnable(true);            // Enable pin on TMC2100 is inverted
-  stepper.setInvertDirection(false);        // Invert the direction pin?
-  stepper.setStepsPerRev(stepsPerRev);      // Set number of steps per revolution
-  stepper.setMaxSpeed(vMax);                // Set max speed
-  stepper.setAcceleration(a);               // Set acceleration
-  stepper.disableDriver();                  // Disable the driver
-  stepper.resetPosition();                  // Reset position of motor
+  // Configure the stepper
+  motor.setMaxSpeed(vMax);
+  motor.setAcceleration(a);
+  motor.setInverseRotation(true);
 
   // Extra fancy LED sequence to say hi
   pinMode(pinLED, OUTPUT);
@@ -136,24 +131,23 @@ void loop()
       findLimit();                                                //   Search for limit switch
       break;
     case 'Z':                                                     // Reset position to zero
-      stepper.resetPosition();
+      motor.setPosition(0);
       break;
     case 'A':                                                     // Set acceleration (steps / s^2)
       a = (float) COM->readInt16();                               //   Read value
-      stepper.setAcceleration(a);                                 //   Set acceleration
+      motor.setAcceleration(a);                                   //   Set acceleration
       break;
     case 'V':                                                     // Set speed (steps / s)
       vMax = (float) COM->readInt16();                            //   Read Int16
-      stepper.setMaxSpeed(vMax);                                  //   Set Speed
+      motor.setMaxSpeed(vMax);                                    //   Set Speed
       break;
     case 'R':                                                     // Set steps per revolution
       stepsPerRev = COM->readUint32();                            //   Read Int32
-      stepper.setStepsPerRev(stepsPerRev);                        //   Update SmoothStepper object
       break;
     case 'G':                                                     // Get parameters
       switch (COM->readByte()) {                                  //   Read Byte
         case 'P':                                                 //   Return position
-          COM->writeUint16((uint16_t) stepper.getPosition());
+          COM->writeUint16((uint16_t) motor.getPosition());
           break;
         case 'A':                                                 //   Return acceleration
           COM->writeInt16((int16_t)a);
@@ -181,36 +175,26 @@ void loop()
 }
 
 void runSteps() {
+  motor.setTargetRel(nSteps);
   digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
   Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.moveSteps(nSteps);                                      // Set destination
+  controller.move(motor);
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = nSteps > 0;
 }
 
 void runDegrees() {
-  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
-  Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.moveDegrees(alpha);                                     // Move by angle alpha
-  Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
-  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = alpha > 0;
+  nSteps = round(alpha * stepsPerRev / 360.0);
+  runSteps();
 }
 
 void runPosition() {
+  motor.setTargetAbs(position);
   digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
   Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.movePosition(position);                                 // Move by angle alpha
+  controller.move(motor);
   Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
   digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = stepper.getDirection();
 }
 
 void findLimit() {
@@ -241,8 +225,8 @@ void returnModuleInfo() {
 }
 
 void hitLimit() {
-  if (stepper.isRunning()) {
-    stepper.stop();                                               // Stop motor
+  if (controller.getCurrentSpeed() > 0) {
+    controller.emergencyStop();                                   // Stop motor
     Serial1COM.writeByte(3);                                      // Send event 3: Limit
   }
 }
