@@ -252,6 +252,27 @@ The Poulet Lab &amp; Sanworks LLC</text>
 <text x="77.47" y="44.0055" size="1.016" layer="25" font="vector" rot="R90" align="bottom-center">3.3V</text>
 <text x="77.47" y="47.498" size="1.016" layer="25" font="vector" rot="R90" align="bottom-center">3.3V</text>
 <text x="77.47" y="50.9905" size="1.016" layer="25" font="vector" rot="R90" align="bottom-center">5V</text>
+<polygon width="0.1524" layer="41">
+<vertex x="31.9405" y="49.9745"/>
+<vertex x="36.957" y="49.9745"/>
+<vertex x="36.957" y="50.673"/>
+<vertex x="35.56" y="52.07"/>
+<vertex x="33.02" y="52.07"/>
+<vertex x="31.9405" y="50.9905"/>
+</polygon>
+<polygon width="0.1524" layer="42">
+<vertex x="31.9405" y="50.927"/>
+<vertex x="36.703" y="50.927"/>
+<vertex x="35.56" y="52.07"/>
+<vertex x="33.02" y="52.07"/>
+<vertex x="31.9405" y="50.9905"/>
+</polygon>
+<polygon width="0.1524" layer="41">
+<vertex x="52.07" y="47.8155"/>
+<vertex x="52.07" y="46.1645"/>
+<vertex x="53.594" y="46.1645"/>
+<vertex x="53.594" y="47.8155"/>
+</polygon>
 </plain>
 <libraries>
 <library name="SparkFun-Capacitors">
@@ -2022,9 +2043,9 @@ design rules under a new name.</description>
 <vertex x="82.55028125" y="1.27"/>
 <vertex x="1.27" y="1.27"/>
 <vertex x="1.27" y="62.23"/>
-<vertex x="44.45" y="62.23"/>
-<vertex x="44.45" y="48.768"/>
-<vertex x="82.550040625" y="48.768"/>
+<vertex x="43.815" y="62.23"/>
+<vertex x="43.815" y="49.53"/>
+<vertex x="82.5500375" y="49.53"/>
 </polygon>
 <contactref element="U$1" pad="GND"/>
 <contactref element="U$1" pad="GND1"/>
