@@ -28,22 +28,26 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 
 // Constants
 #define FirmwareVersion 1
-#define pinDir          2
-#define pinStep         3
-#define pinSleep        4
-#define pinReset        5
-#define pinCFG3         6
-#define pinCFG2         7
-#define pinCFG1         8
-#define pinEnable       9
-#define pinLimit1      10
-#define pinLimit2      11
+#define pinDir          4
+#define pinStep         5
+#define pinSleep        6
+#define pinReset       12
+#define pinCFG3         8
+#define pinCFG2        27
+#define pinCFG1        11
+#define pinEnable      24
+#define pinIO1         36
+#define pinIO2         37
+#define pinIO3         38
+#define pinIO4         14
+#define pinIO5         18
+#define pinIO6         19
 #define pinLED         13
 
 // Variables
 bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
 bool     invertLimit = false;
-uint8_t  pinLimit[]  = {pinLimit1, pinLimit2}; // Array of pins for limit switches
+uint8_t  pinIO[]     = {pinIO1, pinIO2}; // Array of pins for limit switches
 uint8_t  limitID;
 uint8_t  direction;
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
@@ -61,6 +65,10 @@ void setup()
 {
   Serial1.begin(1312500);
 
+  // Set Teensy Pins 3 and 29 to disabled
+  pinMode(3, INPUT_DISABLE);
+  pinMode(29, INPUT_DISABLE);
+
   // Set CFG1 and CFG2 pins to tri-state
   // In case of the TMC2100 driver, this equals stealthChop mode with 1/16 steps
   // See https://learn.watterott.com/silentstepstick/pinconfig/tmc2100/#step-configuration
@@ -69,17 +77,17 @@ void setup()
 
   // Configure limit switches to use internal pull-up resistors.
   // Needs setting invertLimit to TRUE, as pins are now active low.
-  pinMode(pinLimit1, INPUT_PULLUP);
-  pinMode(pinLimit2, INPUT_PULLUP);
+  pinMode(pinIO1, INPUT_PULLUP);
+  pinMode(pinIO2, INPUT_PULLUP);
   invertLimit = true;
 
   // Interrupts for limit switches
   if (invertLimit) {
-    attachInterrupt(digitalPinToInterrupt(pinLimit1), hitLimit, FALLING);
-    attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pinIO1), hitLimit, FALLING);
+    attachInterrupt(digitalPinToInterrupt(pinIO2), hitLimit, FALLING);
   } else {
-    attachInterrupt(digitalPinToInterrupt(pinLimit1), hitLimit, RISING);
-    attachInterrupt(digitalPinToInterrupt(pinLimit2), hitLimit, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinIO1), hitLimit, RISING);
+    attachInterrupt(digitalPinToInterrupt(pinIO2), hitLimit, RISING);
   }
 
   // Configure the stepper library
