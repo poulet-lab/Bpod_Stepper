@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ArCOM.h"         // Import serial communication wrapper
 #include "SmoothStepper.h" // Import SmoothStepper library
+#include <TMCStepper.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -30,16 +31,16 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define FirmwareVersion 1
 #define pinDir          4
 #define pinStep         5
-#define pinSleep        6
-#define pinReset       12
-#define pinCFG3         8
-#define pinCFG2        27
-#define pinCFG1        11
+#define pinSleep        6   // DCO
+#define pinReset       12   // SDO
+#define pinCFG3         8   // CS
+#define pinCFG2        14   // SCK
+#define pinCFG1        11   // SDI
 #define pinEnable      24
 #define pinIO1         36
 #define pinIO2         37
 #define pinIO3         38
-#define pinIO4         14
+#define pinIO4         15
 #define pinIO5         18
 #define pinIO6         19
 #define pinLED         13
@@ -52,28 +53,28 @@ uint8_t  limitID;
 uint8_t  direction;
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
-uint32_t stepsPerRev = 3200;                   // Steps per revolution (TMC2100 stealthChop mode = 3200)
+uint32_t microsteps  = 16;                     // Microsteps
+uint32_t stepsPerRev = microsteps * 200;       // Steps per revolution
 int32_t  nSteps      = 0;
 int32_t  alpha       = 0;
 int32_t  position    = 0;
 float    vMax        = (float) stepsPerRev/2;  // Set default speed
 float    a           = (float) stepsPerRev;    // Set default acceleration
 
+TMC5160Stepper driver = TMC5160Stepper(pinCFG3, 0.075f);
 SmoothStepper stepper(pinStep, pinDir);
 
 void setup()
 {
   Serial1.begin(1312500);
 
-  // Set Teensy Pins 3 and 29 to disabled
-  pinMode(3, INPUT_DISABLE);
-  pinMode(29, INPUT_DISABLE);
-
-  // Set CFG1 and CFG2 pins to tri-state
-  // In case of the TMC2100 driver, this equals stealthChop mode with 1/16 steps
-  // See https://learn.watterott.com/silentstepstick/pinconfig/tmc2100/#step-configuration
-  pinMode(pinCFG1, INPUT);
-  pinMode(pinCFG2, INPUT);
+  // Configure the driver
+  SPI.setSCK(pinCFG2);
+  SPI.begin();
+  driver.begin();                 // Initiate pins and registeries
+  driver.rms_current(600);        // Set stepper current
+  driver.en_pwm_mode(1);          // Enable extremely quiet stepping
+  driver.microsteps(microsteps);  // Set Microsteps
 
   // Configure limit switches to use internal pull-up resistors.
   // Needs setting invertLimit to TRUE, as pins are now active low.
