@@ -2,232 +2,135 @@
 Bpod_stepper
 Copyright (C) 2020 Florian Rau
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3.
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
+This program is distributed  WITHOUT ANY WARRANTY and without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+_______________________________________________________________________________
 */
 
-#include "ArCOM.h"         // Import serial communication wrapper
-#include "SmoothStepper.h" // Import SmoothStepper library
-#include <TMCStepper.h>
+
+#include <Arduino.h>
+#include "ArCOM.h"                // Import serial communication wrapper
+#include "StepperWrapper.h"       // Import StepperWrapper
+#include "EEstore.h"              // Import EEstore library
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
 // Module setup
-ArCOM usbCOM(Serial);                                 // Wrap Serial (USB on Teensy 3.X)
-ArCOM Serial1COM(Serial1);                            // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
-ArCOM *COM;                                           // Pointer to ArCOM object
-char  moduleName[] = "Stepper";                       // Name of module for manual override UI and state machine assembler
+ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
+ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
+ArCOM *COM;                       // Pointer to ArCOM object
+char  moduleName[] = "Stepper";   // Name of module for manual override UI and state machine assembler
 const char* eventNames[] = {"Start", "Stop", "Limit"};
+#define FirmwareVersion 2
 
 // Constants
-#define FirmwareVersion 1
-#define pinDir          4
-#define pinStep         5
-#define pinSleep        6   // DCO
-#define pinReset       12   // SDO
-#define pinCFG3         8   // CS
-#define pinCFG2        14   // SCK
-#define pinCFG1        11   // SDI
-#define pinEnable      24
-#define pinIO1         36
-#define pinIO2         37
-#define pinIO3         38
-#define pinIO4         15
-#define pinIO5         18
-#define pinIO6         19
-#define pinLED         13
+static const int StoreAddress = 0;// 
+static const float fCLK = 12E6;   // internal clock frequencz of TMC5160
+static const float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));
+static const float factV = (float)(1ul<<24) / (fCLK);
 
 // Variables
-bool     lastDir     = true;                   // last movement direction: true = CW, false = CCW
-bool     invertLimit = false;
-uint8_t  pinIO[]     = {pinIO1, pinIO2}; // Array of pins for limit switches
-uint8_t  limitID;
-uint8_t  direction;
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
-uint32_t microsteps  = 16;                     // Microsteps
-uint32_t stepsPerRev = microsteps * 200;       // Steps per revolution
-int32_t  nSteps      = 0;
-int32_t  alpha       = 0;
-int32_t  position    = 0;
-float    vMax        = (float) stepsPerRev/2;  // Set default speed
-float    a           = (float) stepsPerRev;    // Set default acceleration
 
-TMC5160Stepper driver = TMC5160Stepper(pinCFG3, 0.075f);
-SmoothStepper stepper(pinStep, pinDir);
+// Parameters to be loaded from EEPROM (and default values)
+typedef struct{
+  uint16_t rms_current = 400;     // motor RMS current (mA)
+}storageVars;
+storageVars p;
+
+// Pointer to StepperWrapper
+StepperWrapper* wrapper;
 
 void setup()
 {
+  // Initialize serial communication
   Serial1.begin(1312500);
 
-  // Configure the driver
-  SPI.setSCK(pinCFG2);
-  SPI.begin();
-  driver.begin();                 // Initiate pins and registeries
-  driver.rms_current(600);        // Set stepper current
-  driver.en_pwm_mode(1);          // Enable extremely quiet stepping
-  driver.microsteps(microsteps);  // Set Microsteps
+  delay(1000);
 
-  // Configure limit switches to use internal pull-up resistors.
-  // Needs setting invertLimit to TRUE, as pins are now active low.
-  pinMode(pinIO1, INPUT_PULLUP);
-  pinMode(pinIO2, INPUT_PULLUP);
-  invertLimit = true;
+  // Load parameters from EEPROM
+  loadParams();
 
-  // Interrupts for limit switches
-  if (invertLimit) {
-    attachInterrupt(digitalPinToInterrupt(pinIO1), hitLimit, FALLING);
-    attachInterrupt(digitalPinToInterrupt(pinIO2), hitLimit, FALLING);
+  // Manage error interrupt
+  pinMode(StepperWrapper::errorPin, OUTPUT);
+  digitalWrite(StepperWrapper::errorPin, LOW);            // error pin starts off LOW
+  attachInterrupt(digitalPinToInterrupt(StepperWrapper::errorPin), throwError, RISING);
+
+  // Decide which implementation of StepperWrapper to load
+  if (StepperWrapper::SDmode()) {
+    wrapper = new StepperWrapper_SmoothStepper();
   } else {
-    attachInterrupt(digitalPinToInterrupt(pinIO1), hitLimit, RISING);
-    attachInterrupt(digitalPinToInterrupt(pinIO2), hitLimit, RISING);
+    wrapper = new StepperWrapper_MotionControl();
   }
+  wrapper->init(p.rms_current);
 
-  // Configure the stepper library
-  stepper.setPinEnable(pinEnable);          // We do want to use the enable pin
-  stepper.setInvertEnable(true);            // Enable pin on TMC2100 is inverted
-  stepper.setInvertDirection(false);        // Invert the direction pin?
-  stepper.setStepsPerRev(stepsPerRev);      // Set number of steps per revolution
-  stepper.setMaxSpeed(vMax);                // Set max speed
-  stepper.setAcceleration(a);               // Set acceleration
-  stepper.disableDriver();                  // Disable the driver
-  stepper.resetPosition();                  // Reset position of motor
+  // Set default speed & acceleration
+  wrapper->setSpeed(200);
+  wrapper->setAcceleration(400);
+
+  // TODO: Manage DIAG Interrupts -> move to StepperWrapper
+  // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
+  // attachInterrupt(digitalPinToInterrupt(pinDiag0), interrupt, FALLING);
 
   // Extra fancy LED sequence to say hi
-  pinMode(pinLED, OUTPUT);
-  for (int i = 750; i > 0; i--) {
-    delayMicroseconds(i);
-    digitalWriteFast(pinLED, HIGH);
-    delayMicroseconds(750-i);
-    digitalWriteFast(pinLED, LOW);
-  }
-  for (int i = 1; i <=2 ; i++) {
-    delay(75);
-    digitalWriteFast(pinLED, HIGH);
-    delay(50);
-    digitalWriteFast(pinLED, LOW);
-  }
+  StepperWrapper::blinkenlights();
 }
+
 
 void loop()
 {
-  if (usbCOM.available()>0)                                       // Byte available at usbCOM?
-    COM = &usbCOM;                                                //   Point *COM to usbCOM
-  else if (Serial1COM.available())                                // Byte available at Serial1COM?
-    COM = &Serial1COM;                                            //   Point *COM to Serial1COM
-  else                                                            // Otherwise
-    return;                                                       //   Skip to next iteration of loop()
-
-  opCode = COM->readByte();
-  switch(opCode) {
-    case 'D':                                                     // Run degrees (pos = CW, neg = CCW)
-      alpha = (int32_t) COM->readInt16();                         //   Read Int16
-      runDegrees();                                               //   Run degrees
-      break;
-    case 'S':                                                     // Run steps (pos = CW, neg = CCW)
-      nSteps = (int32_t) COM->readInt16();                        //   Read Int16
-      runSteps();                                                 //   Run steps
-      break;
-    case 'P':                                                     // Run to absolute position
-      position = (int32_t) COM->readInt16();                      //   Read Int16
-      runPosition();                                              //   Run to absolute position
-      break;
-    case 'L':                                                     // Search for limit switch
-      direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
-      findLimit();                                                //   Search for limit switch
-      break;
-    case 'Z':                                                     // Reset position to zero
-      stepper.resetPosition();
-      break;
-    case 'A':                                                     // Set acceleration (steps / s^2)
-      a = (float) COM->readInt16();                               //   Read value
-      stepper.setAcceleration(a);                                 //   Set acceleration
-      break;
-    case 'V':                                                     // Set speed (steps / s)
-      vMax = (float) COM->readInt16();                            //   Read Int16
-      stepper.setMaxSpeed(vMax);                                  //   Set Speed
-      break;
-    case 'R':                                                     // Set steps per revolution
-      stepsPerRev = COM->readUint32();                            //   Read Int32
-      stepper.setStepsPerRev(stepsPerRev);                        //   Update SmoothStepper object
-      break;
-    case 'G':                                                     // Get parameters
-      switch (COM->readByte()) {                                  //   Read Byte
-        case 'P':                                                 //   Return position
-          COM->writeUint16((uint16_t) stepper.getPosition());
-          break;
-        case 'A':                                                 //   Return acceleration
-          COM->writeInt16((int16_t)a);
-          break;
-        case 'V':                                                 //   Return speed
-          COM->writeInt16((int16_t)vMax);
-          break;
-        case 'R':                                                 //   Return steps per rev
-          COM->writeUint32((uint32_t)stepsPerRev);
-          break;
-      }
-      break;
-    case 212:                                                     // USB Handshake
-      if (COM == &usbCOM) {                                       //   Check if connected via USB
-        COM->writeByte(211);
-        COM->writeUint32(FirmwareVersion);
-      }
-      break;
-    case 255:                                                     // Return module information
-      if (COM == &Serial1COM) {                                   //   Check if connected via UART
-        returnModuleInfo();
-      }
-      break;
-  }
+  wrapper->setTarget(200);
+  delay(4000);
+  wrapper->setTarget(-200);
+  delay(4000);
 }
 
-void runSteps() {
-  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
-  Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.moveSteps(nSteps);                                      // Set destination
-  Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
-  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = nSteps > 0;
+void throwError() {
+  // Placeholder for proper error handler
+  Serial.print("Error ");
+  Serial.println(wrapper->getErrorID());
+  digitalWrite(StepperWrapper::errorPin, LOW);
+  StepperWrapper::blinkError();
 }
 
-void runDegrees() {
-  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
-  Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.moveDegrees(alpha);                                     // Move by angle alpha
-  Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
-  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = alpha > 0;
+void set_rms_current(uint16_t rms_current) {
+  p.rms_current = 800;
+  storeParams();
 }
 
-void runPosition() {
-  digitalWriteFast(pinLED, HIGH);                                 // Enable the onboard LED
-  stepper.enableDriver();                                         // Enable the driver
-  Serial1COM.writeByte(1);                                        // Send event 1: Start
-  stepper.movePosition(position);                                 // Move by angle alpha
-  Serial1COM.writeByte(2);                                        // Send event 2: Stop
-  stepper.disableDriver();                                        // Disable the driver
-  digitalWriteFast(pinLED, LOW);                                  // Disable the onboard LED
-  lastDir = stepper.getDirection();
+void loadParams() {
+  EEstore<storageVars>::getOrDefault(StoreAddress,p);
 }
 
-void findLimit() {
-  nSteps = 2147483647;                                            // A very large number
-  if (direction == 0)                                             // CCW movement:
-    nSteps = -nSteps;                                             //   A very large, negative number
-  runSteps();                                                     // Run!
+void storeParams() {
+  EEstore<storageVars>::set(StoreAddress,p);
 }
+
+// void interrupt() {
+//   digitalWriteFast(LED_BUILTIN, LOW);
+//
+//   // read RAMP_STAT to get reason for interrupt
+//   uint16_t ramp_stat = driver.RAMP_STAT();
+//   if (bitRead(ramp_stat,6)) {
+//     // event_stop_sg
+//   } else if (bitRead(ramp_stat,7)) {
+//     // event_pos_reached
+//   }
+//
+//   // clear flags & interrupt conditions
+//   driver.RAMP_STAT(ramp_stat);
+// }
 
 void returnModuleInfo() {
   Serial1COM.writeByte(65);                                       // Acknowledge
@@ -247,11 +150,4 @@ void returnModuleInfo() {
     }
   }
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
-}
-
-void hitLimit() {
-  if (stepper.isRunning()) {
-    stepper.stop();                                               // Stop motor
-    Serial1COM.writeByte(3);                                      // Send event 3: Limit
-  }
 }
