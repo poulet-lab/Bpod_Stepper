@@ -23,6 +23,7 @@ version 1.0.1   various cleanups / style fixes (thank you: Florian Uekermann)
 version 1.0.2   add stop() and isRunning()
 version 1.0.3   keep track of position
 version 1.0.4   add movePosition() and getDirection()
+version 1.0.5   corrected return type of getPosition()
 
 _______________________________________________________________________________
 
@@ -34,8 +35,8 @@ EE Times-India: 01/2005:1-5.
 
 _______________________________________________________________________________
 */
-#ifndef SmoothStepper_h
-#define SmoothStepper_h
+
+#pragma once
 
 #include "Arduino.h"
 
@@ -84,7 +85,7 @@ class SmoothStepper {
     void resetPosition();
 
     // get position (steps)
-    uint32_t getPosition();
+    int32_t getPosition();
 
     // get direction
     bool getDirection();
@@ -112,5 +113,3 @@ class SmoothStepper {
     float _vMax;                      // maximum speed (steps / s)
     float _c0;                        // duration of first interval (µs)
 };
-
-#endif

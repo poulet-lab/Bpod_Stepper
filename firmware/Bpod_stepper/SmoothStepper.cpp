@@ -119,7 +119,7 @@ void SmoothStepper::resetPosition() {
   _position = 0;
 }
 
-uint32_t SmoothStepper::getPosition() {
+int32_t SmoothStepper::getPosition() {
   return _position;
 }
 
