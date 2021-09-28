@@ -55,7 +55,6 @@ class StepperWrapper
     float getPCBrev() const;                    // return protected member _PCBrev
     bool getTMC5160() const;                    // return protected member _TMC5160
     
-    static bool SDmodeStatic();                 // are we using STEP/DIR mode?
     static bool SDmode();                       // are we using STEP/DIR mode?
     static float idPCB();                       // identify PCB revision
     static void blinkError();                   // blink lights ad infinitum 
