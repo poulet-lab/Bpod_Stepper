@@ -4,14 +4,6 @@
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
-* **68 / ASCII 'D': move by a defined angle** (degrees)  
-  Must be followed by:
-
-  * **Int16:** angle (degrees).
-
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
-  Returned events: 1 = movement start, 2 = movement end.
-
 * **83 / ASCII 'S': move to relative position** (steps)  
   Must be followed by:
 
@@ -45,7 +37,10 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 * **86 / ASCII 'V': set maximum velocity** (steps / s)  
   Must be followed by:
 
-  * **Int16:** velocity (steps / s).
+* **73 / ASCII 'I': set RMS current** (mA)  
+  Must be followed by:
+
+  * **uInt16:** RMS current (mA).
 
 * **71 / ASCII 'G': get parameter**  
   Must be followed by one of the following bytes:
@@ -56,6 +51,10 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
     Returns one Int16.
   * **86 / ASCII 'V':** get maximum velocity (steps / s)  
     Returns one Int16.
+  * **72 / ASCII 'H':** get hardware revision
+    Returns one uInt8.
+  * **73 / ASCII 'I':** get RMS current (mA)  
+    Returns one uInt16.
   * **82 / ASCII 'R':** get steps per revolution  
     Returns one uInt32.
     
@@ -97,3 +96,4 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 * Firmare uses the following libraries:
   * [ArCOM](https://github.com/sanworks/ArCOM) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
   * [SmoothStepper](https://github.com/bimac/SmoothStepper) by Florian Rau ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [TMCStepper](https://github.com/teemuatlut/TMCStepper) ([MIT](https://opensource.org/licenses/MIT))
