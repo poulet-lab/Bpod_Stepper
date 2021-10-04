@@ -40,15 +40,15 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
   enableDriver(true);                         // Enable the driver
 }
 
-void StepperWrapper_SmoothStepper::setAcceleration(float aHzs) {
+void StepperWrapper_SmoothStepper::a(float aHzs) {
   _stepper->setAcceleration(aHzs * (float) _microsteps);
 }
 
-void StepperWrapper_SmoothStepper::setSpeed(float v) {
+void StepperWrapper_SmoothStepper::vMax(float v) {
   _stepper->setMaxSpeed(v * (float) _microsteps);
 }
 
-void StepperWrapper_SmoothStepper::setTarget(int32_t target) {
+void StepperWrapper_SmoothStepper::position(int32_t target) {
   _stepper->movePosition(target * _microsteps);
 }
 
@@ -57,8 +57,20 @@ void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
   _stepper->setStepsPerRev(200 * _microsteps);
 }
 
-int32_t StepperWrapper_SmoothStepper::getPosition() {
+int32_t StepperWrapper_SmoothStepper::position() {
   return _stepper->getPosition() / (int32_t) _microsteps;
+}
+
+void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
+  _stepper->moveSteps(steps * _microsteps);
+}
+
+float StepperWrapper_SmoothStepper::vMax() {
+ return _stepper->getMaxSpeed();
+}
+
+float StepperWrapper_SmoothStepper::a() {
+ return _stepper->getAcceleration();
 }
 
 void StepperWrapper_SmoothStepper::resetPosition() {

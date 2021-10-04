@@ -28,12 +28,22 @@ _______________________________________________________________________________
 StepperWrapper::StepperWrapper() {
   _PCBrev = idPCB();                        // identify PCB revision
   _pin = getPins(_PCBrev);                  // define pin numbers
+
+  pinMode(_pin.En, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+  if (_PCBrev>=1.4) {
+    pinMode(_pin.VIO, OUTPUT);
+    pinMode(_pin.VM, INPUT);
+    pinMode(_pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
+    pinMode(_pin.Diag1, INPUT_PULLUP);      // use open collector output
+  }
+
+  powerDriver(true);                        // power cycle the driver
   enableDriver(false);                      // disable driver for now
 }
 
 
 void StepperWrapper::init(uint16_t rms_current) {
-  powercycle();                             // power cycle the driver
   
   _driver = getDriver(_PCBrev, _pin);
   if (!_driver->test_connection())          // if we can connect via SPI
@@ -52,10 +62,7 @@ void StepperWrapper::init2100() {
 
 
 void StepperWrapper::init5160(uint16_t rms_current) {
-  if (_PCBrev>=1.4) {
-    pinMode(_pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
-    pinMode(_pin.Diag1, INPUT_PULLUP);      // use open collector output
-  }
+
 
   //_driver->RAMP_STAT(ramp_stat);            // clear RAMP_STAT flags (TODO: TMC5160StepperExt)
   _driver->GSTAT(0b111);                    // reset error flags
@@ -130,24 +137,15 @@ void StepperWrapper::blinkenlights() {
 }
 
 
-void StepperWrapper::powercycle() {
+void StepperWrapper::powerDriver(bool power) {
   if (_PCBrev>=1.4) {
-    powerDriver(false);
-    delay(50);
-    powerDriver(true);
+    digitalWrite(_pin.VIO, !power);
     delay(150);
   }
 }
 
 
-void StepperWrapper::powerDriver(bool power) {
-  pinMode(_pin.Power, OUTPUT);
-  digitalWrite(_pin.Power, !power);
-}
-
-
 void StepperWrapper::enableDriver(bool enable) {
-  pinMode(_pin.En, OUTPUT);
   digitalWrite(_pin.En, enable ^ _invertPinEn);
 }
 
@@ -248,7 +246,8 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
   if (PCBrev >= 1.4) {
     pin.Diag0 = 24;
     pin.Diag1 = 25;
-    pin.Power = 26;
+    pin.VIO   = 26;
+    pin.VM    = 9 ;
   }
   return pin;
 }
@@ -320,6 +319,14 @@ bool StepperWrapper::getTMC5160() const {
   return _TMC5160;
 }
 
+
+void StepperWrapper::RMS(uint16_t rms_current) {
+  _driver->rms_current(rms_current);
+}
+
+uint16_t StepperWrapper::RMS() {
+  return (_TMC5160) ? _driver->rms_current() : 0;
+}
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
   if (_TMC5160) {

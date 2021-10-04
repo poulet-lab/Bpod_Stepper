@@ -42,7 +42,8 @@ struct teensyPins {
   uint8_t IO6;
   uint8_t Diag0;
   uint8_t Diag1;
-  uint8_t Power;
+  uint8_t VIO;
+  uint8_t VM;
   uint8_t Error;
 };
 
@@ -57,23 +58,29 @@ class StepperWrapper
     
     static bool SDmode();                       // are we using STEP/DIR mode?
     static float idPCB();                       // identify PCB revision
+    static teensyPins getPins();
+    static teensyPins getPins(float PCBrev);
     static void blinkError();                   // blink lights ad infinitum 
     static void blinkenlights();                // extra fancy LED sequence to say hi
-    static constexpr uint8_t errorPin = 32;     // pin for error interrupt
+    static constexpr uint8_t errorPin = 33;     // pin for error interrupt
     
     void throwError(uint8_t errorID);           // throw error with specified numeric ID
-    void powercycle();                          // power cycle the driver board
     void powerDriver(bool power);               // supply VIO to driver board?
     void enableDriver(bool enable);             // enable driver board via EN pin?
+    void RMS(uint16_t rms_current);
+    uint16_t RMS();
 
     virtual void init(uint16_t rms_current);    // initialize stepper class
     virtual void setMicrosteps(uint16_t ms);    // set microstepping resolution
 
-    virtual int32_t getPosition() = 0;
-    virtual void resetPosition() = 0;
-    virtual void setAcceleration(float a) = 0;
-    virtual void setSpeed(float v) = 0;
-    virtual void setTarget(int32_t target) = 0;
+    virtual void a(float a) = 0;                // set acceleration (full steps / s^2)
+    virtual float a() = 0;                      // get acceleration (full steps / s^2)
+    virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
+    virtual float vMax() = 0;                   // get peak velocity (full steps / s)
+    virtual void position(int32_t target) = 0;  // go to absolute position (full steps)
+    virtual int32_t position() = 0;             // return current position (full steps)
+    virtual void resetPosition() = 0;           // reset position to zero
+    virtual void moveSteps(int32_t steps) = 0;  // move to relative position (full steps)
     
   protected:
     static constexpr float fCLK = 12E6;         // internal clock frequencz of TMC5160
@@ -90,8 +97,6 @@ class StepperWrapper
     void init5160(uint16_t rms_current);
     static TMC5160Stepper* getDriver();
     static TMC5160Stepper* getDriver(float idPCB, teensyPins pin);
-    static teensyPins getPins();
-    static teensyPins getPins(float PCBrev);
     volatile uint8_t _errorID = 0;
     static constexpr float _Rsense = 0.075;
     bool _hardwareSPI = false;
@@ -103,12 +108,15 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
   public:
     StepperWrapper_SmoothStepper();             // constructor
     void init(uint16_t rms_current);
-    void setAcceleration(float a);
-    void setSpeed(float v);
-    void setTarget(int32_t);
+    void a(float a);
+    void vMax(float v);
+    void position(int32_t);
     void setMicrosteps(uint16_t ms);
-    int32_t getPosition();
+    float vMax();
+    float a();
+    int32_t position();
     void resetPosition();
+    void moveSteps(int32_t steps);
   private:
     SmoothStepper* _stepper;
 };
@@ -119,11 +127,14 @@ class StepperWrapper_MotionControl : public StepperWrapper
   public:
     StepperWrapper_MotionControl();             // constructor
     void init(uint16_t rms_current);
-    void setAcceleration(float a);
-    void setSpeed(float v);
-    void setTarget(int32_t);
-    int32_t getPosition();
+    void a(float a);
+    void vMax(float v);
+    void position(int32_t);
+    float vMax();
+    float a();
+    int32_t position();
     void resetPosition();
+    void moveSteps(int32_t steps);
     
   private:
     static constexpr float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));

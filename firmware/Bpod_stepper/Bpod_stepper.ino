@@ -42,10 +42,14 @@ static const float factV = (float)(1ul<<24) / (fCLK);
 // Variables
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
+float    PCBrev      = 0;
+teensyPins pin;
 
 // Parameters to be loaded from EEPROM (and default values)
 typedef struct{
   uint16_t rms_current = 400;     // motor RMS current (mA)
+  float vMax = 200;
+  float a = 200;
 }storageVars;
 storageVars p;
 
@@ -57,16 +61,23 @@ void setup()
   // Initialize serial communication
   Serial1.begin(1312500);
 
-  delay(1000);
-
   // Load parameters from EEPROM
   loadParams();
 
-  // Manage error interrupt
-  pinMode(StepperWrapper::errorPin, OUTPUT);
-  digitalWrite(StepperWrapper::errorPin, LOW);            // error pin starts off LOW
-  attachInterrupt(digitalPinToInterrupt(StepperWrapper::errorPin), throwError, RISING);
+  // Identify PCB, obtain pin-layout
+  PCBrev = StepperWrapper::idPCB(); 
+  pin = StepperWrapper::getPins(PCBrev);
 
+  // Manage error interrupt
+  pinMode(pin.Error, OUTPUT);
+  digitalWrite(pin.Error, LOW);
+  attachInterrupt(digitalPinToInterrupt(pin.Error), throwError, RISING);
+
+  // TODO: Check motor voltage (needs hardware support)
+  pinMode(pin.VM, INPUT);
+  attachInterrupt(digitalPinToInterrupt(pin.VM), powerGain, RISING);
+  attachInterrupt(digitalPinToInterrupt(pin.VM), powerLoss, FALLING);
+  
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
     wrapper = new StepperWrapper_SmoothStepper();
@@ -76,24 +87,82 @@ void setup()
   wrapper->init(p.rms_current);
 
   // Set default speed & acceleration
-  wrapper->setSpeed(200);
-  wrapper->setAcceleration(400);
-
+  wrapper->vMax(p.vMax);
+  wrapper->a(p.a);
+  
   // TODO: Manage DIAG Interrupts -> move to StepperWrapper
   // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
   // attachInterrupt(digitalPinToInterrupt(pinDiag0), interrupt, FALLING);
 
-  // Extra fancy LED sequence to say hi
+  // Indicate successful start-up
   StepperWrapper::blinkenlights();
 }
 
 
 void loop()
 {
-  wrapper->setTarget(200);
-  delay(4000);
-  wrapper->setTarget(-200);
-  delay(4000);
+  if (usbCOM.available()>0)                                       // Byte available at usbCOM?
+    COM = &usbCOM;                                                //   Point *COM to usbCOM
+  else if (Serial1COM.available())                                // Byte available at Serial1COM?
+    COM = &Serial1COM;                                            //   Point *COM to Serial1COM
+  else                                                            // Otherwise
+    return;                                                       //   Skip to next iteration of loop()
+
+  opCode = COM->readByte();
+  switch(opCode) {
+    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+      wrapper->moveSteps(COM->readInt16());
+      break;
+    case 'P':                                                     // Move to absolute position
+      wrapper->position(COM->readInt16());
+      break;
+    case 'L':                                                     // Search for limit switch
+    //   direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
+    //   findLimit();                                                //   Search for limit switch
+      break;
+    case 'Z':                                                     // Reset position to zero
+      wrapper->resetPosition();
+      break;
+    case 'A':                                                     // Set acceleration (steps / s^2)
+      wrapper->a(COM->readUint16());
+      break;
+    case 'V':                                                     // Set peak velocity (steps / s)
+      wrapper->vMax(COM->readUint16());
+      break;
+    case 'I':
+      wrapper->RMS(COM->readUint16());
+      break;
+    case 'G':                                                     // Get parameters
+      switch (COM->readByte()) {                                  //   Read Byte
+        case 'P':                                                 //   Return position
+          COM->writeInt16(wrapper->position());
+          break;
+        case 'A':                                                 //   Return acceleration
+          COM->writeUint16(wrapper->a());
+          break;
+        case 'V':                                                 //   Return speed
+          COM->writeUint16(wrapper->vMax());
+          break;
+        case 'H':                                                 //   Return hardware revision
+          COM->writeUint8(PCBrev * 10);
+          break;
+        case 'I':
+          COM->writeUint16(wrapper->RMS());
+          break;
+      }
+      break;
+    case 212:                                                     // USB Handshake
+      if (COM == &usbCOM) {                                       //   Check if connected via USB
+        COM->writeByte(211);
+        COM->writeUint32(FirmwareVersion);
+      }
+      break;
+    case 255:                                                     // Return module information
+      if (COM == &Serial1COM) {                                   //   Check if connected via UART
+        returnModuleInfo();
+      }
+      break;
+  }
 }
 
 void throwError() {
@@ -102,6 +171,14 @@ void throwError() {
   Serial.println(wrapper->getErrorID());
   digitalWrite(StepperWrapper::errorPin, LOW);
   StepperWrapper::blinkError();
+}
+
+void powerGain() {
+  SCB_AIRCR = 0x05FA0004; // Reset teensy
+}
+
+void powerLoss() {
+  // throw error
 }
 
 void set_rms_current(uint16_t rms_current) {
