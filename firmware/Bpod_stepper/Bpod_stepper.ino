@@ -62,7 +62,7 @@ void setup()
   Serial1.begin(1312500);
 
   // Load parameters from EEPROM
-  loadParams();
+  EEstore<storageVars>::getOrDefault(StoreAddress,p);
 
   // Identify PCB, obtain pin-layout
   PCBrev = StepperWrapper::idPCB(); 
@@ -125,12 +125,18 @@ void loop()
       break;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
+      p.a = wrapper->a();
       break;
     case 'V':                                                     // Set peak velocity (steps / s)
       wrapper->vMax(COM->readUint16());
+      p.vMax = wrapper->vMax();
       break;
-    case 'I':
+    case 'I':                                                     // Set RMS current (mA)
       wrapper->RMS(COM->readUint16());
+      p.rms_current = wrapper->RMS();
+      break;
+    case 'E':                                                     // Store current settings to EEPROM
+      EEstore<storageVars>::set(StoreAddress,p);
       break;
     case 'G':                                                     // Get parameters
       switch (COM->readByte()) {                                  //   Read Byte
@@ -138,10 +144,10 @@ void loop()
           COM->writeInt16(wrapper->position());
           break;
         case 'A':                                                 //   Return acceleration
-          COM->writeUint16(wrapper->a());
+          COM->writeUint16(round(wrapper->a()));
           break;
         case 'V':                                                 //   Return speed
-          COM->writeUint16(wrapper->vMax());
+          COM->writeUint16(round(wrapper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
           COM->writeUint8(PCBrev * 10);
@@ -179,19 +185,6 @@ void powerGain() {
 
 void powerLoss() {
   // throw error
-}
-
-void set_rms_current(uint16_t rms_current) {
-  p.rms_current = 800;
-  storeParams();
-}
-
-void loadParams() {
-  EEstore<storageVars>::getOrDefault(StoreAddress,p);
-}
-
-void storeParams() {
-  EEstore<storageVars>::set(StoreAddress,p);
 }
 
 // void interrupt() {
