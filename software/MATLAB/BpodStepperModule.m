@@ -20,83 +20,110 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
 classdef BpodStepperModule < handle
-    properties
-        Port % ArCOM Serial port
-        MaxSpeed
-        Acceleration
-        StepsPerRevolution
-    end
-    properties (Dependent)
-        Position
-    end
+    
     properties (SetAccess = protected)
-        FirmwareVersion = 0;
+        Port                        % ArCOM Serial port
+        FirmwareVersion             % firmware version of connected module
+        HardwareVersion             % PCB revision of connected module
     end
+    
+    properties (Dependent)
+        RMScurrent                  % RMS current (mA)
+        Acceleration                % acceleration (full steps / s^2)
+        MaxSpeed                    % peak velocity (full steps / s)
+        Position                    % absolute position
+    end
+    
     properties (Access = private)
-        CurrentFirmwareVersion = 1;
-        Initialized = 0; % Set to 1 after constructor finishes running
+        privMaxSpeed                % private: peak velocity
+        privAcceleration            % private: acceleration
+        privRMScurrent              % private: RMS current
+        CurrentFirmwareVersion = 2  % most recent firmware version
     end
+    
     methods
         function obj = BpodStepperModule(portString)
+
+            % connect to stepper module
             obj.Port = ArCOMObject_Stepper(portString, 115200);
             obj.Port.write(212, 'uint8');
-            response = obj.Port.read(1, 'uint8');
-            if response ~= 211
+            if obj.Port.read(1, 'uint8') ~= 211
                 error('Could not connect =( ')
             end
+            
+            % check firmware version
             obj.FirmwareVersion = obj.Port.read(1, 'uint32');
             if obj.FirmwareVersion < obj.CurrentFirmwareVersion
-                error(['Error: old firmware detected - v' obj.FirmwareVersion '. The current version is: ' obj.CurrentFirmwareVersion '. Please update the Stepper Module firmware using Arduino.'])
+                error(['Error: old firmware detected - v%d. The ' ...
+                    'current version is: v%d. Please update the ' ...
+                    'Stepper Module firmware using Arduino.'], ...
+                    obj.FirmwareVersion, obj.CurrentFirmwareVersion)
             end
-            obj.Initialized = 1;
+            
+            % get non-dependent parameters from stepper module
+            obj.Port.write('GH', 'uint8');
+            obj.HardwareVersion = double(obj.Port.read(1, 'uint8')) / 10;
             obj.Port.write('GA', 'uint8');
-            obj.MaxSpeed = obj.Port.read(1, 'int16');
+            obj.privAcceleration = obj.Port.read(1, 'uint16');
             obj.Port.write('GV', 'uint8');
-            obj.Acceleration = obj.Port.read(1, 'int16');
-            obj.Port.write('GR', 'uint8');
-            obj.StepsPerRevolution = obj.Port.read(1, 'uint32');
+            obj.privMaxSpeed = obj.Port.read(1, 'uint16');
+            obj.Port.write('GI', 'uint8');
+            obj.RMScurrent = obj.Port.read(1, 'uint16');
+        end
+        
+        function out = get.MaxSpeed(obj)
+            out = obj.privMaxSpeed;
         end
         function set.MaxSpeed(obj, newSpeed)
-            if obj.Initialized
-                obj.Port.write('V', 'uint8', newSpeed, 'int16');
-            end
-            obj.MaxSpeed = newSpeed;
+            obj.Port.write('V', 'uint8', newSpeed, 'uint16');
+            obj.Port.write('GV', 'uint8');
+            obj.privMaxSpeed = obj.Port.read(1, 'uint16');
+        end
+        
+        function out = get.Acceleration(obj)
+            out = obj.privAcceleration;
         end
         function set.Acceleration(obj, newAccel)
-            if obj.Initialized
-                obj.Port.write('A', 'uint8', newAccel, 'int16');
-            end
-            obj.Acceleration = newAccel;
+            obj.Port.write('A', 'uint8', newAccel, 'uint16');
+            obj.Port.write('GA', 'uint8');
+            obj.privAcceleration = obj.Port.read(1, 'uint16');
         end
-        function set.StepsPerRevolution(obj, newStepsPerRev)
-            if obj.Initialized
-                obj.Port.write('R', 'uint8', newStepsPerRev, 'uint32');
-            end
-            obj.StepsPerRevolution = newStepsPerRev;
+        
+        function out = get.RMScurrent(obj)
+            out = obj.privRMScurrent;
+        end
+        function set.RMScurrent(obj, newCurrent)
+            obj.Port.write('I', 'uint8', newCurrent, 'uint16');
+            obj.Port.write('GI', 'uint8');
+            obj.privRMScurrent = obj.Port.read(1, 'uint16');
         end
 
         function out = get.Position(obj)
             obj.Port.write('GP', 'uint8');
-            out = obj.Port.read(1, 'uint16');
+            out = obj.Port.read(1, 'int16');
         end
         function set.Position(obj,position)
-            obj.Port.write('P', 'uint8', position, 'int16');
+            obj.Port.write('P', 'int8', position, 'int16');
         end
         function resetPosition(obj)
+            % Reset value of absolute position to zero.
             obj.Port.write('Z', 'uint8');
         end
 
-        function step(obj, nSteps) % Move stepper motor a set number of steps. nSteps = positive for clockwise steps, negative for counterclockwise
+        function step(obj, nSteps)
+            % Move stepper motor a set number of steps. nSteps = positive
+            % for clockwise steps, negative for counterclockwise
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
-        function turnDegrees(obj, nDegrees) % Move stepper motor a set number of degrees. nDegrees = positive for clockwise, negative for counterclockwise
-            obj.Port.write('D', 'uint8', nDegrees, 'int16');
-        end
-        function findLimitSwitch(obj, Dir) % Turn stepper motor until limit switch is reached. Dir = 0 (clockwise) or 1 (counterclockwise)
-            obj.Port.write(['L' Dir], 'uint8');
+        function findLimitSwitch(obj, Dir)
+            % Turn stepper motor until limit switch is reached. Dir = 0
+            % (clockwise) or 1 (counterclockwise)
+            obj.Port.write(['L' Dir>0], 'uint8');
         end
         function delete(obj)
-            obj.Port = []; % Trigger the ArCOM port's destructor function (closes and releases port)
+            % Trigger the ArCOM port's destructor function (closes and
+            % releases port)
+            obj.Port = [];
         end
     end
 end

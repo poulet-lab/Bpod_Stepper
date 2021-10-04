@@ -60,7 +60,7 @@ classdef ArCOMObject_Stepper < handle
     methods
         function obj = ArCOMObject_Stepper(portString, baudRate, varargin)
             obj.Port = [];
-            if (exist('OCTAVE_VERSION'))
+            if (exist ("OCTAVE_VERSION", "builtin") > 0)
                 try
                     pkg load instrument-control
                 catch
