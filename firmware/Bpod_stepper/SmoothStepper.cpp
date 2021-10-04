@@ -70,6 +70,14 @@ bool SmoothStepper::getDirection() {
   return _direction;
 }
 
+float SmoothStepper::getMaxSpeed() {
+  return _vMax;
+}
+
+float SmoothStepper::getAcceleration() {
+  return _a;
+}
+
 void SmoothStepper::moveSteps(int32_t nSteps) {
   _direction = (nSteps >= 0);
   if (_direction)
