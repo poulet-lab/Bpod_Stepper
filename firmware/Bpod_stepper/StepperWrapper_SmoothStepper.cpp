@@ -66,11 +66,11 @@ void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
 }
 
 float StepperWrapper_SmoothStepper::vMax() {
- return _stepper->getMaxSpeed();
+ return _stepper->getMaxSpeed() / _microsteps;
 }
 
 float StepperWrapper_SmoothStepper::a() {
- return _stepper->getAcceleration();
+ return _stepper->getAcceleration() / _microsteps;
 }
 
 void StepperWrapper_SmoothStepper::resetPosition() {
