@@ -139,7 +139,7 @@ void StepperWrapper::blinkenlights() {
 
 void StepperWrapper::powerDriver(bool power) {
   if (_PCBrev>=1.4) {
-    digitalWrite(_pin.VIO, !power);
+    digitalWrite(_pin.VIO, power);
     delay(150);
   }
 }
