@@ -64,29 +64,29 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 
 
 ## Bill of Materials
-| Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
-| :------- | :------  | :-: | :---------------------------------------------------------------------------------------------- | :-------------------------  |
-| IC1      | Digi-Key |  1  | [LM3480IM3-5.0/NOPBCT-ND](https://www.digikey.com/products/en?keywords=LM3480IM3-5.0/NOPBCT-ND) | 5V regulator                |
-| IC2      | Digi-Key |  1  | [ADM3077EARZ-ND](https://www.digikey.com/products/en?keywords=ADM3077EARZ-ND)                   | RS-485 IC                   |
-| IC3      | Digi-Key |  1  | [MCP1792T-5002H/CB](https://www.digikey.com/products/en?keywords=MCP1792T-5002H/CB)             | 5V regulator                |
-| IC4      | Digi-Key |  1  | [MCP1793T-3302H/OT](https://www.digikey.com/products/en?keywords=MCP1793T-3302H/OT)             | 3.3V regulator              |
-| C1, C5   | Digi-Key |  2  | [PCE3203TR-ND](https://www.digikey.com/products/en?keywords=PCE3203TR-ND)                       | Aluminium capacitor, 100 µF |
-| C2 - C4  | Digi-Key |  3  | [311-1179-1-ND](https://www.digikey.com/products/en?keywords=311-1179-1-ND)                     | Ceramic capacitor, 0.1 µf   |
-| D1       | Digi-Key |  1  | [MBR0520LCT-ND](https://www.digikey.com/products/en?keywords=MBR0520LCT-ND)                     | Schottky diode, 20V 500mA   |
-| D2       | Digi-Key |  1  | [1KSMB75CACT-ND](https://www.digikey.com/products/en?keywords=1KSMB75CACT-ND)                   | TVS diode                   |
-| D3 - D11 | Digi-Key |  9  | [S310FACT-ND](https://www.digikey.com/products/en?keywords=S310FACT-ND)                         | Schottky diode, 100V 3A     |
-|          | Digi-Key |  1  | [A31442-ND](https://www.digikey.com/products/en?keywords=A31442-ND)                             | Ethernet jack               |
-|          | Digi-Key |  1  | [839-1512-ND](https://www.digikey.com/products/en?keywords=839-1512-ND)                         | DC barrel jack              |
-|          | Digi-Key |  1  | [PPTC021LFBN-RC](https://www.digikey.com/products/en?keywords=PPTC021LFBN-RC)                   | Female header, 1x2          |
-|          | Digi-Key |  2  | [PPPC081LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC081LFBN-RC)                   | Female header, 1x8          |
-|          | Digi-Key |  2  | [PPPC241LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC241LFBN-RC)                   | Female header, 1x24         |
-|          | Digi-Key |  1  | [1568-1465-ND](https://www.digikey.com/products/en?keywords=1568-1465-ND)                       | Teensy 3.6                  |
-|          | Digi-Key |  1  | [2100-20150007-002-ND](https://www.digikey.com/products/en?keywords=2100-20150007-002-ND)       | Stepper motor driver        |
-|          | Digi-Key |  1  | [2100-201835-ND](https://www.digikey.com/products/en?keywords=2100-201835-ND)                   | Heat sink                   |
-|          | Digi-Key |  1  | [WM21887-ND](https://www.digikey.com/products/en?keywords=WM21887-ND)                           | Terminal Block Header, 1x4  |
-|          | Digi-Key |  1  | [WM7780-ND](https://www.digikey.com/products/en?keywords=WM7780-ND)                             | Terminal Block Header, 1x12 |
-|          | Digi-Key |  1  | [WM7791-ND](https://www.digikey.com/products/en?keywords=WM7791-ND)                             | Terminal Block Plug, 1x4    |
-|          | Digi-Key |  1  | [WM7742-ND](https://www.digikey.com/products/en?keywords=WM7742-ND)                             | Terminal Block Plug, 1x12   |
+| Item     | Vendor    | Qty | Part Number                                                                                      | Description                 |
+| :------- | :-------- | :-: | :----------------------------------------------------------------------------------------------- | :-------------------------- |
+| IC1      | Digi-Key  |  1  | [LM3480IM3-5.0/NOPBCT-ND](https://www.digikey.com/products/en?keywords=LM3480IM3-5.0/NOPBCT-ND)  | 5V regulator                |
+| IC2      | Digi-Key  |  1  | [ADM3077EARZ-ND](https://www.digikey.com/products/en?keywords=ADM3077EARZ-ND)                    | RS-485 IC                   |
+| IC3      | Digi-Key  |  1  | [MCP1792T-5002H/CB](https://www.digikey.com/products/en?keywords=MCP1792T-5002H/CB)              | 5V regulator                |
+| IC4      | Digi-Key  |  1  | [MCP1793T-3302H/DC](https://www.digikey.com/products/en?keywords=MCP1793T-3302H/DC)              | 3.3V regulator              |
+| C1, C2   | Digi-Key  |  2  | [PCE3203TR-ND](https://www.digikey.com/products/en?keywords=PCE3203TR-ND)                        | Aluminium capacitor, 100 µF |
+| C3, C4   | Digi-Key  |  2  | [PCE4362TR-ND](https://www.digikey.com/products/en?keywords=PCE4362TR-ND)                        | Aluminium capacitor, 2.2 µF |
+| C5 - C8  | Digi-Key  |  4  | [311-1179-1-ND](https://www.digikey.com/products/en?keywords=311-1179-1-ND)                      | Ceramic capacitor, 0.1 µf   |
+| D1       | Digi-Key  |  1  | [1KSMB75CACT-ND](https://www.digikey.com/products/en?keywords=1KSMB75CACT-ND)                    | TVS diode                   |
+| D2 - D3  | Digi-Key  |  2  | [MBR0520LCT-ND](https://www.digikey.com/products/en?keywords=MBR0520LCT-ND)                      | Schottky diode, 20V 500mA   |
+| D4 - D11 | Digi-Key  |  8  | [S310FACT-ND](https://www.digikey.com/products/en?keywords=S310FACT-ND)                          | Schottky diode, 100V 3A     |
+|          | Digi-Key  |  1  | [A31442-ND](https://www.digikey.com/products/en?keywords=A31442-ND)                              | Ethernet jack               |
+|          | Digi-Key  |  1  | [839-1512-ND](https://www.digikey.com/products/en?keywords=839-1512-ND)                          | DC barrel jack              |
+|          | Digi-Key  |  1  | [PPTC021LFBN-RC](https://www.digikey.com/products/en?keywords=PPTC021LFBN-RC)                    | Female header, 1x2          |
+|          | Digi-Key  |  2  | [PPPC081LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC081LFBN-RC)                    | Female header, 1x8          |
+|          | Digi-Key  |  2  | [PPPC241LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC241LFBN-RC)                    | Female header, 1x24         |
+|          | Digi-Key  |  1  | [1568-1464-ND](https://www.digikey.com/products/en?keywords=1568-1464-ND)                        | Teensy 3.5                  |
+|          | Digi-Key  |  1  | [WM21887-ND](https://www.digikey.com/products/en?keywords=WM21887-ND)                            | Terminal Block Header, 1x4  |
+|          | Digi-Key  |  1  | [WM7780-ND](https://www.digikey.com/products/en?keywords=WM7780-ND)                              | Terminal Block Header, 1x12 |
+|          | Digi-Key  |  1  | [WM7791-ND](https://www.digikey.com/products/en?keywords=WM7791-ND)                              | Terminal Block Plug, 1x4    |
+|          | Digi-Key  |  1  | [WM7742-ND](https://www.digikey.com/products/en?keywords=WM7742-ND)                              | Terminal Block Plug, 1x12   |
+|          | Watterott |  1  | [201899-001](https://shop.watterott.com/SilentStepStick-TMC5160-Stepper-motor-driver-10-35V-V15) | Stepper motor driver        |
 
 
 
