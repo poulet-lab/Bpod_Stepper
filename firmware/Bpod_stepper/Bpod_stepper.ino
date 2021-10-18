@@ -60,7 +60,6 @@ void setup()
 {
   // Initialize serial communication
   Serial1.begin(1312500);
-  delay(1000);
 
   // Load parameters from EEPROM
   EEstore<storageVars>::getOrDefault(StoreAddress,p);
