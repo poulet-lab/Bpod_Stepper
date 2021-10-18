@@ -4,64 +4,24 @@
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
-* **83 / ASCII 'S': move to relative position** (steps)  
-  Must be followed by:
-
-  * **Int16:** number of steps.
-
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
-  Returned events: 1 = movement start, 2 = movement end.
-
-* **80 / ASCII 'P': move to absolute position** (steps)  
-  Must be followed by:
-
-  * **Int16:** absolute position (steps).
-
-  Returned events: 1 = movement start, 2 = movement end.
-
-* **90 / ASCII 'Z': reset absolute position to zero**
-
-* **76 / ASCII 'L': search limit switch**  
-  Must be followed by:
-
-  * **uInt8:** specifies the movement direction (0 = CCW, 1 = CW).
-
-  This will advance the motor until one of the limit switches has been reached.  
-  Returned events: 3 = limit switch reached.
-
-* **65 / ASCII 'A': set acceleration** (steps / s<sup>2</sup>)  
-  Must be followed by:
-
-  * **Int16:** acceleration (steps / s<sup>2</sup>).
-
-* **86 / ASCII 'V': set maximum velocity** (steps / s)  
-  Must be followed by:
-
-* **73 / ASCII 'I': set RMS current** (mA)  
-  Must be followed by:
-
-  * **uInt16:** RMS current (mA).
-
-* **71 / ASCII 'G': get parameter**  
-  Must be followed by one of the following bytes:
-
-  * **80 / ASCII 'P':** get absolute position (steps)  
-    Returns one Int16.  
-  * **65 / ASCII 'A':** get acceleration (steps / s<sup>2</sup>)  
-    Returns one Int16.
-  * **86 / ASCII 'V':** get maximum velocity (steps / s)  
-    Returns one Int16.
-  * **72 / ASCII 'H':** get hardware revision
-    Returns one uInt8.
-  * **73 / ASCII 'I':** get RMS current (mA)  
-    Returns one uInt16.
-  * **82 / ASCII 'R':** get steps per revolution  
-    Returns one uInt32.
-    
-* **Byte 212: USB Handshake** (reserved)
-
-* **Byte 255: return module info** (reserved)
-
+| Send                        | Receive | Unit / Key                               | Description                                                                                                           |
+| :-------------------------- | :-----  | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| ```S``` + Int16             |         | steps                                    | Move to relative position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation. |
+| ```P``` + Int16             |         | steps                                    | Move to absolute position.                                                                                            |
+| ```Z```                     |         |                                          | Set absolute position back to zero.                                                                                   |
+| ```L``` + uInt8             |         | 0&nbsp;=&nbsp;CCW,&nbsp;1&nbsp;=&nbsp;CW | Search limit switch. Move until one of the limit switches has been reached.                                           |
+| ```V``` + uInt16            |         | steps / s                                | Set maximum velocity                                                                                                  |
+| ```A```&nbsp;+&nbsp;uInt16  |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
+| ```I``` + uInt16            |         | mA                                       | Set RMS current                                                                                                       |
+| ```GP```                    | Int16   | steps                                    | Get absolute position                                                                                                 |
+| ```GV```                    | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
+| ```GA```                    | uInt16  | steps / s<sup>2</sup>                    | Get acceleration                                                                                                      |
+| ```GI```                    | uInt16  | mA                                       | Get RMS current                                                                                                       |
+| ```GR```                    | uInt32  | steps                                    | Get steps per revolution                                                                                              |
+| ```GH```                    | uInt8   |                                          | Get hardware revision                                                                                                 |
+| ```GT```                    | uInt8   |                                          | Get bool: TMC5160 found?                                                                                              |
+| Byte 212                    |         |                                          | USB Handshake (reserved)                                                                                              |
+| Byte 255                    |         |                                          | Return module info (reserved)                                                                                         |
 
 ## Bill of Materials
 | Item     | Vendor    | Qty | Part Number                                                                                      | Description                 |
