@@ -60,6 +60,7 @@ void setup()
 {
   // Initialize serial communication
   Serial1.begin(1312500);
+  delay(1000);
 
   // Load parameters from EEPROM
   EEstore<storageVars>::getOrDefault(StoreAddress,p);
@@ -154,6 +155,9 @@ void loop()
           break;
         case 'I':
           COM->writeUint16(wrapper->RMS());
+          break;
+        case 'T':
+          COM->writeUint8(wrapper->getTMC5160());
           break;
       }
       break;
