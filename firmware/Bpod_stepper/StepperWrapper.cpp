@@ -152,26 +152,23 @@ void StepperWrapper::enableDriver(bool enable) {
 
 float StepperWrapper::idPCB() {
   // r1.4 onwards has the revision number coded in hardware.
-  // It can be read by checking if pins 20-22 are connected
-  // to pin23. The connection status forms a binary code:
+  // It can be read by checking if pins 20-23 are connected
+  // to GND. The connection status forms a binary code:
   //
-  //        pin20 pin21 pin22
-  // r1.4x                x
-  // r1.5x          x
-  // r1.6x          x     x
-  // r1.7x    x
+  //       pin20 pin21 pin22 pin23
+  // r1.4x                     x
+  // r1.5x               x
+  // r1.6x               x     x
+  // r1.7x         x
   // etc.
 
   uint8_t x = 0;
-  pinMode(23, OUTPUT);
-  digitalWrite(23, LOW);
-  for (int i = 22; i >= 20; i--) {
+  for (int i = 23; i >= 20; i--) {
     pinMode(i, INPUT_PULLUP);
     delayMicroseconds(10);
-    bitWrite(x, abs(i - 22), !digitalRead(i));
+    bitWrite(x, abs(i - 23), !digitalRead(i));
     pinMode(i, INPUT_DISABLE);
   }
-  pinMode(23, INPUT_DISABLE);
   if (x)
     return 1.3 + x / 10.0;
   else {
