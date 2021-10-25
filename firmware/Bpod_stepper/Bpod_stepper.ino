@@ -50,6 +50,7 @@ typedef struct{
   uint16_t rms_current = 400;     // motor RMS current (mA)
   float vMax = 200;
   float a = 200;
+  int32_t target[10] {0};
 }storageVars;
 storageVars p;
 
@@ -109,6 +110,11 @@ void loop()
     return;                                                       //   Skip to next iteration of loop()
 
   opCode = COM->readByte();
+  
+  if (opCode > 47 && opCode < 58) {                               // Move to predefined target
+    wrapper->position(p.target[opCode-48]);
+    return;
+  }
   switch(opCode) {
     case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
       wrapper->moveSteps(COM->readInt16());
@@ -135,11 +141,21 @@ void loop()
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
       break;
+    case 'T':                                                     // Set predefined target
+      opCode = COM->readUint8();
+      if (opCode > 47 && opCode < 58)
+        p.target[opCode-48] = COM->readInt32();
+      break;
     case 'E':                                                     // Store current settings to EEPROM
       EEstore<storageVars>::set(StoreAddress,p);
       break;
     case 'G':                                                     // Get parameters
-      switch (COM->readByte()) {                                  //   Read Byte
+      opCode = COM->readByte();                                   //   Read Byte
+      if (opCode > 47 && opCode < 58) {                           //   Return predefined target
+        COM->writeInt32(p.target[opCode-48]);
+        return;
+      }
+      switch (opCode) {                                  
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
           break;

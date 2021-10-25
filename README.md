@@ -3,24 +3,27 @@
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
-| Send                        | Receive | Unit / Key                               | Description                                                                                                           |
-| :-------------------------- | :-----  | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
-| ```S``` + Int16             |         | steps                                    | Move to relative position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation. |
-| ```P``` + Int16             |         | steps                                    | Move to absolute position.                                                                                            |
-| ```Z```                     |         |                                          | Set absolute position back to zero.                                                                                   |
-| ```L``` + uInt8             |         | 0&nbsp;=&nbsp;CCW,&nbsp;1&nbsp;=&nbsp;CW | Search limit switch. Move until one of the limit switches has been reached.                                           |
-| ```V``` + uInt16            |         | steps / s                                | Set maximum velocity                                                                                                  |
-| ```A```&nbsp;+&nbsp;uInt16  |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
-| ```I``` + uInt16            |         | mA                                       | Set RMS current                                                                                                       |
-| ```GP```                    | Int16   | steps                                    | Get absolute position                                                                                                 |
-| ```GV```                    | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
-| ```GA```                    | uInt16  | steps / s<sup>2</sup>                    | Get acceleration                                                                                                      |
-| ```GI```                    | uInt16  | mA                                       | Get RMS current                                                                                                       |
-| ```GR```                    | uInt32  | steps                                    | Get steps per revolution                                                                                              |
-| ```GH```                    | uInt8   |                                          | Get hardware revision                                                                                                 |
-| ```GT```                    | uInt8   |                                          | Get bool: TMC5160 found?                                                                                              |
-| Byte 212                    |         |                                          | USB Handshake (reserved)                                                                                              |
-| Byte 255                    |         |                                          | Return module info (reserved)                                                                                         |
+| Send                          | Receive | Unit / Key                               | Description                                                                                                           |
+| :---------------------------- | :-----  | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
+| ```S``` + Int16               |         | steps                                    | Move to relative position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation. |
+| ```P``` + Int16               |         | steps                                    | Move to absolute position.                                                                                            |
+| n                             |         | n = ```0```, ```1``` … ```9```           | Move to predefined target position.                                                                                   |
+| ```Z```                       |         |                                          | Set absolute position back to zero.                                                                                   |
+| ```L``` + uInt8               |         | 0&nbsp;=&nbsp;CCW,&nbsp;1&nbsp;=&nbsp;CW | Search limit switch. Move until one of the limit switches has been reached.                                           |
+| ```V``` + uInt16              |         | steps / s                                | Set maximum velocity                                                                                                  |
+| ```A```&nbsp;+&nbsp;uInt16    |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
+| ```I``` + uInt16              |         | mA                                       | Set RMS current                                                                                                       |
+| ```T```n + INT32              |         | n = ```0```, ```1``` … ```9```, steps    | Set predefined target position                                                                                        |
+| ```G```n                      | Int32   | n = ```0```, ```1``` … ```9```, steps    | Get predefined target position                                                                                        |
+| ```GP```                      | Int16   | steps                                    | Get absolute position                                                                                                 |
+| ```GV```                      | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
+| ```GA```                      | uInt16  | steps / s<sup>2</sup>                    | Get acceleration                                                                                                      |
+| ```GI```                      | uInt16  | mA                                       | Get RMS current                                                                                                       |
+| ```GR```                      | uInt32  | steps                                    | Get steps per revolution                                                                                              |
+| ```GH```                      | uInt8   |                                          | Get hardware revision                                                                                                 |
+| ```GT```                      | uInt8   |                                          | Get bool: TMC5160 found?                                                                                              |
+| Byte 212                      |         |                                          | USB Handshake (reserved)                                                                                              |
+| Byte 255                      |         |                                          | Return module info (reserved)                                                                                         |
 
 ## Bill of Materials
 | Item     | Vendor    | Qty | Part Number                                                                                      | Description                 |

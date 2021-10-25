@@ -118,6 +118,28 @@ classdef BpodStepperModule < handle
             % for clockwise steps, negative for counterclockwise
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
+        
+        function setTarget(obj, id, target)
+            validateattributes(id,{'numeric'},...
+                {'scalar','integer','nonnegative','<',10})
+            validateattributes(target,{'numeric'},{'scalar','integer',...
+                '>=',intmin('int32'),'<=',intmax('int32')})
+            obj.Port.write(sprintf('T%d',id), 'uint8');
+            obj.Port.write(target, 'int32');
+        end
+
+        function out = getTarget(obj, id)
+            validateattributes(id,{'numeric'},...
+                {'scalar','integer','nonnegative','<',10})
+            obj.Port.write(sprintf('G%d',id), 'uint8');
+            out = obj.Port.read(1, 'int32');
+        end
+        
+        function moveToTarget(id)
+            validateattributes(id,{'numeric'},...
+                {'scalar','integer','nonnegative','<',10})
+            obj.Port.write(id+48, 'uint8');
+        end
 
         function findLimitSwitch(obj, Dir)
             % Turn stepper motor until limit switch is reached. Dir = 0
