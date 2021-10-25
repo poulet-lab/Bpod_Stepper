@@ -13,8 +13,8 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 | ```V``` + uInt16              |         | steps / s                                | Set maximum velocity                                                                                                  |
 | ```A``` + uInt16              |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
 | ```I``` + uInt16              |         | mA                                       | Set RMS current                                                                                                       |
-| ```T```n&nbsp;+&nbsp;Int32    |         | n = ```0```, ```1``` … ```9```, steps    | Set predefined target position                                                                                        |
-| ```G```n                      | Int32   | n = ```0```, ```1``` … ```9```, steps    | Get predefined target position                                                                                        |
+| ```T```n&nbsp;+&nbsp;Int32    |         | n = ```0```, ```1``` … ```9```           | Set predefined target position                                                                                        |
+| ```G```n                      | Int32   | n = ```0```, ```1``` … ```9```           | Get predefined target position                                                                                        |
 | ```GP```                      | Int16   | steps                                    | Get absolute position                                                                                                 |
 | ```GV```                      | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
 | ```GA```                      | uInt16  | steps / s<sup>2</sup>                    | Get acceleration                                                                                                      |
