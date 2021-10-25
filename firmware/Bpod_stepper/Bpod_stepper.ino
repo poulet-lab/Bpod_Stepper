@@ -111,7 +111,7 @@ void loop()
 
   opCode = COM->readByte();
   
-  if (opCode > 47 && opCode < 58) {                               // Move to predefined target
+  if (opCode <= 57 && opCode >= 48)  {                            // Move to predefined target
     wrapper->position(p.target[opCode-48]);
     return;
   }
@@ -142,16 +142,15 @@ void loop()
       p.rms_current = wrapper->RMS();
       break;
     case 'T':                                                     // Set predefined target
-      opCode = COM->readUint8();
-      if (opCode > 47 && opCode < 58)
-        p.target[opCode-48] = COM->readInt32();
+      opCode = constrain(COM->readUint8(),48,57) - 48;
+      p.target[opCode] = COM->readInt32();
       break;
     case 'E':                                                     // Store current settings to EEPROM
       EEstore<storageVars>::set(StoreAddress,p);
       break;
     case 'G':                                                     // Get parameters
       opCode = COM->readByte();                                   //   Read Byte
-      if (opCode > 47 && opCode < 58) {                           //   Return predefined target
+      if (opCode <= 57 && opCode >= 48) {                         //   Return predefined target
         COM->writeInt32(p.target[opCode-48]);
         return;
       }
