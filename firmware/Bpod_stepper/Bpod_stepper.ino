@@ -33,12 +33,6 @@ char  moduleName[] = "Stepper";   // Name of module for manual override UI and s
 const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define FirmwareVersion 2
 
-// Constants
-static const int StoreAddress = 0;// 
-static const float fCLK = 12E6;   // internal clock frequencz of TMC5160
-static const float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));
-static const float factV = (float)(1ul<<24) / (fCLK);
-
 // Variables
 uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
 uint8_t  opCode      = 0;
@@ -46,6 +40,7 @@ float    PCBrev      = 0;
 teensyPins pin;
 
 // Parameters to be loaded from EEPROM (and default values)
+static const int StoreAddress = 0;
 typedef struct{
   uint16_t rms_current = 400;     // motor RMS current (mA)
   float vMax = 200;
