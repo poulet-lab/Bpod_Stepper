@@ -11,9 +11,9 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 | ```Z```                       |         |                                          | Set absolute position back to zero.                                                                                   |
 | ```L``` + uInt8               |         | 0&nbsp;=&nbsp;CCW,&nbsp;1&nbsp;=&nbsp;CW | Search limit switch. Move until one of the limit switches has been reached.                                           |
 | ```V``` + uInt16              |         | steps / s                                | Set maximum velocity                                                                                                  |
-| ```A```&nbsp;+&nbsp;uInt16    |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
+| ```A``` + uInt16              |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
 | ```I``` + uInt16              |         | mA                                       | Set RMS current                                                                                                       |
-| ```T```n + INT32              |         | n = ```0```, ```1``` … ```9```, steps    | Set predefined target position                                                                                        |
+| ```T```n&nbsp;+&nbsp;Int32    |         | n = ```0```, ```1``` … ```9```, steps    | Set predefined target position                                                                                        |
 | ```G```n                      | Int32   | n = ```0```, ```1``` … ```9```, steps    | Get predefined target position                                                                                        |
 | ```GP```                      | Int16   | steps                                    | Get absolute position                                                                                                 |
 | ```GV```                      | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
