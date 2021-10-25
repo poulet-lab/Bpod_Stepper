@@ -137,7 +137,8 @@ void loop()
       p.rms_current = wrapper->RMS();
       break;
     case 'T':                                                     // Set predefined target
-      opCode = constrain(COM->readUint8(),48,57) - 48;
+      opCode = COM->readUint8();
+      opCode = constrain(opCode,48,57) - 48;
       p.target[opCode] = COM->readInt32();
       break;
     case 'E':                                                     // Store current settings to EEPROM
