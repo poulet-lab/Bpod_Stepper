@@ -47,24 +47,27 @@ struct teensyPins {
   uint8_t Error;
 };
 
+extern const float PCBrev;                      // PCB revision
+extern const teensyPins pin;                    // pin numbers
+
 class StepperWrapper
 {
   public:
     StepperWrapper();                           // constructor
 
+    static void powerUp();                      // called when VM was connected
     static void blinkError();                   // blink lights ad infinitum
     static void blinkenlights();                // extra fancy LED sequence to say hi
     static float idPCB();                       // identify PCB revision
     static bool SDmode();                       // are we using STEP/DIR mode?
-    static teensyPins getPins();
     static teensyPins getPins(float PCBrev);
     static constexpr uint8_t errorPin = 33;     // pin for error interrupt
+    static void powerDriver(bool power);        // supply VIO to driver board?
+    static void enableDriver(bool enable);      // enable driver board via EN pin?
 
-    void enableDriver(bool enable);             // enable driver board via EN pin?
     uint8_t getErrorID() const;                 // return private member _errorID
-    float getPCBrev() const;                    // return protected member _PCBrev
-    bool getTMC5160() const;                    // return protected member _TMC5160
-    void powerDriver(bool power);               // supply VIO to driver board?
+    bool getTMC5160() const;                    // return _TMC5160
+
     uint16_t RMS();                             // get RMS current
     void RMS(uint16_t rms_current);             // set RMS current
     void throwError(uint8_t errorID);           // throw error with specified numeric ID
@@ -85,21 +88,19 @@ class StepperWrapper
     static constexpr float fCLK = 12E6;         // internal clock frequencz of TMC5160
     bool _TMC5160 = false;
     TMC5160Stepper* _driver;
-    float _PCBrev;
-    teensyPins _pin;
     uint16_t _microsteps = 1;
-    bool _invertPinEn = true;
-    bool _invertPinDir = false;
+    static constexpr bool _invertPinEn  = true;
+    static constexpr bool _invertPinDir = false;
 
   private:
     void init2100();
     void init5160(uint16_t rms_current);
     static TMC5160Stepper* getDriver();
-    static TMC5160Stepper* getDriver(float idPCB, teensyPins pin);
     volatile uint8_t _errorID = 0;
     static constexpr float _Rsense = 0.075;
     bool _hardwareSPI = false;
 };
+
 
 
 class StepperWrapper_SmoothStepper : public StepperWrapper

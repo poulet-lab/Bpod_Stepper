@@ -27,7 +27,7 @@ StepperWrapper_MotionControl::StepperWrapper_MotionControl() : StepperWrapper() 
 void StepperWrapper_MotionControl::init(uint16_t rms_current) {
   StepperWrapper::init(rms_current);
 
-  //if (_PCBrev < 1.4)
+  //if (PCBrev < 1.4)
   //throwError(42);
 }
 

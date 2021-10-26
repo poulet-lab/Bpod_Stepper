@@ -20,8 +20,8 @@ _______________________________________________________________________________
 
 #include <Arduino.h>
 #include "ArCOM.h"                // Import serial communication wrapper
-#include "StepperWrapper.h"       // Import StepperWrapper
 #include "EEstore.h"              // Import EEstore library
+#include "StepperWrapper.h"       // Import StepperWrapper
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -34,10 +34,10 @@ const char* eventNames[] = {"Start", "Stop", "Limit"};
 #define FirmwareVersion 2
 
 // Variables
-uint8_t  nEventNames = sizeof(eventNames) / sizeof(char *);
-uint8_t  opCode      = 0;
-float    PCBrev      = 0;
-teensyPins pin;
+uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
+uint8_t opCode       = 0;
+extern const float PCBrev;
+extern const teensyPins pin;
 
 // Parameters to be loaded from EEPROM (and default values)
 static const int StoreAddress = 0;
@@ -46,6 +46,7 @@ typedef struct{
   float vMax = 200;
   float a = 200;
   int32_t target[10] {0};
+  uint8_t iomode[6] {0};
 }storageVars;
 storageVars p;
 
@@ -60,20 +61,15 @@ void setup()
   // Load parameters from EEPROM
   EEstore<storageVars>::getOrDefault(StoreAddress,p);
 
-  // Identify PCB, obtain pin-layout
-  PCBrev = StepperWrapper::idPCB(); 
-  pin = StepperWrapper::getPins(PCBrev);
-
   // Manage error interrupt
   pinMode(pin.Error, OUTPUT);
   digitalWrite(pin.Error, LOW);
   attachInterrupt(digitalPinToInterrupt(pin.Error), throwError, RISING);
 
   // TODO: Check motor voltage (needs hardware support)
-  pinMode(pin.VM, INPUT);
-  attachInterrupt(digitalPinToInterrupt(pin.VM), powerGain, RISING);
-  attachInterrupt(digitalPinToInterrupt(pin.VM), powerLoss, FALLING);
-  
+  //pinMode(pin.VM, INPUT_PULLDOWN);
+  //attachInterrupt(digitalPinToInterrupt(pin.VM), power, CHANGE);
+
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
     wrapper = new StepperWrapper_SmoothStepper();
@@ -85,7 +81,7 @@ void setup()
   // Set default speed & acceleration
   wrapper->vMax(p.vMax);
   wrapper->a(p.a);
-  
+
   // TODO: Manage DIAG Interrupts -> move to StepperWrapper
   // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
   // attachInterrupt(digitalPinToInterrupt(pinDiag0), interrupt, FALLING);
@@ -105,7 +101,7 @@ void loop()
     return;                                                       //   Skip to next iteration of loop()
 
   opCode = COM->readByte();
-  
+
   if (opCode <= 57 && opCode >= 48)  {                            // Move to predefined target
     wrapper->position(p.target[opCode-48]);
     return;
@@ -150,7 +146,7 @@ void loop()
         COM->writeInt32(p.target[opCode-48]);
         return;
       }
-      switch (opCode) {                                  
+      switch (opCode) {
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
           break;
@@ -193,12 +189,12 @@ void throwError() {
   StepperWrapper::blinkError();
 }
 
-void powerGain() {
-  SCB_AIRCR = 0x05FA0004; // Reset teensy
-}
-
-void powerLoss() {
-  // throw error
+void power() {
+  if (digitalReadFast(pin.VM))
+    SCB_AIRCR = 0x05FA0004; // Reset teensy
+  else
+    Serial.println("loss of power");
+    //StepperWrapper::blinkError();
 }
 
 // void interrupt() {

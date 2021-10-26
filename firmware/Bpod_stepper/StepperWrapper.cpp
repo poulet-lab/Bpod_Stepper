@@ -23,29 +23,41 @@ _______________________________________________________________________________
 #include <TMCStepper.h>
 #include "EEstore.h"                        // Import EEstore library
 #include "StepperWrapper.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+
+const float PCBrev   = StepperWrapper::idPCB();
+const teensyPins pin = StepperWrapper::getPins(PCBrev);
 
 
 StepperWrapper::StepperWrapper() {
-  _PCBrev = idPCB();                        // identify PCB revision
-  _pin = getPins(_PCBrev);                  // define pin numbers
-
-  pinMode(_pin.En, OUTPUT);
+  pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  if (_PCBrev>=1.4) {
-    pinMode(_pin.VIO, OUTPUT);
-    pinMode(_pin.VM, INPUT);
-    pinMode(_pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
-    pinMode(_pin.Diag1, INPUT_PULLUP);      // use open collector output
+  if (PCBrev>=1.4) {
+    pinMode(pin.VIO, OUTPUT);
+    pinMode(pin.VM, INPUT_PULLDOWN);
+    pinMode(pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
+    pinMode(pin.Diag1, INPUT_PULLUP);      // use open collector output
   }
+
+  attachInterrupt(digitalPinToInterrupt(pin.VM), powerUp, RISING);
+  delayMicroseconds(10);
+  if (!digitalRead(pin.VM))
+    blinkError();
 
   powerDriver(true);                        // power cycle the driver
   enableDriver(false);                      // disable driver for now
 }
 
 
+void StepperWrapper::powerUp() {
+  SCB_AIRCR = 0x05FA0004;                   // reset teensy
+}
+
+
 void StepperWrapper::init(uint16_t rms_current) {
-  
-  _driver = getDriver(_PCBrev, _pin);
+  _driver = getDriver();
   if (!_driver->test_connection())          // if we can connect via SPI
     _TMC5160 = _driver->version() == 0x30;  // identify TMC5160 by version
 
@@ -138,15 +150,15 @@ void StepperWrapper::blinkenlights() {
 
 
 void StepperWrapper::powerDriver(bool power) {
-  if (_PCBrev>=1.4) {
-    digitalWrite(_pin.VIO, power);
+  if (PCBrev>=1.4) {
+    digitalWrite(pin.VIO, power);
     delay(150);
   }
 }
 
 
 void StepperWrapper::enableDriver(bool enable) {
-  digitalWrite(_pin.En, enable ^ _invertPinEn);
+  digitalWrite(pin.En, enable ^ _invertPinEn);
 }
 
 
@@ -161,7 +173,6 @@ float StepperWrapper::idPCB() {
   // r1.6x               x     x
   // r1.7x         x
   // etc.
-
   uint8_t x = 0;
   for (int i = 23; i >= 20; i--) {
     pinMode(i, INPUT_PULLUP);
@@ -190,12 +201,6 @@ float StepperWrapper::idPCB() {
     } else                        // otherwise its r1.1
       return 1.1;
   }
-}
-
-
-teensyPins StepperWrapper::getPins() {
-  float PCBrev = StepperWrapper::idPCB();
-  return StepperWrapper::getPins(PCBrev);
 }
 
 
@@ -244,22 +249,15 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.Diag0 = 24;
     pin.Diag1 = 25;
     pin.VIO   = 26;
-    pin.VM    = 9 ;
+    pin.VM    = 4 ;
   }
   return pin;
 }
 
 
 TMC5160Stepper* StepperWrapper::getDriver() {
-  float idPCB = StepperWrapper::idPCB();
-  teensyPins pin = StepperWrapper::getPins(idPCB);
-  return StepperWrapper::getDriver(idPCB, pin);
-}
-
-
-TMC5160Stepper* StepperWrapper::getDriver(float idPCB, teensyPins pin) {
   TMC5160Stepper* driver;
-  if (idPCB<1.3)
+  if (PCBrev<1.3)
     driver = new TMC5160Stepper(pin.CFG3, _Rsense, pin.CFG1, pin.Reset, pin.CFG2);
   else {
     driver = new TMC5160Stepper(pin.CFG3, _Rsense);
@@ -298,17 +296,12 @@ void StepperWrapper::throwError(uint8_t errorID) {
   enableDriver(false);
   powerDriver(false);
   _errorID = errorID;
-  digitalWrite(_pin.Error, HIGH);
+  digitalWrite(pin.Error, HIGH);
 }
 
 
 uint8_t StepperWrapper::getErrorID() const {
   return _errorID;
-}
-
-
-float StepperWrapper::getPCBrev() const {
-  return _PCBrev;
 }
 
 
@@ -333,25 +326,25 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
   else {
     switch (ms) {
       case 16:
-        pinMode(_pin.CFG1, INPUT);
-        pinMode(_pin.CFG2, INPUT);
+        pinMode(pin.CFG1, INPUT);
+        pinMode(pin.CFG2, INPUT);
         break;
       case 4:
-        pinMode(_pin.CFG1, OUTPUT);
-        pinMode(_pin.CFG2, INPUT);
-        digitalWrite(_pin.CFG1, HIGH);
+        pinMode(pin.CFG1, OUTPUT);
+        pinMode(pin.CFG2, INPUT);
+        digitalWrite(pin.CFG1, HIGH);
         break;
       case 2:
-        pinMode(_pin.CFG1, INPUT);
-        pinMode(_pin.CFG2, OUTPUT);
-        digitalWrite(_pin.CFG2, LOW);
+        pinMode(pin.CFG1, INPUT);
+        pinMode(pin.CFG2, OUTPUT);
+        digitalWrite(pin.CFG2, LOW);
         break;
       default:
         ms = 1;
-        pinMode(_pin.CFG1, OUTPUT);
-        pinMode(_pin.CFG2, OUTPUT);
-        digitalWrite(_pin.CFG1, LOW);
-        digitalWrite(_pin.CFG2, LOW);
+        pinMode(pin.CFG1, OUTPUT);
+        pinMode(pin.CFG2, OUTPUT);
+        digitalWrite(pin.CFG1, LOW);
+        digitalWrite(pin.CFG2, LOW);
     }
     _microsteps = ms;
   }
