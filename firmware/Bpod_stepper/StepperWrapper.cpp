@@ -39,12 +39,12 @@ StepperWrapper::StepperWrapper() {
     pinMode(pin.VM, INPUT_PULLDOWN);
     pinMode(pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
     pinMode(pin.Diag1, INPUT_PULLUP);      // use open collector output
-  }
 
-  attachInterrupt(digitalPinToInterrupt(pin.VM), powerUp, RISING);
-  delayMicroseconds(10);
-  if (!digitalRead(pin.VM))
-    blinkError();
+    attachInterrupt(digitalPinToInterrupt(pin.VM), powerUp, RISING);
+    delayMicroseconds(10);
+    if (!digitalRead(pin.VM))
+      blinkError();
+  }
 
   powerDriver(true);                        // power cycle the driver
   enableDriver(false);                      // disable driver for now
