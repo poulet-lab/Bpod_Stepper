@@ -66,10 +66,6 @@ void setup()
   digitalWrite(pin.Error, LOW);
   attachInterrupt(digitalPinToInterrupt(pin.Error), throwError, RISING);
 
-  // TODO: Check motor voltage (needs hardware support)
-  //pinMode(pin.VM, INPUT_PULLDOWN);
-  //attachInterrupt(digitalPinToInterrupt(pin.VM), power, CHANGE);
-
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
     wrapper = new StepperWrapper_SmoothStepper();
@@ -187,14 +183,6 @@ void throwError() {
   Serial.println(wrapper->getErrorID());
   digitalWrite(StepperWrapper::errorPin, LOW);
   StepperWrapper::blinkError();
-}
-
-void power() {
-  if (digitalReadFast(pin.VM))
-    SCB_AIRCR = 0x05FA0004; // Reset teensy
-  else
-    Serial.println("loss of power");
-    //StepperWrapper::blinkError();
 }
 
 // void interrupt() {
