@@ -248,7 +248,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
   if (PCBrev >= 1.4) {
     pin.Diag0 = 24;
     pin.Diag1 = 25;
-    pin.VIO   = 26;
+    pin.VIO   = 28;
     pin.VM    = 4 ;
   }
   return pin;
