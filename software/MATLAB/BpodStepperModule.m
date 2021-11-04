@@ -25,7 +25,7 @@ classdef BpodStepperModule < handle
         Port                        % ArCOM Serial port
         FirmwareVersion             % firmware version of connected module
         HardwareVersion             % PCB revision of connected module
-        TMC5160                     % logical: TMC5160 driver detected?
+        DriverVersion               % which TMC driver is installed?
     end
     
     properties (Dependent)
@@ -65,7 +65,14 @@ classdef BpodStepperModule < handle
             obj.Port.write('GH', 'uint8');
             obj.HardwareVersion = double(obj.Port.read(1, 'uint8')) / 10;
             obj.Port.write('GT', 'uint8');
-            obj.TMC5160 = logical(obj.Port.read(1, 'uint8'));
+            switch obj.Port.read(1, 'uint8')
+                case 0x11
+                    obj.DriverVersion = 2130;
+                case 0x30
+                    obj.DriverVersion = 5160;
+                otherwise
+                    obj.DriverVersion = NaN;
+            end
             obj.Port.write('GA', 'uint8');
             obj.privAcceleration = obj.Port.read(1, 'uint16');
             obj.Port.write('GV', 'uint8');

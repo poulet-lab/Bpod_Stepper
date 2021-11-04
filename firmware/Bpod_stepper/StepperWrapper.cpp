@@ -25,43 +25,68 @@ _______________________________________________________________________________
 #include "StepperWrapper.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "SerialDebug.h"
 
-
-const float PCBrev   = StepperWrapper::idPCB();
-const teensyPins pin = StepperWrapper::getPins(PCBrev);
-
+const float PCBrev        = StepperWrapper::idPCB();
+const teensyPins pin      = StepperWrapper::getPins(PCBrev);
+volatile uint8_t errorID  = 0;
+IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
+  DEBUG_PRINTFUN();
   pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   if (PCBrev>=1.4) {
     pinMode(pin.VIO, OUTPUT);
-    pinMode(pin.VM, INPUT_PULLDOWN);
-    pinMode(pin.Diag0, INPUT_PULLUP);      // DIAG pins on TMC5160 ...
-    pinMode(pin.Diag1, INPUT_PULLUP);      // use open collector output
 
-    attachInterrupt(digitalPinToInterrupt(pin.VM), powerUp, RISING);
-    delayMicroseconds(10);
+    pinMode(pin.Diag0, INPUT_PULLUP);       // DIAG pins on TMC5160 ...
+    pinMode(pin.Diag1, INPUT_PULLUP);       // use open collector output
+    //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
+    //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
+
+    pinMode(pin.VM, INPUT_PULLDOWN);
+    attachInterrupt(digitalPinToInterrupt(pin.VM), ISRchangeVM, CHANGE);
     if (!digitalRead(pin.VM))
-      blinkError();
+      throwError(1);
   }
 
-  powerDriver(true);                        // power cycle the driver
   enableDriver(false);                      // disable driver for now
+  powerDriver(true);                        // power the driver
 }
 
 
-void StepperWrapper::powerUp() {
-  SCB_AIRCR = 0x05FA0004;                   // reset teensy
+void StepperWrapper::ISRdiag0() {
+  TMCStepper* driver = getDriver();
+  if (driver->drv_err()) {
+    throwError(2);
+  }
+  // TODO
+}
+
+
+void StepperWrapper::ISRdiag1() {
+  // TODO
+}
+
+
+void StepperWrapper::ISRchangeVM() {
+  DEBUG_PRINTFUN();
+  if (digitalRead(pin.VM))
+   SCB_AIRCR = 0x05FA0004;                  // reset teensy
+  else
+    throwError(1);
 }
 
 
 void StepperWrapper::init(uint16_t rms_current) {
+  DEBUG_PRINTFUN(rms_current);
   _driver = getDriver();
   if (!_driver->test_connection())          // if we can connect via SPI
-    _TMC5160 = _driver->version() == 0x30;  // identify TMC5160 by version
+    _driverVersion = _driver->version();    // get driver version
 
-  if (_TMC5160)
+  if (_driverVersion == 0x11)
+    init2130();                             // initialize TMC2130
+  else if (_driverVersion == 0x30)
     init5160(rms_current);                  // initialize TMC5160
   else
     init2100();                             // initialize (assumed) TMC2100
@@ -69,12 +94,34 @@ void StepperWrapper::init(uint16_t rms_current) {
 
 
 void StepperWrapper::init2100() {
+  DEBUG_PRINTFUN();
   StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
 
 
-void StepperWrapper::init5160(uint16_t rms_current) {
+void StepperWrapper::init2130() {
+  DEBUG_PRINTFUN();
+  _driver->GSTAT(0b111);                    // reset error flags
 
+  attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
+
+  enableDriver(true);                       // activate motor outputs
+
+  // StealthChop configuration
+  _driver->en_pwm_mode(1);                  // enable StealthChop
+  setMicrosteps(16);                       // set microstep resolution
+  _driver->pwm_freq(0b01);                  // set PWM Frequency (35.1kHz with 12MHz internal clock)
+  _driver->pwm_ofs(30);                     // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
+  _driver->pwm_grad(0);                     // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
+  _driver->pwm_autoscale(1);                // enable automatic tuning of PWM amplitude offset
+  _driver->pwm_autograd(1);                 // enable automatic tuning of PWM amplitude gradient
+  delay(150);                               // stand still for automatic tuning AT#1
+}
+
+
+void StepperWrapper::init5160(uint16_t rms_current) {
+  DEBUG_PRINTFUN(rms_current);
 
   //_driver->RAMP_STAT(ramp_stat);            // clear RAMP_STAT flags (TODO: TMC5160StepperExt)
   _driver->GSTAT(0b111);                    // reset error flags
@@ -133,6 +180,7 @@ void StepperWrapper::init5160(uint16_t rms_current) {
 
 
 void StepperWrapper::blinkenlights() {
+  DEBUG_PRINTFUN();
   pinMode(LED_BUILTIN, OUTPUT);
   for (int i = 750; i > 0; i--) {
     delayMicroseconds(i);
@@ -150,6 +198,7 @@ void StepperWrapper::blinkenlights() {
 
 
 void StepperWrapper::powerDriver(bool power) {
+  DEBUG_PRINTFUN(power);
   if (PCBrev>=1.4) {
     digitalWrite(pin.VIO, power);
     delay(150);
@@ -158,11 +207,13 @@ void StepperWrapper::powerDriver(bool power) {
 
 
 void StepperWrapper::enableDriver(bool enable) {
+  DEBUG_PRINTFUN(enable);
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
 
 
 float StepperWrapper::idPCB() {
+  DEBUG_PRINTFUN();
   // r1.4 onwards has the revision number coded in hardware.
   // It can be read by checking if pins 20-23 are connected
   // to GND. The connection status forms a binary code:
@@ -205,6 +256,7 @@ float StepperWrapper::idPCB() {
 
 
 teensyPins StepperWrapper::getPins(float PCBrev) {
+  DEBUG_PRINTFUN(PCBrev);
   teensyPins pin;
   pin.Error = StepperWrapper::errorPin;
   if (PCBrev <= 1.1) {  // the original layout
@@ -256,6 +308,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
 
 
 TMC5160Stepper* StepperWrapper::getDriver() {
+  DEBUG_PRINTFUN();
   TMC5160Stepper* driver;
   if (PCBrev<1.3)
     driver = new TMC5160Stepper(pin.CFG3, _Rsense, pin.CFG1, pin.Reset, pin.CFG2);
@@ -272,6 +325,7 @@ TMC5160Stepper* StepperWrapper::getDriver() {
 
 
 bool StepperWrapper::SDmode() {
+  DEBUG_PRINTFUN();
   bool sd_mode = true;
   TMC5160Stepper* driver = getDriver();
   if (!driver->test_connection()) {
@@ -281,32 +335,36 @@ bool StepperWrapper::SDmode() {
 }
 
 
-void StepperWrapper::blinkError() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  while (true) {
-    digitalWriteFast(LED_BUILTIN, HIGH);
-    delay(250);
-    digitalWriteFast(LED_BUILTIN, LOW);
-    delay(250);
-  }
+void StepperWrapper::ISRblinkError() {
+  digitalWriteFast(LED_BUILTIN, !digitalReadFast(LED_BUILTIN));
 }
 
 
-void StepperWrapper::throwError(uint8_t errorID) {
+void StepperWrapper::throwError(uint8_t ID) {
+  DEBUG_PRINTFUN(ID);
   enableDriver(false);
-  powerDriver(false);
-  _errorID = errorID;
+  errorID = ID;
   digitalWrite(pin.Error, HIGH);
+  timerErrorBlink.begin(ISRblinkError, 250000);
 }
 
 
-uint8_t StepperWrapper::getErrorID() const {
-  return _errorID;
+void StepperWrapper::clearError() {
+  DEBUG_PRINTFUN();
+  errorID = 0;
+  digitalWrite(pin.Error, LOW);
+  timerErrorBlink.end();
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 
 bool StepperWrapper::getTMC5160() const {
   return _TMC5160;
+}
+
+
+uint8_t StepperWrapper::getDriverVersion() const {
+  return _driverVersion;
 }
 
 
@@ -319,7 +377,8 @@ uint16_t StepperWrapper::RMS() {
 }
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
-  if (_TMC5160) {
+  DEBUG_PRINTFUN(ms);
+  if (_driverVersion>0) {
     _driver->microsteps(ms);
     _microsteps = _driver->microsteps();
   }

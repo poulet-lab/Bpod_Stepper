@@ -21,9 +21,11 @@ _______________________________________________________________________________
 #ifndef StepperWrapper_h
 #define StepperWrapper_h
 
-
-class TMC5160Stepper;                           // forward declaration of TMC5160Stepper
-class SmoothStepper;                            // forward declaration of SmoothStepper
+// forward declarations
+class TMCStepper;
+class TMC2130Stepper;
+class TMC5160Stepper;
+class SmoothStepper;
 
 struct teensyPins {
   uint8_t Dir;
@@ -49,28 +51,23 @@ struct teensyPins {
 
 extern const float PCBrev;                      // PCB revision
 extern const teensyPins pin;                    // pin numbers
+extern volatile uint8_t errorID;                // error ID
 
 class StepperWrapper
 {
   public:
     StepperWrapper();                           // constructor
 
-    static void powerUp();                      // called when VM was connected
-    static void blinkError();                   // blink lights ad infinitum
     static void blinkenlights();                // extra fancy LED sequence to say hi
     static float idPCB();                       // identify PCB revision
     static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
     static constexpr uint8_t errorPin = 33;     // pin for error interrupt
-    static void powerDriver(bool power);        // supply VIO to driver board?
-    static void enableDriver(bool enable);      // enable driver board via EN pin?
 
-    uint8_t getErrorID() const;                 // return private member _errorID
     bool getTMC5160() const;                    // return _TMC5160
-
+    uint8_t getDriverVersion() const;           // return _driverVersion
     uint16_t RMS();                             // get RMS current
     void RMS(uint16_t rms_current);             // set RMS current
-    void throwError(uint8_t errorID);           // throw error with specified numeric ID
 
     virtual void init(uint16_t rms_current);    // initialize stepper class
     virtual void setMicrosteps(uint16_t ms);    // set microstepping resolution
@@ -85,18 +82,27 @@ class StepperWrapper
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
 
   protected:
+    static void powerDriver(bool power);        // supply VIO to driver board?
+    static void enableDriver(bool enable);      // enable driver board via EN pin?
+    static void throwError(uint8_t errorID);    // throw error with specified numeric ID
+    static void clearError();                   // clear error conditition
     static constexpr float fCLK = 12E6;         // internal clock frequencz of TMC5160
     bool _TMC5160 = false;
+    uint8_t _driverVersion = 0;
     TMC5160Stepper* _driver;
     uint16_t _microsteps = 1;
     static constexpr bool _invertPinEn  = true;
     static constexpr bool _invertPinDir = false;
 
   private:
+    static void ISRchangeVM();                  // called when VM was (dis)connected
+    static void ISRdiag0();                     // called when diag0 changes
+    static void ISRdiag1();                     // called when diag1 changes
+    static void ISRblinkError();                // blink lights ad infinitum
     void init2100();
+    void init2130();
     void init5160(uint16_t rms_current);
     static TMC5160Stepper* getDriver();
-    volatile uint8_t _errorID = 0;
     static constexpr float _Rsense = 0.075;
     bool _hardwareSPI = false;
 };

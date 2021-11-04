@@ -22,10 +22,12 @@ _______________________________________________________________________________
 #include "StepperWrapper.h"
 #include "SmoothStepper.h"
 #include <TMCStepper.h>
+#include "SerialDebug.h"
 
 StepperWrapper_SmoothStepper::StepperWrapper_SmoothStepper() : StepperWrapper() {}
 
 void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
+  DEBUG_PRINTFUN();
   StepperWrapper::init(rms_current);
 
   _stepper = new SmoothStepper(pin.Step, pin.Dir);
@@ -41,38 +43,47 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
 }
 
 void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
+  DEBUG_PRINTFUN(ms);
   StepperWrapper::setMicrosteps(ms);
   _stepper->setStepsPerRev(200 * _microsteps);
 }
 
 float StepperWrapper_SmoothStepper::a() {
- return _stepper->getAcceleration() / _microsteps;
+  DEBUG_PRINTFUN();
+  return _stepper->getAcceleration() / _microsteps;
 }
 
 void StepperWrapper_SmoothStepper::a(float aHzs) {
+  DEBUG_PRINTFUN(aHzs);
   _stepper->setAcceleration(aHzs * (float) _microsteps);
 }
 
 void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
+  DEBUG_PRINTFUN(steps);
   _stepper->moveSteps(steps * _microsteps);
 }
 
 int32_t StepperWrapper_SmoothStepper::position() {
+  DEBUG_PRINTFUN();
   return _stepper->getPosition() / (int32_t) _microsteps;
 }
 
 void StepperWrapper_SmoothStepper::position(int32_t target) {
+  DEBUG_PRINTFUN(target);
   _stepper->movePosition(target * _microsteps);
 }
 
 void StepperWrapper_SmoothStepper::resetPosition() {
+  DEBUG_PRINTFUN();
   _stepper->resetPosition();
 }
 
 float StepperWrapper_SmoothStepper::vMax() {
- return _stepper->getMaxSpeed() / _microsteps;
+  DEBUG_PRINTFUN();
+  return _stepper->getMaxSpeed() / _microsteps;
 }
 
 void StepperWrapper_SmoothStepper::vMax(float v) {
+  DEBUG_PRINTFUN(v);
   _stepper->setMaxSpeed(v * (float) _microsteps);
 }

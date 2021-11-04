@@ -21,10 +21,12 @@ _______________________________________________________________________________
 #include <Arduino.h>
 #include "StepperWrapper.h"
 #include <TMCStepper.h>
+#include "SerialDebug.h"
 
 StepperWrapper_MotionControl::StepperWrapper_MotionControl() : StepperWrapper() {}
 
 void StepperWrapper_MotionControl::init(uint16_t rms_current) {
+  DEBUG_PRINTFUN(rms_current);
   StepperWrapper::init(rms_current);
 
   //if (PCBrev < 1.4)
@@ -32,10 +34,12 @@ void StepperWrapper_MotionControl::init(uint16_t rms_current) {
 }
 
 float StepperWrapper_MotionControl::a() {
- return _driver->AMAX() / factA / _microsteps;
+  DEBUG_PRINTFUN();
+  return _driver->AMAX() / factA / _microsteps;
 }
 
 void StepperWrapper_MotionControl::a(float aHzs) {
+  DEBUG_PRINTFUN(aHzs);
   //a5160 = aHzs / fCLK^2 / (512*256) / 2^24
   uint16_t a5160 = round(constrain(aHzs * factA * _microsteps, 0, uint16_t(-1)));
   _driver->AMAX(a5160);
@@ -45,28 +49,34 @@ void StepperWrapper_MotionControl::a(float aHzs) {
 }
 
 void StepperWrapper_MotionControl::moveSteps(int32_t steps) {
+  DEBUG_PRINTFUN(steps);
   _driver->XTARGET(_driver->XACTUAL() + steps * (int32_t) _microsteps);
 }
 
 int32_t StepperWrapper_MotionControl::position() {
- return _driver->XACTUAL() / (int32_t) _microsteps;
+  DEBUG_PRINTFUN();
+  return _driver->XACTUAL() / (int32_t) _microsteps;
 }
 
 void StepperWrapper_MotionControl::position(int32_t target) {
+  DEBUG_PRINTFUN(target);
   _driver->RAMPMODE(0);
   _driver->XTARGET(target * _microsteps);
 }
 
 void StepperWrapper_MotionControl::resetPosition() {
+  DEBUG_PRINTFUN();
   _driver->RAMPMODE(3);
- _driver->XACTUAL(0);
+  _driver->XACTUAL(0);
 }
 
 float StepperWrapper_MotionControl::vMax() {
- return _driver->VMAX() / factV / _microsteps;
+  DEBUG_PRINTFUN();
+  return _driver->VMAX() / factV / _microsteps;
 }
 
 void StepperWrapper_MotionControl::vMax(float vHz) {
+  DEBUG_PRINTFUN(vHz);
   // v5160 = vHz / ( fCLK/2 / 2^23 )
   uint32_t v5160 = round(constrain(vHz * factV * _microsteps, 0, pow(2,23)-512));
   _driver->VMAX(v5160);

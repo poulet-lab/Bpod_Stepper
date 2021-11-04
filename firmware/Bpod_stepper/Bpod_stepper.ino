@@ -24,20 +24,22 @@ _______________________________________________________________________________
 #include "StepperWrapper.h"       // Import StepperWrapper
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "SerialDebug.h"
 
 // Module setup
 ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
 ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
 ArCOM *COM;                       // Pointer to ArCOM object
 char  moduleName[] = "Stepper";   // Name of module for manual override UI and state machine assembler
-const char* eventNames[] = {"Start", "Stop", "Limit"};
+const char* eventNames[] = {"Error","Start", "Stop", "Limit"};
 #define FirmwareVersion 2
 
 // Variables
 uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
 uint8_t opCode       = 0;
-extern const float PCBrev;
-extern const teensyPins pin;
+extern const float PCBrev;        // PCB revision
+extern const teensyPins pin;      // pin numbers
+extern volatile uint8_t errorID;  // error ID
 
 // Parameters to be loaded from EEPROM (and default values)
 static const int StoreAddress = 0;
@@ -55,6 +57,8 @@ StepperWrapper* wrapper;
 
 void setup()
 {
+  DEBUG_DELAY(1000);
+
   // Initialize serial communication
   Serial1.begin(1312500);
 
@@ -159,7 +163,7 @@ void loop()
           COM->writeUint16(wrapper->RMS());
           break;
         case 'T':
-          COM->writeUint8(wrapper->getTMC5160());
+          COM->writeUint8(wrapper->getDriverVersion());
           break;
       }
       break;
@@ -179,10 +183,9 @@ void loop()
 
 void throwError() {
   // Placeholder for proper error handler
-  Serial.print("Error ");
-  Serial.println(wrapper->getErrorID());
-  digitalWrite(StepperWrapper::errorPin, LOW);
-  StepperWrapper::blinkError();
+  DEBUG_PRINT("Error ");
+  DEBUG_PRINTLN(errorID);
+  Serial1COM.writeByte(1);
 }
 
 // void interrupt() {
