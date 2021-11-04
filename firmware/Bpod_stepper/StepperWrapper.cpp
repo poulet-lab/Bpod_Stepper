@@ -44,7 +44,7 @@ StepperWrapper::StepperWrapper() {
     //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
     //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
 
-    pinMode(pin.VM, INPUT_PULLDOWN);
+    pinMode(pin.VM, INPUT);
     attachInterrupt(digitalPinToInterrupt(pin.VM), ISRchangeVM, CHANGE);
     if (!digitalRead(pin.VM))
       throwError(1);
@@ -110,13 +110,13 @@ void StepperWrapper::init2130() {
 
   // StealthChop configuration
   _driver->en_pwm_mode(1);                  // enable StealthChop
-  setMicrosteps(16);                       // set microstep resolution
-  _driver->pwm_freq(0b01);                  // set PWM Frequency (35.1kHz with 12MHz internal clock)
-  _driver->pwm_ofs(30);                     // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
-  _driver->pwm_grad(0);                     // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
-  _driver->pwm_autoscale(1);                // enable automatic tuning of PWM amplitude offset
-  _driver->pwm_autograd(1);                 // enable automatic tuning of PWM amplitude gradient
-  delay(150);                               // stand still for automatic tuning AT#1
+  // setMicrosteps(16);                        // set microstep resolution
+  // _driver->pwm_freq(0b01);                  // set PWM Frequency (35.1kHz with 12MHz internal clock)
+  // _driver->pwm_ofs(30);                     // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
+  // _driver->pwm_grad(0);                     // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
+  // _driver->pwm_autoscale(1);                // enable automatic tuning of PWM amplitude offset
+  // _driver->pwm_autograd(1);                 // enable automatic tuning of PWM amplitude gradient
+  // delay(150);                               // stand still for automatic tuning AT#1
 }
 
 
