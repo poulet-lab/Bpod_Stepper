@@ -57,9 +57,20 @@ StepperWrapper::StepperWrapper() {
 
 
 void StepperWrapper::ISRdiag0() {
-  TMCStepper* driver = get5160();
+  if (errorID)
+    return;
+  TMC2130Stepper* driver = get2130();
   if (driver->drv_err()) {
-    throwError(2);
+    if (driver->uv_cp())
+      throwError(3);                        // undervoltage charge-pump
+    else if (driver->otpw())
+      throwError(4);                        // overtemperature pre-warning threshold is exceeded
+    else if (driver->ot())
+      throwError(5);                        // overtemperature limit has been reached
+    else if (driver->s2gb())
+      throwError(6);                        // short to ground indicator phase B
+    else if (driver->s2ga())
+      throwError(7);                        // short to ground indicator phase A
   }
   // TODO
 }
@@ -108,6 +119,8 @@ void StepperWrapper::init2130(uint16_t rms_current) {
 
   // configuration of DIAG pins & interrupts
   driver->GSTAT(0b111);                     // reset error flags
+  driver->diag0_error(true);                // enable DIAG0 active on driver errors
+  driver->diag0_otpw(true);                 // enable DIAG0 active on driver over temperature prewarning
   attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
   attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
 
@@ -411,8 +424,11 @@ void StepperWrapper::ISRblinkError() {
 
 void StepperWrapper::throwError(uint8_t ID) {
   DEBUG_PRINTFUN(ID);
+  if (errorID)
+    return;
   enableDriver(false);
   errorID = ID;
+  detachInterrupt(digitalPinToInterrupt(pin.Diag0));
   digitalWrite(pin.Error, HIGH);
   timerErrorBlink.begin(ISRblinkError, 250000);
 }
