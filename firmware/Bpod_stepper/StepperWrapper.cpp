@@ -295,7 +295,7 @@ uint8_t StepperWrapper::idDriver() {
 teensyPins StepperWrapper::getPins(float PCBrev) {
   DEBUG_PRINTFUN(PCBrev);
   teensyPins pin;
-  pin.Error = StepperWrapper::errorPin;
+  pin.Error = 33;
   if (PCBrev <= 1.1) {  // the original layout
     pin.Dir   =  2;
     pin.Step  =  3;

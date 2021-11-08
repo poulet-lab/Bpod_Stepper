@@ -64,7 +64,6 @@ class StepperWrapper
     static uint8_t idDriver();                  // identify TMC stepper driver
     static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
-    static constexpr uint8_t errorPin = 33;     // pin for error interrupt
 
     bool getTMC5160() const;                    // return _TMC5160
     uint16_t RMS();                             // get RMS current
