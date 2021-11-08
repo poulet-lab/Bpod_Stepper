@@ -38,15 +38,16 @@ const char* eventNames[] = {"Error","Start", "Stop", "Limit"};
 uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
 uint8_t opCode       = 0;
 extern const float PCBrev;        // PCB revision
+extern const uint8_t vDriver;     // version number of TMC stepper driver
 extern const teensyPins pin;      // pin numbers
 extern volatile uint8_t errorID;  // error ID
 
 // Parameters to be loaded from EEPROM (and default values)
 static const int StoreAddress = 0;
 typedef struct{
-  uint16_t rms_current = 400;     // motor RMS current (mA)
+  uint16_t rms_current = 800;     // motor RMS current (mA)
   float vMax = 200;
-  float a = 200;
+  float a = 800;
   int32_t target[10] {0};
   uint8_t iomode[6] {0};
 }storageVars;
@@ -163,7 +164,7 @@ void loop()
           COM->writeUint16(wrapper->RMS());
           break;
         case 'T':
-          COM->writeUint8(wrapper->getDriverVersion());
+          COM->writeUint8(vDriver);
           break;
       }
       break;

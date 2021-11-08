@@ -50,6 +50,7 @@ struct teensyPins {
 };
 
 extern const float PCBrev;                      // PCB revision
+extern const uint8_t vDriver;                   // version number of TMC stepper driver
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID
 
@@ -60,12 +61,12 @@ class StepperWrapper
 
     static void blinkenlights();                // extra fancy LED sequence to say hi
     static float idPCB();                       // identify PCB revision
+    static uint8_t idDriver();                  // identify TMC stepper driver
     static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
     static constexpr uint8_t errorPin = 33;     // pin for error interrupt
 
     bool getTMC5160() const;                    // return _TMC5160
-    uint8_t getDriverVersion() const;           // return _driverVersion
     uint16_t RMS();                             // get RMS current
     void RMS(uint16_t rms_current);             // set RMS current
 
@@ -82,17 +83,16 @@ class StepperWrapper
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
 
   protected:
+    static TMC2130Stepper* get2130();
+    static TMC5160Stepper* get5160();
     static void powerDriver(bool power);        // supply VIO to driver board?
     static void enableDriver(bool enable);      // enable driver board via EN pin?
     static void throwError(uint8_t errorID);    // throw error with specified numeric ID
     static void clearError();                   // clear error conditition
-    static constexpr float fCLK = 12E6;         // internal clock frequencz of TMC5160
-    bool _TMC5160 = false;
-    uint8_t _driverVersion = 0;
-    TMC5160Stepper* _driver;
+    static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
     uint16_t _microsteps = 1;
     static constexpr bool _invertPinEn  = true;
-    static constexpr bool _invertPinDir = false;
+    bool _invertPinDir = false;
 
   private:
     static void ISRchangeVM();                  // called when VM was (dis)connected
@@ -100,10 +100,8 @@ class StepperWrapper
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
     void init2100();
-    void init2130();
+    void init2130(uint16_t rms_current);
     void init5160(uint16_t rms_current);
-    static TMC5160Stepper* getDriver();
-    static constexpr float _Rsense = 0.075;
     bool _hardwareSPI = false;
 };
 
@@ -148,6 +146,7 @@ class StepperWrapper_MotionControl : public StepperWrapper
     void vMax(float v);
 
   private:
+    TMC5160Stepper* _driver;
     static constexpr float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));
     static constexpr float factV = (float)(1ul<<24) / (fCLK);
 };

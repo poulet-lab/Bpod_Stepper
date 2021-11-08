@@ -29,6 +29,7 @@ _______________________________________________________________________________
 
 const float PCBrev        = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
+const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
 IntervalTimer timerErrorBlink;
 
@@ -56,7 +57,7 @@ StepperWrapper::StepperWrapper() {
 
 
 void StepperWrapper::ISRdiag0() {
-  TMCStepper* driver = getDriver();
+  TMCStepper* driver = get5160();
   if (driver->drv_err()) {
     throwError(2);
   }
@@ -80,16 +81,15 @@ void StepperWrapper::ISRchangeVM() {
 
 void StepperWrapper::init(uint16_t rms_current) {
   DEBUG_PRINTFUN(rms_current);
-  _driver = getDriver();
-  if (!_driver->test_connection())          // if we can connect via SPI
-    _driverVersion = _driver->version();    // get driver version
 
-  if (_driverVersion == 0x11)
-    init2130();                             // initialize TMC2130
-  else if (_driverVersion == 0x30)
+  if (vDriver == 0x11)
+    init2130(rms_current);                  // initialize TMC2130
+  else if (vDriver == 0x30)
     init5160(rms_current);                  // initialize TMC5160
   else
-    init2100();                             // initialize (assumed) TMC2100
+    init2100();                             // initialize TMC2100
+
+  enableDriver(true);                       // activate motor outputs
 }
 
 
@@ -99,32 +99,56 @@ void StepperWrapper::init2100() {
 }
 
 
-void StepperWrapper::init2130() {
+void StepperWrapper::init2130(uint16_t rms_current) {
   DEBUG_PRINTFUN();
-  _driver->GSTAT(0b111);                    // reset error flags
 
+  _invertPinDir = true;
+
+  TMC2130Stepper* driver = get2130();
+
+  // configuration of DIAG pins & interrupts
+  driver->GSTAT(0b111);                     // reset error flags
   attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
   attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
 
+  driver->rms_current(rms_current,1);       // set motor current, standstill reduction disabled
   enableDriver(true);                       // activate motor outputs
 
   // StealthChop configuration
-  _driver->en_pwm_mode(1);                  // enable StealthChop
-  // setMicrosteps(16);                        // set microstep resolution
-  // _driver->pwm_freq(0b01);                  // set PWM Frequency (35.1kHz with 12MHz internal clock)
-  // _driver->pwm_ofs(30);                     // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
-  // _driver->pwm_grad(0);                     // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
-  // _driver->pwm_autoscale(1);                // enable automatic tuning of PWM amplitude offset
-  // _driver->pwm_autograd(1);                 // enable automatic tuning of PWM amplitude gradient
-  // delay(150);                               // stand still for automatic tuning AT#1
+  driver->en_pwm_mode(1);                   // enable StealthChop
+  setMicrosteps(2);                        // set microstep resolution
+  driver->intpol(1);                        // interpolation to 256 microsteps
+  driver->pwm_autoscale(1);                 // enable automatic tuning of PWM amplitude offset
+  driver->pwm_grad(4);                      // amplitude regulation loop gradient
+  driver->pwm_ampl(128);                    // user defined amplitude (offset)
+  driver->pwm_freq(0b01);                   // set PWM Frequency (~38kHz with internal clock)
+  delay(150);                               // stand still for automatic tuning AT#1
+
+  // Chopper configuration
+  driver->chm(0);                           // Chopper mode: SpreadCycle
+  driver->toff(4);                          // Chopper slow decay time. Required to enable the motor.
+  driver->tbl(2);
+  driver->hstrt(4);
+  driver->hend(0);
+  driver->TPWMTHRS(0);                      // Disable SpreadCycle chopper (use StealthChop only)
+
+  // Power savings
+  driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
+  driver->TPOWERDOWN(0);
+  driver->iholddelay(0);                    // instant IHOLD
+  driver->freewheel(0x01);                  // 0x00 = normal operation, 0x01 = freewheeling
 }
 
 
 void StepperWrapper::init5160(uint16_t rms_current) {
   DEBUG_PRINTFUN(rms_current);
 
+  _invertPinDir = false;
+
+  TMC5160Stepper* driver = get5160();
+
   //_driver->RAMP_STAT(ramp_stat);            // clear RAMP_STAT flags (TODO: TMC5160StepperExt)
-  _driver->GSTAT(0b111);                    // reset error flags
+  driver->GSTAT(0b111);                    // reset error flags
 
   // TODO: Check global & driver status
   // if (_driver.uv_cp())
@@ -143,39 +167,40 @@ void StepperWrapper::init5160(uint16_t rms_current) {
   //     throwError(42);                       // Error: Overtemperature.
   // }
 
-  _driver->rms_current(rms_current,1);      // set motor current, standstill reduction disabled
+  driver->rms_current(rms_current,1);       // set motor current, standstill reduction disabled
   enableDriver(true);                       // activate motor outputs
 
   // StealthChop configuration
-  _driver->en_pwm_mode(1);                  // enable StealthChop
+  driver->en_pwm_mode(1);                   // enable StealthChop
   setMicrosteps(256);                       // set microstep resolution
-  _driver->pwm_freq(0b01);                  // set PWM Frequency (35.1kHz with 12MHz internal clock)
-  _driver->pwm_ofs(30);                     // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
-  _driver->pwm_grad(0);                     // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
-  _driver->pwm_autoscale(1);                // enable automatic tuning of PWM amplitude offset
-  _driver->pwm_autograd(1);                 // enable automatic tuning of PWM amplitude gradient
+  driver->pwm_freq(0b01);                   // set PWM Frequency (35.1kHz with 12MHz internal clock)
+  driver->pwm_ofs(30);                      // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
+  driver->pwm_grad(0);                      // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
+  driver->pwm_autoscale(1);                 // enable automatic tuning of PWM amplitude offset
+  driver->pwm_autograd(1);                  // enable automatic tuning of PWM amplitude gradient
   delay(150);                               // stand still for automatic tuning AT#1
 
   // Chopper configuration
-  _driver->chm(0);                          // Chopper mode: SpreadCycle
-  _driver->toff(5);                         // Chopper slow decay time. Required to enable the motor.
-  // _driver->tbl(2);
-  // _driver->hstrt(4);
-  // _driver->hend(0);
-  _driver->TPWMTHRS(0);                     // Disable SpreadCycle chopper (use StealthChop only)
+  driver->chm(0);                           // Chopper mode: SpreadCycle
+  driver->toff(5);                          // Chopper slow decay time. Required to enable the motor.
+  // driver->tbl(2);
+  // driver->hstrt(4);
+  // driver->hend(0);
+  driver->TPWMTHRS(0);                      // Disable SpreadCycle chopper (use StealthChop only)
 
   // Power savings
-  _driver->rms_current(rms_current,.25);    // Set motor current, standstill reduction enabled at 25%
-  _driver->iholddelay(7);                   // Delayed motor power down after standstill
-  _driver->freewheel(0x00);                 // 0x00 = normal operation, 0x01 = freewheeling
+  driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
+  driver->TPOWERDOWN(0);
+  driver->iholddelay(7);                    // Delayed motor power down after standstill
+  driver->freewheel(0x00);                  // 0x00 = normal operation, 0x01 = freewheeling
 
   // TODO: StallGuard / CoolStep
-  //_driver->TCOOLTHRS(* 256);
-  // _driver->sgt(2);
-  // _driver->sg_stop(true);
-  // _driver->THIGH(1500 * 256);
-  // _driver->tbl(2);
-  // _driver->chm(0);
+  // driver->TCOOLTHRS(* 256);
+  // driver->sgt(2);
+  // driver->sg_stop(true);
+  // driver->THIGH(1500 * 256);
+  // driver->tbl(2);
+  // driver->chm(0);
 }
 
 
@@ -199,6 +224,7 @@ void StepperWrapper::blinkenlights() {
 
 void StepperWrapper::powerDriver(bool power) {
   DEBUG_PRINTFUN(power);
+  pinMode(pin.VIO, OUTPUT);
   if (PCBrev>=1.4) {
     digitalWrite(pin.VIO, power);
     delay(150);
@@ -208,6 +234,7 @@ void StepperWrapper::powerDriver(bool power) {
 
 void StepperWrapper::enableDriver(bool enable) {
   DEBUG_PRINTFUN(enable);
+  pinMode(pin.En, OUTPUT);
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
 
@@ -252,6 +279,16 @@ float StepperWrapper::idPCB() {
     } else                        // otherwise its r1.1
       return 1.1;
   }
+}
+
+
+uint8_t StepperWrapper::idDriver() {
+  DEBUG_PRINTFUN();
+  TMC2130Stepper* driver = get2130();
+  if (!driver->test_connection()) // if we can connect via SPI
+    return driver->version();     // return driver version
+  else
+    return 0;
 }
 
 
@@ -307,19 +344,50 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
 }
 
 
-TMC5160Stepper* StepperWrapper::getDriver() {
+TMC2130Stepper* StepperWrapper::get2130() {
   DEBUG_PRINTFUN();
-  TMC5160Stepper* driver;
-  if (PCBrev<1.3)
-    driver = new TMC5160Stepper(pin.CFG3, _Rsense, pin.CFG1, pin.Reset, pin.CFG2);
-  else {
-    driver = new TMC5160Stepper(pin.CFG3, _Rsense);
-    SPI.setMISO(pin.Reset);
-    SPI.setMOSI(pin.CFG1);
-    SPI.setSCK(pin.CFG2);
-    SPI.begin();
+  static bool initialized = false;
+  static TMC2130Stepper* driver;
+
+  if (!initialized) {
+    powerDriver(true);
+    if (PCBrev<1.3)
+      driver = new TMC2130Stepper(pin.CFG3, 0.110, pin.CFG1, pin.Reset, pin.CFG2);
+    else {
+      driver = new TMC2130Stepper(pin.CFG3, 0.110);
+      SPI.setMISO(pin.Reset);
+      SPI.setMOSI(pin.CFG1);
+      SPI.setSCK(pin.CFG2);
+      SPI.begin();
+    }
+    driver->begin();
+    initialized = true;
   }
-  driver->begin();
+
+  return driver;
+}
+
+
+TMC5160Stepper* StepperWrapper::get5160() {
+  DEBUG_PRINTFUN();
+  static bool initialized = false;
+  static TMC5160Stepper* driver;
+
+  if (!initialized) {
+    powerDriver(true);
+    if (PCBrev<1.3)
+      driver = new TMC5160Stepper(pin.CFG3, 0.075, pin.CFG1, pin.Reset, pin.CFG2);
+    else {
+      driver = new TMC5160Stepper(pin.CFG3, 0.075);
+      SPI.setMISO(pin.Reset);
+      SPI.setMOSI(pin.CFG1);
+      SPI.setSCK(pin.CFG2);
+      SPI.begin();
+    }
+    driver->begin();
+    initialized = true;
+  }
+
   return driver;
 }
 
@@ -327,9 +395,10 @@ TMC5160Stepper* StepperWrapper::getDriver() {
 bool StepperWrapper::SDmode() {
   DEBUG_PRINTFUN();
   bool sd_mode = true;
-  TMC5160Stepper* driver = getDriver();
-  if (!driver->test_connection()) {
-    sd_mode = driver->sd_mode();
+  if (vDriver == 0x30) {
+    TMC5160Stepper* driver = get5160();
+    if (!driver->test_connection())
+      sd_mode = driver->sd_mode();
   }
   return sd_mode;
 }
@@ -358,53 +427,86 @@ void StepperWrapper::clearError() {
 }
 
 
-bool StepperWrapper::getTMC5160() const {
-  return _TMC5160;
-}
-
-
-uint8_t StepperWrapper::getDriverVersion() const {
-  return _driverVersion;
-}
-
-
 void StepperWrapper::RMS(uint16_t rms_current) {
-  _driver->rms_current(rms_current);
+  switch (vDriver) {
+    case 0x11:
+      {
+        rms_current = constrain(rms_current,0,850);
+        TMC2130Stepper* driver = get2130();
+        driver->rms_current(rms_current);
+        return;
+      }
+    case 0x30:
+      {
+        rms_current = constrain(rms_current,0,2000);
+        TMC5160Stepper* driver = get5160();
+        driver->rms_current(rms_current);
+        return;
+      }
+    default:
+      return;
+  }
 }
+
 
 uint16_t StepperWrapper::RMS() {
-  return (_TMC5160) ? _driver->rms_current() : 0;
+  switch (vDriver) {
+    case 0x11:
+      {
+        TMC2130Stepper* driver = get2130();
+        return(driver->rms_current());
+      }
+    case 0x30:
+      {
+        TMC5160Stepper* driver = get5160();
+        return(driver->rms_current());
+      }
+    default:
+      return 0;
+  }
 }
+
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
   DEBUG_PRINTFUN(ms);
-  if (_driverVersion>0) {
-    _driver->microsteps(ms);
-    _microsteps = _driver->microsteps();
+  switch (vDriver) {
+    case 0x11:
+      {
+        TMC2130Stepper* driver = get2130();
+        driver->microsteps(ms);
+        _microsteps = driver->microsteps();
+        return;
+      }
+    case 0x30:
+      {
+        TMC5160Stepper* driver = get5160();
+        driver->microsteps(ms);
+        _microsteps = driver->microsteps();
+        return;
+      }
   }
-  else {
-    switch (ms) {
-      case 16:
-        pinMode(pin.CFG1, INPUT);
-        pinMode(pin.CFG2, INPUT);
-        break;
-      case 4:
-        pinMode(pin.CFG1, OUTPUT);
-        pinMode(pin.CFG2, INPUT);
-        digitalWrite(pin.CFG1, HIGH);
-        break;
-      case 2:
-        pinMode(pin.CFG1, INPUT);
-        pinMode(pin.CFG2, OUTPUT);
-        digitalWrite(pin.CFG2, LOW);
-        break;
-      default:
-        ms = 1;
-        pinMode(pin.CFG1, OUTPUT);
-        pinMode(pin.CFG2, OUTPUT);
-        digitalWrite(pin.CFG1, LOW);
-        digitalWrite(pin.CFG2, LOW);
-    }
-    _microsteps = ms;
+
+  switch (ms) {
+    case 16:
+      pinMode(pin.CFG1, INPUT);
+      pinMode(pin.CFG2, INPUT);
+      break;
+    case 4:
+      pinMode(pin.CFG1, OUTPUT);
+      pinMode(pin.CFG2, INPUT);
+      digitalWrite(pin.CFG1, HIGH);
+      break;
+    case 2:
+      pinMode(pin.CFG1, INPUT);
+      pinMode(pin.CFG2, OUTPUT);
+      digitalWrite(pin.CFG2, LOW);
+      break;
+    default:
+      ms = 1;
+      pinMode(pin.CFG1, OUTPUT);
+      pinMode(pin.CFG2, OUTPUT);
+      digitalWrite(pin.CFG1, LOW);
+      digitalWrite(pin.CFG2, LOW);
   }
+  _microsteps = ms;
 }
