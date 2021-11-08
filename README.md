@@ -37,7 +37,7 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 | C5 - C8  | Digi-Key  |  4  | [311-1179-1-ND](https://www.digikey.com/products/en?keywords=311-1179-1-ND)                      | Ceramic capacitor, 0.1 µf   |
 | D1       | Digi-Key  |  1  | [1KSMB75CACT-ND](https://www.digikey.com/products/en?keywords=1KSMB75CACT-ND)                    | TVS diode                   |
 | D2 - D3  | Digi-Key  |  2  | [MBR0520LCT-ND](https://www.digikey.com/products/en?keywords=MBR0520LCT-ND)                      | Schottky diode, 20V 500mA   |
-| D4 - D11 | Digi-Key  |  8  | [S310FACT-ND](https://www.digikey.com/products/en?keywords=S310FACT-ND)                          | Schottky diode, 100V 3A     |
+| D4 - D12 | Digi-Key  |  8  | [S310FACT-ND](https://www.digikey.com/products/en?keywords=S310FACT-ND)                          | Schottky diode, 100V 3A     |
 |          | Digi-Key  |  1  | [A31442-ND](https://www.digikey.com/products/en?keywords=A31442-ND)                              | Ethernet jack               |
 |          | Digi-Key  |  1  | [839-1512-ND](https://www.digikey.com/products/en?keywords=839-1512-ND)                          | DC barrel jack              |
 |          | Digi-Key  |  1  | [PPTC021LFBN-RC](https://www.digikey.com/products/en?keywords=PPTC021LFBN-RC)                    | Female header, 1x2          |
