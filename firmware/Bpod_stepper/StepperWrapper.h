@@ -65,7 +65,6 @@ class StepperWrapper
     static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
 
-    bool getTMC5160() const;                    // return _TMC5160
     uint16_t RMS();                             // get RMS current
     void RMS(uint16_t rms_current);             // set RMS current
 
