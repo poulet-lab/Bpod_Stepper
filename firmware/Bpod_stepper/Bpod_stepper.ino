@@ -109,10 +109,14 @@ void loop()
   }
   switch(opCode) {
     case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+      Serial1COM.writeByte(2);
       wrapper->moveSteps(COM->readInt16());
+      Serial1COM.writeByte(3);
       break;
     case 'P':                                                     // Move to absolute position
+      Serial1COM.writeByte(2);
       wrapper->position(COM->readInt16());
+      Serial1COM.writeByte(3);
       break;
     case 'L':                                                     // Search for limit switch
     //   direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
