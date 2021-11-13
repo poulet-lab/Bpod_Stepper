@@ -129,7 +129,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
 
   // StealthChop configuration
   driver->en_pwm_mode(1);                   // enable StealthChop
-  setMicrosteps(2);                        // set microstep resolution
+  setMicrosteps(256);                       // set microstep resolution
   driver->intpol(1);                        // interpolation to 256 microsteps
   driver->pwm_autoscale(1);                 // enable automatic tuning of PWM amplitude offset
   driver->pwm_grad(4);                      // amplitude regulation loop gradient
