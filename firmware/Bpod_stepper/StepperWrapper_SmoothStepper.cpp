@@ -60,7 +60,9 @@ void StepperWrapper_SmoothStepper::a(float aHzs) {
 
 void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
+  digitalWriteFast(LED_BUILTIN, HIGH);
   _stepper->moveSteps(steps * _microsteps);
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 int32_t StepperWrapper_SmoothStepper::position() {
@@ -70,7 +72,9 @@ int32_t StepperWrapper_SmoothStepper::position() {
 
 void StepperWrapper_SmoothStepper::position(int32_t target) {
   DEBUG_PRINTFUN(target);
+  digitalWriteFast(LED_BUILTIN, HIGH);
   _stepper->movePosition(target * _microsteps);
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 void StepperWrapper_SmoothStepper::resetPosition() {
