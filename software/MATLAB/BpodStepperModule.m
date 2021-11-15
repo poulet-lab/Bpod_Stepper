@@ -20,28 +20,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
 classdef BpodStepperModule < handle
-    
+
     properties (SetAccess = protected)
         Port                        % ArCOM Serial port
         FirmwareVersion             % firmware version of connected module
         HardwareVersion             % PCB revision of connected module
         DriverVersion               % which TMC driver is installed?
     end
-    
+
     properties (Dependent)
         RMScurrent                  % RMS current (mA)
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
     end
-    
+
     properties (Access = private)
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
         CurrentFirmwareVersion = 2  % most recent firmware version
     end
-    
+
     methods
         function obj = BpodStepperModule(portString)
 
@@ -51,7 +51,7 @@ classdef BpodStepperModule < handle
             if obj.Port.read(1, 'uint8') ~= 211
                 error('Could not connect =( ')
             end
-            
+
             % check firmware version
             obj.FirmwareVersion = obj.Port.read(1, 'uint32');
             if obj.FirmwareVersion < obj.CurrentFirmwareVersion
@@ -60,7 +60,7 @@ classdef BpodStepperModule < handle
                     'Stepper Module firmware using Arduino.'], ...
                     obj.FirmwareVersion, obj.CurrentFirmwareVersion)
             end
-            
+
             % get non-dependent parameters from stepper module
             obj.Port.write('GH', 'uint8');
             obj.HardwareVersion = double(obj.Port.read(1, 'uint8')) / 10;
@@ -80,7 +80,7 @@ classdef BpodStepperModule < handle
             obj.Port.write('GI', 'uint8');
             obj.RMScurrent = obj.Port.read(1, 'uint16');
         end
-        
+
         function out = get.MaxSpeed(obj)
             out = obj.privMaxSpeed;
         end
@@ -89,7 +89,7 @@ classdef BpodStepperModule < handle
             obj.Port.write('GV', 'uint8');
             obj.privMaxSpeed = obj.Port.read(1, 'uint16');
         end
-        
+
         function out = get.Acceleration(obj)
             out = obj.privAcceleration;
         end
@@ -98,11 +98,13 @@ classdef BpodStepperModule < handle
             obj.Port.write('GA', 'uint8');
             obj.privAcceleration = obj.Port.read(1, 'uint16');
         end
-        
+
         function out = get.RMScurrent(obj)
             out = obj.privRMScurrent;
         end
         function set.RMScurrent(obj, newCurrent)
+            validateattributes(newCurrent,{'numeric'},...
+                {'scalar','integer','nonnegative'})
             obj.Port.write('I', 'uint8', newCurrent, 'uint16');
             obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
@@ -113,6 +115,7 @@ classdef BpodStepperModule < handle
             out = obj.Port.read(1, 'int16');
         end
         function set.Position(obj,position)
+            validateattributes(position,{'numeric'},{'scalar','integer'})
             obj.Port.write('P', 'int8', position, 'int16');
         end
         function resetPosition(obj)
@@ -123,35 +126,74 @@ classdef BpodStepperModule < handle
         function step(obj, nSteps)
             % Move stepper motor a set number of steps. nSteps = positive
             % for clockwise steps, negative for counterclockwise
+            validateattributes(nSteps,{'numeric'},{'scalar','integer'})
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
-        
+
         function setTarget(obj, id, target)
             validateattributes(id,{'numeric'},...
-                {'scalar','integer','nonnegative','<',10})
+                {'scalar','integer','>=',1,'<=',9})
             validateattributes(target,{'numeric'},{'scalar','integer',...
                 '>=',intmin('int32'),'<=',intmax('int32')})
-            obj.Port.write(sprintf('T%d',id), 'uint8');
+            obj.Port.write(['T' id], 'uint8');
             obj.Port.write(target, 'int32');
         end
 
         function out = getTarget(obj, id)
             validateattributes(id,{'numeric'},...
-                {'scalar','integer','nonnegative','<',10})
-            obj.Port.write(sprintf('G%d',id), 'uint8');
+                {'scalar','integer','>=',1,'<=',9})
+            obj.Port.write(['G' id], 'uint8');
             out = obj.Port.read(1, 'int32');
         end
-        
-        function moveToTarget(id)
+
+        function moveToTarget(obj,id)
             validateattributes(id,{'numeric'},...
-                {'scalar','integer','nonnegative','<',10})
-            obj.Port.write(id+48, 'uint8');
+                {'scalar','integer','nonnegative','>=',1,'<=',9})
+            obj.Port.write(id, 'uint8');
         end
 
         function findLimitSwitch(obj, Dir)
             % Turn stepper motor until limit switch is reached. Dir = 0
             % (clockwise) or 1 (counterclockwise)
             obj.Port.write(['L' Dir>0], 'uint8');
+        end
+        
+        function out = getResistor(obj, idx)
+            % Return the input resistor for IO port IDX
+            %   0 = no input resistor
+            %   1 = pullup resistor
+            %   2 = pulldown resistor
+            obj.Port.write(['GR' idx], 'uint8');
+            out = obj.Port.read(1, 'uint8');
+        end
+
+        function setResistor(obj, idx, R)
+            % Set the input resistor R for IO port IDX
+            %   R = 0: no input resistor
+            %   R = 1: pullup resistor
+            %   R = 2: pulldown resistor
+            validateattributes(idx,{'numeric'},...
+                {'scalar','integer','>=',1,'<=',6})
+            validateattributes(idx,{'numeric'},...
+                {'scalar','integer','>=',0,'<=',2})
+            obj.Port.write(['R' idx R], 'uint8');
+        end
+        
+        function out = getMode(obj, idx)
+            % Return the currently configured mode of IO port IDX
+            validateattributes(idx,{'numeric'},...
+                {'scalar','integer','>=',1,'<=',6})
+            obj.Port.write(['GM' idx], 'uint8');
+            out = obj.Port.read(1, 'uint8');
+        end
+
+        function setMode(obj, idx, M)
+            % Set the input mode M for IO port IDX (cf. readme)
+            validateattributes(idx,{'numeric'},...
+                {'scalar','integer','>=',1,'<=',6})
+            validateattributes(idx,{'numeric'},...
+                {'scalar','integer','nonnegative'})
+            obj.Port.write(['M' idx M], 'uint8');
         end
 
         function storeDefaults(obj)

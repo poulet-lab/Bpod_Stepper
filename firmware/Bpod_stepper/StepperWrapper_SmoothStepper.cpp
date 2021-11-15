@@ -45,7 +45,7 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
 void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
   DEBUG_PRINTFUN(ms);
   StepperWrapper::setMicrosteps(ms);
-  _stepper->setStepsPerRev(200 * _microsteps);
+  // _stepper->setStepsPerRev(200 * _microsteps); // TODO: runtime error!
 }
 
 float StepperWrapper_SmoothStepper::a() {

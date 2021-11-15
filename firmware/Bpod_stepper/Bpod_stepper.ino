@@ -48,8 +48,9 @@ typedef struct{
   uint16_t rms_current = 800;     // motor RMS current (mA)
   float vMax = 200;
   float a = 800;
-  int32_t target[10] {0};
-  uint8_t iomode[6] {0};
+  int32_t target[9] {0};
+  uint8_t IOmode[6] {0};
+  uint8_t IOresistor[6] {0};
 }storageVars;
 storageVars p;
 
@@ -79,9 +80,11 @@ void setup()
   }
   wrapper->init(p.rms_current);
 
-  // Set default speed & acceleration
+  // Set default values
   wrapper->vMax(p.vMax);
   wrapper->a(p.a);
+  wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
+  wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
 
   // TODO: Manage DIAG Interrupts -> move to StepperWrapper
   // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
@@ -89,11 +92,21 @@ void setup()
 
   // Indicate successful start-up
   StepperWrapper::blinkenlights();
+
+  //delay(1000);
+  //wrapper->setIOresistor(1,2);
+  //Serial.println(wrapper->getIOresistor(1));
 }
 
 
 void loop()
 {
+  if (go2pos) {                                                   // Go to predefined target (called by interrupt)
+    wrapper->position(p.target[go2pos-1]);
+    go2pos = 0;
+    return;
+  }
+
   if (usbCOM.available()>0)                                       // Byte available at usbCOM?
     COM = &usbCOM;                                                //   Point *COM to usbCOM
   else if (Serial1COM.available())                                // Byte available at Serial1COM?
@@ -103,8 +116,8 @@ void loop()
 
   opCode = COM->readByte();
 
-  if (opCode <= 57 && opCode >= 48)  {                            // Move to predefined target
-    wrapper->position(p.target[opCode-48]);
+  if (opCode <= 9 && opCode >= 1)  {                              // Move to predefined target (0-9)
+    wrapper->position(p.target[opCode-1]);
     return;
   }
   switch(opCode) {
@@ -137,18 +150,39 @@ void loop()
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
       break;
-    case 'T':                                                     // Set predefined target
-      opCode = COM->readUint8();
-      opCode = constrain(opCode,48,57) - 48;
-      p.target[opCode] = COM->readInt32();
+    case 'M':                                                     // Set mode for IO port
+    {
+      uint8_t idx  = COM->readUint8();
+      uint8_t mode = COM->readUint8();
+      wrapper->setIOmode(idx,mode);
+      if (idx>0 && idx <= 6)
+        p.IOmode[idx-1] = wrapper->getIOmode(idx);
       break;
+    }
+    case 'R':                                                     // Set input resistor for IO port (0 = no resistor, 1 = pullup, 2 = pulldown)
+    {
+      uint8_t idx = COM->readUint8();
+      uint8_t res = COM->readUint8();
+      wrapper->setIOresistor(idx,res);
+      if (idx>0 && idx <= 6)
+        p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
+      break;
+    }
+    case 'T':                                                     // Set predefined target
+    {
+      uint8_t  idx = COM->readUint8()-48;
+      uint32_t pos = COM->readInt32();
+      if (idx <= 9 && opCode >= 1)
+        p.target[idx-1] = pos;
+      break;
+    }
     case 'E':                                                     // Store current settings to EEPROM
       EEstore<storageVars>::set(StoreAddress,p);
       break;
     case 'G':                                                     // Get parameters
       opCode = COM->readByte();                                   //   Read Byte
-      if (opCode <= 57 && opCode >= 48) {                         //   Return predefined target
-        COM->writeInt32(p.target[opCode-48]);
+      if (opCode <= 9 && opCode >= 1) {                           //   Return predefined target
+        COM->writeInt32(p.target[opCode-1]);
         return;
       }
       switch (opCode) {
@@ -163,6 +197,12 @@ void loop()
           break;
         case 'H':                                                 //   Return hardware revision
           COM->writeUint8(PCBrev * 10);
+          break;
+        case 'M':
+          COM->writeUint8(wrapper->getIOmode(COM->readByte()));
+          break;
+        case 'R':
+          COM->writeUint8(wrapper->getIOresistor(COM->readByte()));
           break;
         case 'I':
           COM->writeUint16(wrapper->RMS());
@@ -192,21 +232,6 @@ void throwError() {
   DEBUG_PRINTLN(errorID);
   Serial1COM.writeByte(1);
 }
-
-// void interrupt() {
-//   digitalWriteFast(LED_BUILTIN, LOW);
-//
-//   // read RAMP_STAT to get reason for interrupt
-//   uint16_t ramp_stat = driver.RAMP_STAT();
-//   if (bitRead(ramp_stat,6)) {
-//     // event_stop_sg
-//   } else if (bitRead(ramp_stat,7)) {
-//     // event_pos_reached
-//   }
-//
-//   // clear flags & interrupt conditions
-//   driver.RAMP_STAT(ramp_stat);
-// }
 
 void returnModuleInfo() {
   Serial1COM.writeByte(65);                                       // Acknowledge

@@ -27,14 +27,19 @@ _______________________________________________________________________________
 #include <avr/interrupt.h>
 #include "SerialDebug.h"
 
+
 const float PCBrev        = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
+volatile uint8_t go2pos   = 0;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
   DEBUG_PRINTFUN();
+
+  _nIO = (PCBrev<1.2) ? 2 : 6;              // set number of IO pins
+
   pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   if (PCBrev>=1.4) {
@@ -240,7 +245,7 @@ void StepperWrapper::powerDriver(bool power) {
   pinMode(pin.VIO, OUTPUT);
   if (PCBrev>=1.4) {
     digitalWrite(pin.VIO, power);
-    delay(150);
+    delay(200);
   }
 }
 
@@ -318,8 +323,8 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.CFG2  =  7;
     pin.CFG1  =  8;
     pin.En    =  9;
-    pin.IO1   = 10;
-    pin.IO2   = 11;
+    pin.IO[0] = 10;     // IO1 - watch out, zero indexing!
+    pin.IO[1] = 11;     // IO2
     return pin;
   } else {              // major reorganisation with r1.2
     pin.Dir   =  4;
@@ -330,12 +335,12 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.CFG2  = 27;
     pin.CFG1  = 11;
     pin.En    = 24;
-    pin.IO1   = 36;
-    pin.IO2   = 37;
-    pin.IO3   = 38;
-    pin.IO4   = 14;
-    pin.IO5   = 18;
-    pin.IO6   = 19;
+    pin.IO[0] = 36;     // IO1 - watch out, zero indexing!
+    pin.IO[1] = 37;     // IO2
+    pin.IO[2] = 38;     // IO3
+    pin.IO[3] = 14;     // IO4
+    pin.IO[4] = 18;     // IO5
+    pin.IO[5] = 19;     // IO6
   }
   if (PCBrev >= 1.3) {  // corrected layout for hardware SPI with r1.3
     pin.Dir   =  5;
@@ -345,7 +350,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.CFG3  = 10;
     pin.CFG2  = 14;
     pin.En    = 12;
-    pin.IO4   = 15;
+    pin.IO[3] = 15;     // IO4
   }
   if (PCBrev >= 1.4) {
     pin.Diag0 = 24;
@@ -422,6 +427,37 @@ void StepperWrapper::ISRblinkError() {
 }
 
 
+void StepperWrapper::ISRlimit() {
+  static uint32_t tInterrupt0  = 0;
+  uint32_t tInterrupt1 = millis();
+  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
+  {
+    Serial.println("LIMIT");
+  }
+  tInterrupt0 = tInterrupt1;
+}
+
+
+void StepperWrapper::ISRpos1() { StepperWrapper::ISRposN(1); }
+void StepperWrapper::ISRpos2() { StepperWrapper::ISRposN(2); }
+void StepperWrapper::ISRpos3() { StepperWrapper::ISRposN(3); }
+void StepperWrapper::ISRpos4() { StepperWrapper::ISRposN(4); }
+void StepperWrapper::ISRpos5() { StepperWrapper::ISRposN(5); }
+void StepperWrapper::ISRpos6() { StepperWrapper::ISRposN(6); }
+void StepperWrapper::ISRpos7() { StepperWrapper::ISRposN(7); }
+void StepperWrapper::ISRpos8() { StepperWrapper::ISRposN(8); }
+void StepperWrapper::ISRpos9() { StepperWrapper::ISRposN(9); }
+void StepperWrapper::ISRposN(uint8_t n) {
+  if (go2pos > 0)
+    return;
+  static uint32_t tInterrupt0[9]{0};
+  uint32_t tInterrupt1 = millis();
+  if (tInterrupt0[n-1] == 0 || tInterrupt1 - tInterrupt0[n-1] > debounceMillis)
+    go2pos = n;
+  tInterrupt0[n-1] = tInterrupt1;
+}
+
+
 void StepperWrapper::throwError(uint8_t ID) {
   DEBUG_PRINTFUN(ID);
   if (errorID)
@@ -488,17 +524,17 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
   switch (vDriver) {
     case 0x11:
       {
-        TMC2130Stepper* driver = get2130();
-        driver->microsteps(ms);
-        _microsteps = driver->microsteps();
-        return;
+      TMC2130Stepper* driver = get2130();
+      driver->microsteps(ms);
+      _microsteps = driver->microsteps();
+      return;
       }
     case 0x30:
       {
-        TMC5160Stepper* driver = get5160();
-        driver->microsteps(ms);
-        _microsteps = driver->microsteps();
-        return;
+      TMC5160Stepper* driver = get5160();
+      driver->microsteps(ms);
+      _microsteps = driver->microsteps();
+      return;
       }
   }
 
@@ -525,4 +561,107 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       digitalWrite(pin.CFG2, LOW);
   }
   _microsteps = ms;
+}
+
+
+uint8_t StepperWrapper::getIOmode(uint8_t idx) {
+  DEBUG_PRINTFUN(idx);
+  idx--;
+  if (idx>=_nIO)
+    return 0;
+  return _ioMode[idx];
+}
+
+
+void StepperWrapper::setIOmode(uint8_t mode[], uint8_t l) {
+  DEBUG_PRINTFUN();
+  for (uint8_t idx = 1; idx <= l; idx++)
+    setIOmode(idx,mode[idx-1]);
+}
+
+
+void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
+  DEBUG_PRINTFUN(idx);
+  idx--;
+  if (idx>=_nIO)
+    return;
+
+  _ioMode[idx] = mode;
+
+  detachInterrupt(digitalPinToInterrupt(pin.IO[idx]));
+  switch (mode) {
+    case 0:
+      pinMode(pin.IO[idx], INPUT);
+      break;
+    case 1:
+      attachInput(idx, ISRpos1);
+      break;
+    case 2:
+      attachInput(idx, ISRpos2);
+      break;
+    case 3:
+      attachInput(idx, ISRpos3);
+      break;
+    case 4:
+      attachInput(idx, ISRpos4);
+      break;
+    case 5:
+      attachInput(idx, ISRpos5);
+      break;
+    case 6:
+      attachInput(idx, ISRpos6);
+      break;
+    case 7:
+      attachInput(idx, ISRpos7);
+      break;
+    case 8:
+      attachInput(idx, ISRpos8);
+      break;
+    case 9:
+      attachInput(idx, ISRpos9);
+      break;
+    case 11:
+      attachInput(idx, ISRlimit);
+      break;
+  }
+}
+
+
+void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
+  DEBUG_PRINTFUN(idx);
+  pinMode(pin.IO[idx], _ioResistor[idx]);
+  uint8_t direction = (_ioResistor[idx]==INPUT_PULLUP) ? FALLING : RISING;
+  attachInterrupt(digitalPinToInterrupt(pin.IO[idx]), userFunc, direction);
+}
+
+
+uint8_t StepperWrapper::getIOresistor(uint8_t idx) {
+  DEBUG_PRINTFUN(idx);
+  idx--;
+  if (idx>=_nIO)
+    return 0;
+  uint8_t output = _ioResistor[idx];
+  if (output > 0)
+    output--;
+  return output;
+}
+
+
+void StepperWrapper::setIOresistor(uint8_t r[], uint8_t l) {
+  DEBUG_PRINTFUN();
+  for (uint8_t idx = 1; idx <= l; idx++)
+    setIOresistor(idx,r[idx-1]);
+}
+
+
+void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
+  DEBUG_PRINTFUN(idx);
+  idx--;
+  if (idx>=_nIO || r > 2)
+    return;
+  if (r > 0)
+    r++;
+  _ioResistor[idx] = r;
+  if (_ioMode[idx]>0)
+    setIOmode(idx+1, _ioMode[idx]);
 }

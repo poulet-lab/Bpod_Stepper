@@ -36,23 +36,19 @@ struct teensyPins {
   uint8_t CFG2;
   uint8_t CFG3;
   uint8_t En;
-  uint8_t IO1;
-  uint8_t IO2;
-  uint8_t IO3;
-  uint8_t IO4;
-  uint8_t IO5;
-  uint8_t IO6;
   uint8_t Diag0;
   uint8_t Diag1;
   uint8_t VIO;
   uint8_t VM;
   uint8_t Error;
+  uint8_t IO[6] {0};
 };
 
 extern const float PCBrev;                      // PCB revision
 extern const uint8_t vDriver;                   // version number of TMC stepper driver
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID
+extern volatile uint8_t go2pos;                 // go to position
 
 class StepperWrapper
 {
@@ -79,6 +75,12 @@ class StepperWrapper
     virtual void resetPosition() = 0;           // reset position to zero
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
+    void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
+    void setIOmode(uint8_t idx, uint8_t role);  // set IO mode (specific IO port)
+    uint8_t getIOmode(uint8_t idx);             // get IO mode (specific IO port)
+    void setIOresistor(uint8_t r[6], uint8_t l);// set input resistor (all IO ports)
+    void setIOresistor(uint8_t idx, uint8_t r); // set input resistor (specific IO port)
+    uint8_t getIOresistor(uint8_t idx);         // get input resistor (specific IO port)
 
   protected:
     static TMC2130Stepper* get2130();
@@ -97,10 +99,27 @@ class StepperWrapper
     static void ISRdiag0();                     // called when diag0 changes
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
+    static void ISRlimit();                     // IO: reached limit-switch
+    static void ISRpos1();                      // IO: go to predefined position 1
+    static void ISRpos2();                      // IO: go to predefined position 2
+    static void ISRpos3();                      // IO: go to predefined position 3
+    static void ISRpos4();                      // IO: go to predefined position 4
+    static void ISRpos5();                      // IO: go to predefined position 5
+    static void ISRpos6();                      // IO: go to predefined position 6
+    static void ISRpos7();                      // IO: go to predefined position 7
+    static void ISRpos8();                      // IO: go to predefined position 8
+    static void ISRpos9();                      // IO: go to predefined position 9
+    static void ISRposN(uint8_t n);             // IO: go to predefined position N
+
+    void attachInput(uint8_t idx, void (*userFunc)(void));
     void init2100();
     void init2130(uint16_t rms_current);
     void init5160(uint16_t rms_current);
     bool _hardwareSPI = false;
+    uint8_t _nIO;                               // number of IO pins
+    static const uint32_t debounceMillis = 200; // duration for input debounce [ms]
+    uint8_t _ioMode[6] {0};
+    uint8_t _ioResistor[6] {0};                 // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
 };
 
 
