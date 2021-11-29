@@ -19,11 +19,11 @@ _______________________________________________________________________________
 
 
 #include <Arduino.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 #include "ArCOM.h"                // Import serial communication wrapper
 #include "EEstore.h"              // Import EEstore library
 #include "StepperWrapper.h"       // Import StepperWrapper
-#include <avr/io.h>
-#include <avr/interrupt.h>
 #include "SerialDebug.h"
 
 // Module setup
@@ -88,16 +88,8 @@ void setup()
   wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
   wrapper->setChopper(p.chopper);
 
-  // TODO: Manage DIAG Interrupts -> move to StepperWrapper
-  // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
-  // attachInterrupt(digitalPinToInterrupt(pinDiag0), interrupt, FALLING);
-
   // Indicate successful start-up
   StepperWrapper::blinkenlights();
-
-  //delay(1000);
-  //wrapper->setIOresistor(1,2);
-  //Serial.println(wrapper->getIOresistor(1));
 }
 
 
@@ -133,11 +125,11 @@ void loop()
       wrapper->position(COM->readInt16());
       Serial1COM.writeByte(3);
       break;
-    case 'x':
-      wrapper->softStop();
-      break;
-    case 'X':
+    case 'X':                                                     // Stop without slowing down
       wrapper->hardStop();
+      break;
+    case 'x':                                                     // Stop after slowing down
+      wrapper->softStop();
       break;
     case 'L':                                                     // Search for limit switch
     //   direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
