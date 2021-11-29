@@ -165,6 +165,14 @@ classdef BpodStepperModule < handle
                 {'scalar','integer','nonnegative','>=',1,'<=',9})
             obj.Port.write(id, 'uint8');
         end
+        
+        function softStop(obj)
+            obj.Port.write('x', 'uint8');
+        end
+        
+        function hardStop(obj)
+            obj.Port.write('X', 'uint8');
+        end
 
         function findLimitSwitch(obj, Dir)
             % Turn stepper motor until limit switch is reached. Dir = 0

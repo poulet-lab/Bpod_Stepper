@@ -600,6 +600,8 @@ uint8_t StepperWrapper::getChopper() {
         TMC5160Stepper* driver = get5160();
         return driver->en_pwm_mode();
       }
+    default:
+      return 0;
   }
 }
 

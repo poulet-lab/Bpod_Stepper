@@ -83,3 +83,13 @@ void StepperWrapper_MotionControl::vMax(float vHz) {
   _driver->VMAX(v5160);
   _driver->v1(0); // Disables A1 and D1 phase, use AMAX, DMAX only
 }
+
+void StepperWrapper_MotionControl::hardStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
+void StepperWrapper_MotionControl::softStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}

@@ -133,6 +133,12 @@ void loop()
       wrapper->position(COM->readInt16());
       Serial1COM.writeByte(3);
       break;
+    case 'x':
+      wrapper->softStop();
+      break;
+    case 'X':
+      wrapper->hardStop();
+      break;
     case 'L':                                                     // Search for limit switch
     //   direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
     //   findLimit();                                                //   Search for limit switch

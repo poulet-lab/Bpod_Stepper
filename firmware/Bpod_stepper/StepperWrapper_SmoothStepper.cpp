@@ -88,3 +88,13 @@ void StepperWrapper_SmoothStepper::vMax(float v) {
   DEBUG_PRINTFUN(v);
   _stepper->setMaxSpeed(v * (float) _microsteps);
 }
+
+void StepperWrapper_SmoothStepper::hardStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
+void StepperWrapper_SmoothStepper::softStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}

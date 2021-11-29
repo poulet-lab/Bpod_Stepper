@@ -103,6 +103,17 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
   _motor->setMaxSpeed(_vMax);
 }
 
+void StepperWrapper_TeensyStep::hardStop() {
+  DEBUG_PRINTFUN();
+  _controller->emergencyStop();
+  digitalWriteFast(LED_BUILTIN, LOW);
+}
+
+void StepperWrapper_TeensyStep::softStop() {
+  DEBUG_PRINTFUN();
+  _controller->stopAsync();
+}
+
 void StepperWrapper_TeensyStep::CBstop() {
   DEBUG_PRINTFUN();
   digitalWriteFast(LED_BUILTIN, LOW);

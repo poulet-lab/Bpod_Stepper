@@ -73,6 +73,8 @@ class StepperWrapper
     virtual void resetPosition() = 0;           // reset position to zero
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
+    virtual void hardStop() = 0;                // stop without slowing down
+    virtual void softStop() = 0;                // stop after slowing down
 
     void setChopper(uint8_t chopper);
     uint8_t getChopper();
@@ -141,6 +143,8 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
     void resetPosition();
     float vMax();
     void vMax(float v);
+    void hardStop();
+    void softStop();
 
   private:
     SmoothStepper* _stepper;
@@ -162,6 +166,8 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     void resetPosition();
     float vMax();
     void vMax(float v);
+    void hardStop();
+    void softStop();
 
   private:
     Stepper* _motor;
@@ -187,6 +193,8 @@ class StepperWrapper_MotionControl : public StepperWrapper
     void resetPosition();
     float vMax();
     void vMax(float v);
+    void hardStop();
+    void softStop();
 
   private:
     TMC5160Stepper* _driver;
