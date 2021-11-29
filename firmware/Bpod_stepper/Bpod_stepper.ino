@@ -21,6 +21,7 @@ _______________________________________________________________________________
 #include <Arduino.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <limits>
 #include "ArCOM.h"                // Import serial communication wrapper
 #include "EEstore.h"              // Import EEstore library
 #include "StepperWrapper.h"       // Import StepperWrapper
@@ -75,7 +76,7 @@ void setup()
 
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
-    wrapper = new StepperWrapper_TeensyStep();
+    wrapper = new StepperWrapper_TeensyStep(*Serial1COM);
   } else {
     wrapper = new StepperWrapper_MotionControl();
   }
@@ -95,10 +96,14 @@ void setup()
 
 void loop()
 {
+  if (limit) {                                                    // Limit switch reached (called by interrupt)
+    wrapper->hardStop();
+    Serial1COM.writeByte(3);
+    limit = false;
+  }
   if (go2pos) {                                                   // Go to predefined target (called by interrupt)
     wrapper->position(p.target[go2pos-1]);
     go2pos = 0;
-    return;
   }
 
   if (usbCOM.available()>0)                                       // Byte available at usbCOM?
@@ -132,8 +137,11 @@ void loop()
       wrapper->softStop();
       break;
     case 'L':                                                     // Search for limit switch
-    //   direction = COM->readUint8();                               //   Direction (0 = CCW, 1 = CW)
-    //   findLimit();                                                //   Search for limit switch
+      Serial1COM.writeByte(2);
+      if (COM->readUint8())
+        wrapper->moveSteps(std::numeric_limits<int32_t>::max()/10);
+      else
+        wrapper->moveSteps(std::numeric_limits<int32_t>::min()/10);
       break;
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();

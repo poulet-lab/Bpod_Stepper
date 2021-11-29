@@ -33,6 +33,7 @@ const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
 volatile uint8_t go2pos   = 0;
+volatile bool limit       = false;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
@@ -62,6 +63,7 @@ StepperWrapper::StepperWrapper() {
 
 
 void StepperWrapper::ISRdiag0() {
+  DEBUG_PRINTFUN();
   if (errorID)
     return;
   TMC2130Stepper* driver = get2130();
@@ -82,7 +84,7 @@ void StepperWrapper::ISRdiag0() {
 
 
 void StepperWrapper::ISRdiag1() {
-  // TODO
+  DEBUG_PRINTFUN();
 }
 
 
@@ -133,7 +135,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   enableDriver(true);                       // activate motor outputs
 
   // StealthChop configuration
-  driver->en_pwm_mode(0);                   // enable StealthChop
+  driver->en_pwm_mode(1);                   // enable StealthChop
   driver->intpol(1);                        // interpolation to 256 microsteps
   driver->pwm_autoscale(1);                 // enable automatic tuning of PWM amplitude offset
   driver->pwm_grad(4);                      // amplitude regulation loop gradient
@@ -430,7 +432,7 @@ void StepperWrapper::ISRlimit() {
   uint32_t tInterrupt1 = millis();
   if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
   {
-    Serial.println("LIMIT");
+    limit = true;
   }
   tInterrupt0 = tInterrupt1;
 }

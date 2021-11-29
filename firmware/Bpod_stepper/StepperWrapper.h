@@ -47,6 +47,7 @@ extern const uint8_t vDriver;                   // version number of TMC stepper
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID
 extern volatile uint8_t go2pos;                 // go to position
+extern volatile bool limit;                     // limit switch reached
 
 class StepperWrapper
 {

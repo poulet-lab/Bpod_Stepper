@@ -28,11 +28,8 @@ StepperWrapper_SmoothStepper::StepperWrapper_SmoothStepper() : StepperWrapper() 
 void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
   DEBUG_PRINTFUN();
   StepperWrapper::init(rms_current);
-
   _stepper = new SmoothStepper(pin.Step, pin.Dir);
-
   _stepper->setStepsPerRev(200 * (uint32_t) _microsteps);
-
   _stepper->setPinEnable(pin.En);             // We do want to use the enable pin
   _stepper->setInvertEnable(_invertPinEn);    // Enable pin on TMC2100 is inverted
   _stepper->setInvertDirection(_invertPinDir);// Invert the direction pin?
@@ -42,7 +39,6 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
 void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
   DEBUG_PRINTFUN(ms);
   StepperWrapper::setMicrosteps(ms);
-  // _stepper->setStepsPerRev(200 * _microsteps); // TODO: runtime error!
 }
 
 float StepperWrapper_SmoothStepper::a() {
