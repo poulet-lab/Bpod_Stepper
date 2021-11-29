@@ -19,9 +19,8 @@ _______________________________________________________________________________
 
 
 #include <Arduino.h>
-#include "StepperWrapper.h"
-#include "SmoothStepper.h"
 #include <TMCStepper.h>
+#include "StepperWrapper.h"
 #include "SerialDebug.h"
 
 StepperWrapper_SmoothStepper::StepperWrapper_SmoothStepper() : StepperWrapper() {}
@@ -38,8 +37,6 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
   _stepper->setInvertEnable(_invertPinEn);    // Enable pin on TMC2100 is inverted
   _stepper->setInvertDirection(_invertPinDir);// Invert the direction pin?
   _stepper->resetPosition();                  // Reset position of motor
-
-  enableDriver(true);                         // Enable the driver
 }
 
 void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {

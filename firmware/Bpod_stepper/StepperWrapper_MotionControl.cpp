@@ -19,8 +19,8 @@ _______________________________________________________________________________
 
 
 #include <Arduino.h>
-#include "StepperWrapper.h"
 #include <TMCStepper.h>
+#include "StepperWrapper.h"
 #include "SerialDebug.h"
 
 StepperWrapper_MotionControl::StepperWrapper_MotionControl() : StepperWrapper() {}

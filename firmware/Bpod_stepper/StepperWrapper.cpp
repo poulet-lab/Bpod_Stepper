@@ -133,8 +133,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   enableDriver(true);                       // activate motor outputs
 
   // StealthChop configuration
-  driver->en_pwm_mode(1);                   // enable StealthChop
-  setMicrosteps(256);                       // set microstep resolution
+  driver->en_pwm_mode(0);                   // enable StealthChop
   driver->intpol(1);                        // interpolation to 256 microsteps
   driver->pwm_autoscale(1);                 // enable automatic tuning of PWM amplitude offset
   driver->pwm_grad(4);                      // amplitude regulation loop gradient
@@ -190,7 +189,6 @@ void StepperWrapper::init5160(uint16_t rms_current) {
 
   // StealthChop configuration
   driver->en_pwm_mode(1);                   // enable StealthChop
-  setMicrosteps(256);                       // set microstep resolution
   driver->pwm_freq(0b01);                   // set PWM Frequency (35.1kHz with 12MHz internal clock)
   driver->pwm_ofs(30);                      // initial value: PWM amplitude offset (TODO: Load from EEPROM?)
   driver->pwm_grad(0);                      // initial value: PWM amplitude gradient (TODO: Load from EEPROM?)
@@ -521,12 +519,19 @@ uint16_t StepperWrapper::RMS() {
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
   DEBUG_PRINTFUN(ms);
+
+  // sanitize input argument
+  ms = constrain(ms,1,256);
+  ms = pow(2,ceil(log(ms)/log(2)));
+  ms = (ms==1) ? 0 : ms;
+
   switch (vDriver) {
     case 0x11:
       {
       TMC2130Stepper* driver = get2130();
       driver->microsteps(ms);
       _microsteps = driver->microsteps();
+      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       return;
       }
     case 0x30:
@@ -534,10 +539,12 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       TMC5160Stepper* driver = get5160();
       driver->microsteps(ms);
       _microsteps = driver->microsteps();
+      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       return;
       }
   }
 
+  // for TMC2100:
   switch (ms) {
     case 16:
       pinMode(pin.CFG1, INPUT);

@@ -21,11 +21,9 @@ _______________________________________________________________________________
 #ifndef StepperWrapper_h
 #define StepperWrapper_h
 
-// forward declarations
-class TMCStepper;
-class TMC2130Stepper;
-class TMC5160Stepper;
-class SmoothStepper;
+#include <TeensyStep.h>
+#include <TMCStepper.h>
+#include "SmoothStepper.h"
 
 struct teensyPins {
   uint8_t Dir;
@@ -143,6 +141,31 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
 
   private:
     SmoothStepper* _stepper;
+};
+
+
+class StepperWrapper_TeensyStep : public StepperWrapper
+{
+  public:
+    StepperWrapper_TeensyStep();                // constructor
+
+    void init(uint16_t rms_current);
+
+    float a();
+    void a(float a);
+    void moveSteps(int32_t steps);
+    int32_t position();
+    void position(int32_t);
+    void resetPosition();
+    float vMax();
+    void vMax(float v);
+
+  private:
+    Stepper* _motor;
+    StepControl* _controller;
+    uint32_t _a;
+    int32_t _vMax;
+    static void CBstop();
 };
 
 

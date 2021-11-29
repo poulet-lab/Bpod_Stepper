@@ -74,7 +74,7 @@ void setup()
 
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
-    wrapper = new StepperWrapper_SmoothStepper();
+    wrapper = new StepperWrapper_TeensyStep();
   } else {
     wrapper = new StepperWrapper_MotionControl();
   }
