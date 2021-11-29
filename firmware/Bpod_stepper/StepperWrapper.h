@@ -73,6 +73,9 @@ class StepperWrapper
     virtual void resetPosition() = 0;           // reset position to zero
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
+
+    void setChopper(uint8_t chopper);
+    uint8_t getChopper();
     void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
     void setIOmode(uint8_t idx, uint8_t role);  // set IO mode (specific IO port)
     uint8_t getIOmode(uint8_t idx);             // get IO mode (specific IO port)

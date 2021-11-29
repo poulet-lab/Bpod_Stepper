@@ -48,6 +48,7 @@ typedef struct{
   uint16_t rms_current = 800;     // motor RMS current (mA)
   float vMax = 200;
   float a = 800;
+  uint8_t chopper = 1;
   int32_t target[9] {0};
   uint8_t IOmode[6] {0};
   uint8_t IOresistor[6] {0};
@@ -85,6 +86,7 @@ void setup()
   wrapper->a(p.a);
   wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
   wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
+  wrapper->setChopper(p.chopper);
 
   // TODO: Manage DIAG Interrupts -> move to StepperWrapper
   // driver.RAMP_STAT(driver.RAMP_STAT()); // clear flags & interrupt conditions
@@ -150,6 +152,10 @@ void loop()
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
       break;
+    case 'C':                                                     // Set chopper mode (0 = spreadCycle™, 1 = stealthChop™)
+      wrapper->setChopper(COM->readUint8());
+      p.chopper = wrapper->getChopper();
+      break;
     case 'M':                                                     // Set mode for IO port
     {
       uint8_t idx  = COM->readUint8();
@@ -206,6 +212,9 @@ void loop()
           break;
         case 'I':
           COM->writeUint16(wrapper->RMS());
+          break;
+        case 'C':                                                 //   Return chopper mode (0 = spreadCycle™, 1 = stealthChop™)
+          COM->writeUint8(wrapper->getChopper());
           break;
         case 'T':
           COM->writeUint8(vDriver);

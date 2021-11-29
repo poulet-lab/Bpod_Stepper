@@ -571,6 +571,39 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
 }
 
 
+void StepperWrapper::setChopper(uint8_t chopper) {
+  chopper = constrain(chopper,0,1);
+  switch (vDriver) {
+    case 0x11:
+      {
+        TMC2130Stepper* driver = get2130();
+        driver->en_pwm_mode(chopper);
+      }
+    case 0x30:
+      {
+        TMC5160Stepper* driver = get5160();
+        driver->en_pwm_mode(chopper);
+      }
+  }
+}
+
+
+uint8_t StepperWrapper::getChopper() {
+  switch (vDriver) {
+    case 0x11:
+      {
+        TMC2130Stepper* driver = get2130();
+        return driver->en_pwm_mode();
+      }
+    case 0x30:
+      {
+        TMC5160Stepper* driver = get5160();
+        return driver->en_pwm_mode();
+      }
+  }
+}
+
+
 uint8_t StepperWrapper::getIOmode(uint8_t idx) {
   DEBUG_PRINTFUN(idx);
   idx--;

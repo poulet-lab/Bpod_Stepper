@@ -30,6 +30,7 @@ classdef BpodStepperModule < handle
 
     properties (Dependent)
         RMScurrent                  % RMS current (mA)
+        ChopperMode                 % 0 = spreadCycle™, 1 = stealthChop™
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
@@ -39,6 +40,7 @@ classdef BpodStepperModule < handle
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
+        privChopper                 % private: Chopper mode
         CurrentFirmwareVersion = 2  % most recent firmware version
     end
 
@@ -79,6 +81,8 @@ classdef BpodStepperModule < handle
             obj.privMaxSpeed = obj.Port.read(1, 'uint16');
             obj.Port.write('GI', 'uint8');
             obj.RMScurrent = obj.Port.read(1, 'uint16');
+            obj.Port.write('GC', 'uint8');
+            obj.privChopper = obj.Port.read(1, 'uint8');
         end
 
         function out = get.MaxSpeed(obj)
@@ -108,6 +112,16 @@ classdef BpodStepperModule < handle
             obj.Port.write('I', 'uint8', newCurrent, 'uint16');
             obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
+        end
+        
+        function out = get.ChopperMode(obj)
+            out = obj.privChopper;
+        end
+        function set.ChopperMode(obj, mode)
+            validateattributes(mode,{'numeric'},...
+                {'scalar','integer','nonnegative','<=',1})
+            obj.Port.write('C', 'uint8', mode, 'uint16', 'GI', 'uint8');
+            obj.privChopper = obj.Port.read(1, 'uint16');
         end
 
         function out = get.Position(obj)
