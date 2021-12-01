@@ -3,29 +3,153 @@
 Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
-| Send                          | Receive | Unit / Key                               | Description                                                                                                           |
-| :---------------------------- | :-----  | :--------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- |
-| ```S``` + Int16               |         | steps                                    | Move to relative position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation. |
-| ```P``` + Int16               |         | steps                                    | Move to absolute position.                                                                                            |
-| n                             |         | n = 0, 1 … 9                             | Move to predefined target position.                                                                                   |
-| ```Z```                       |         |                                          | Set absolute position back to zero.                                                                                   |
-| ```L``` + uInt8               |         | 0&nbsp;=&nbsp;CCW,&nbsp;1&nbsp;=&nbsp;CW | Search limit switch. Move until one of the limit switches has been reached.                                           |
-| ```V``` + uInt16              |         | steps / s                                | Set maximum velocity                                                                                                  |
-| ```A``` + uInt16              |         | steps / s<sup>2</sup>                    | Set acceleration.                                                                                                     |
-| ```I``` + uInt16              |         | mA                                       | Set RMS current                                                                                                       |
-| ```T```n&nbsp;+&nbsp;Int32    |         | n = 0, 1 … 9                             | Set predefined target position                                                                                        |
-| ```M``` + uInt8 + uInt8       |         |                                          | Set input mode of IO port                                                                                             |
-| ```R``` + uInt8 + uInt8       |         |                                          | Set input resistor of IO port: 0 = none; 1 = pullup; 2 = pulldown                                                     |
-| ```G```n                      | Int32   | n = 0, 1 … 9                             | Get predefined target position                                                                                        |
-| ```GP```                      | Int16   | steps                                    | Get absolute position                                                                                                 |
-| ```GV```                      | uInt16  | steps / s                                | Get maximum velocity                                                                                                  |
-| ```GA```                      | uInt16  | steps / s<sup>2</sup>                    | Get acceleration                                                                                                      |
-| ```GI```                      | uInt16  | mA                                       | Get RMS current                                                                                                       |
-| ```GR``` + uInt8              | uInt8   |                                          | Get input resistor of IO port: 0 = none; 1 = pullup; 2 = pulldown                                                     |
-| ```GH```                      | uInt8   |                                          | Get hardware revision                                                                                                 |
-| ```GT```                      | uInt8   |                                          | Get bool: TMC5160 found?                                                                                              |
-| Byte 212                      |         |                                          | USB Handshake (reserved)                                                                                              |
-| Byte 255                      |         |                                          | Return module info (reserved)                                                                                         |
+
+### Moving the Motor
+The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions.
+
+* #### Move in direction
+  Start continuous movement in a specific direction without a defined target position.
+
+      PUT 1 uInt8: 68 ('D')
+      PUT 1 Int8:  direction [1 = CW, -1 = CCW]
+
+* #### Move to a relative position
+  Move a defined number of steps relative to the current position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
+
+      PUT 1 uInt8: 83 ('S')
+      PUT 1 Int16: relative position [steps]
+
+* #### Move to an absolute position
+
+      PUT 1 uInt8: 80 ('P')
+      PUT 1 Int16: absolut position [steps]
+
+
+* #### Move to a predefined target
+
+      PUT 1 uInt8: 1 … 9 [target ID]
+
+* #### Get current position
+  This will return the current position of the motor. The command can also be used to monitor ongoing movements.
+
+      PUT 2 uInt8: 71, 80 ('GP')
+      GET 1 Int16: absolute position [steps]
+
+* #### Reset absolute position
+  This command will reset the current position to zero (without moving the motor).
+
+      PUT 1 uInt8: 90 ('Z')
+
+### Stopping the motor
+In addition to using end-switches, the motor can also be stopped by means of serial commands.
+
+* #### Soft stop
+  Decelerate the motor to a complete standstill.
+
+      PUT 1 uInt8: 120 ('x')
+
+* #### Emergency stop
+  Stop the motor abruptly. Depending on motor speed this will lead to a loss of steps.
+
+      PUT 1 uInt8: 88 ('X')
+
+
+### Predefined targets
+The stepper module can store up to 9 target definitions.
+Movement to one of these targets can be triggered by a single byte serial command (see [*Moving the Motor*](#move-to-a-predefined-target)).
+Alternatively, you can bind a trigger to one of the IO ports.
+
+
+* #### Define a target
+
+      PUT 1 uInt8: 84 ('T')
+      PUT 1 uInt8: 1 … 9 [target ID]
+      PUT 1 Int32: target position [steps]
+
+* #### Get the definition of a target
+
+      PUT 1 uInt8: 71 ('G')
+      PUT 1 uInt8: 1 … 9 [target ID]
+      GET 1 Int32: target position [steps]
+
+* #### Bind target trigger to IO port
+  
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: 1 … 9 [target ID]
+
+
+### Configuration of movement parameters
+All of the motors movements are defined by an acceleration phase, a peak velocity and a deceleration phase (the sole exception being the [emergency stop](#emergency-stop)).
+
+* #### Set Acceleration
+  This parameter is valid for, both, the acceleration and the deceleration phase.
+
+      PUT 1 uInt8:  65 ('A')
+      PUT 1 uInt16: acceleration [steps / s^2]
+
+* #### Get Acceleration
+
+      PUT 2 uInt8:  71, 65 ('GA')
+      GET 1 uInt16: acceleration [steps / s^2]
+
+* #### Set peak velocity
+
+      PUT 1 uInt8:  86 ('V')
+      PUT 1 uInt16: peak velocity [steps / s]
+
+* #### Get peak velocity
+
+      PUT 2 uInt8:  71, 86 ('GV')
+      GET 1 uInt16: peak velocity [steps / s]
+
+
+### Configuration of motor parameters
+TO DO: RMS current, chopper mode, hold current reduction (...)
+
+
+### Configuration of IO ports
+
+* #### Set input configuration of IO port
+  When used as inputs the IO ports can be configured with different input modes.
+  Use this command to configure a specific port.
+
+      PUT 1 uInt8: 82 ('R')
+      PUT 1 uInt8: 1 … 6 [number of IO port]
+      PUT 1 uInt8: input configuration [0 = floating; 1 = pull-up; 2 = pull-down]
+
+* #### Get input configuration of IO port
+
+      PUT 2 uInt8: 71, 82 ('GR')
+      PUT 1 uInt8: 1 … 6 [number of IO port]
+      GET 1 uInt8: input configuration [0 = floating; 1 = pull-up; 2 = pull-down]
+
+
+### EEPROM storage
+The Stepper Module can store its configuration to non-volatile memory.
+This way you can define default values for your specific setup.
+Stored values will automatically be loaded during start-up of the module.
+This enables the use of the Stepper Module as a headless unit (i.e., without connection to Bpod or USB host).
+
+* #### Store to EEPROM
+  To store the current configuration to EEPROM:
+
+      PUT 1 uInt8: 69 ('E')
+
+  The following values will be stored:
+  * maximum velocity,
+  * acceleration,
+  * RMS current,
+  * chopper mode,
+  * predefined targets,
+  * input resistance of IO ports, and
+  * function of IO ports.
+
+
+### System information
+TO DO: hardware revision, driver version, module info, USB handshake
+
+
 
 ## Bill of Materials
 | Item     | Vendor    | Qty | Part Number                                                                                      | Description                 |
