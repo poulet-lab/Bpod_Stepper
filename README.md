@@ -55,7 +55,7 @@ In addition to using end-switches, the motor can also be stopped by means of ser
 
 * #### Bind emergency stop to IO port
   Configures an IO port for use with a limit switch.
-  
+
       PUT 1 uInt8: 77 ('M')
       PUT 1 uInt8: 1 … 6 [IO port]
       PUT 1 uInt8: 76 ('L')
@@ -80,7 +80,7 @@ Alternatively, you can bind a trigger to one of the IO ports.
       GET 1 Int32: target position [steps]
 
 * #### Bind target trigger to IO port
-  
+
       PUT 1 uInt8: 77 ('M')
       PUT 1 uInt8: 1 … 6 [IO port]
       PUT 1 uInt8: 1 … 9 [target ID]
@@ -112,7 +112,28 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
 
 
 ### Configuration of motor parameters
-TO DO: RMS current, chopper mode, hold current reduction (...)
+
+* #### Set RMS current
+  The RMS current output from the Stepper Module to the motor can be configured within the limits of the driver board.
+
+      PUT 1 uInt8:  73 ('I')
+      PUT 1 uInt16: RMS current [mA]
+
+* #### Get RMS current
+
+      PUT 2 uInt8:  71, 73 ('GI')
+      GET 1 uInt16: RMS current [mA]
+
+* #### Set chopper mode
+  You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. The PWM chopper is better suited for higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
+
+      PUT 1 uInt8:  67 ('C')
+      PUT 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
+
+* #### Get chopper mode
+
+      PUT 2 uInt8:  71, 67 ('GC')
+      GET 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
 
 
 ### Configuration of IO ports

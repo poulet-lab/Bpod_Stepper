@@ -152,7 +152,7 @@ void loop()
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
       break;
-    case 'C':                                                     // Set chopper mode (0 = spreadCycle™, 1 = stealthChop™)
+    case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper)
       wrapper->setChopper(COM->readUint8());
       p.chopper = wrapper->getChopper();
       break;
@@ -213,7 +213,7 @@ void loop()
         case 'I':
           COM->writeUint16(wrapper->RMS());
           break;
-        case 'C':                                                 //   Return chopper mode (0 = spreadCycle™, 1 = stealthChop™)
+        case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper)
           COM->writeUint8(wrapper->getChopper());
           break;
         case 'T':

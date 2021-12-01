@@ -30,7 +30,7 @@ classdef BpodStepperModule < handle
 
     properties (Dependent)
         RMScurrent                  % RMS current (mA)
-        ChopperMode                 % 0 = spreadCycle™, 1 = stealthChop™
+        ChopperMode                 % 0 = PWM chopper, 1 = voltage chopper
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
@@ -113,7 +113,7 @@ classdef BpodStepperModule < handle
             obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
         end
-        
+
         function out = get.ChopperMode(obj)
             out = obj.privChopper;
         end
@@ -165,11 +165,11 @@ classdef BpodStepperModule < handle
                 {'scalar','integer','nonnegative','>=',1,'<=',9})
             obj.Port.write(id, 'uint8');
         end
-        
+
         function softStop(obj)
             obj.Port.write('x', 'uint8');
         end
-        
+
         function hardStop(obj)
             obj.Port.write('X', 'uint8');
         end
@@ -182,7 +182,7 @@ classdef BpodStepperModule < handle
             parse(p,varargin{:}),
             obj.Port.write('D', 'uint8', p.Results.Dir, 'int8');
         end
-        
+
         function out = getResistor(obj, idx)
             % Return the input resistor for IO port IDX
             %   0 = no input resistor
@@ -203,7 +203,7 @@ classdef BpodStepperModule < handle
                 {'scalar','integer','>=',0,'<=',2})
             obj.Port.write(['R' idx R], 'uint8');
         end
-        
+
         function out = getMode(obj, idx)
             % Return the currently configured mode of IO port IDX
             validateattributes(idx,{'numeric'},...
