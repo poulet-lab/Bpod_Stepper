@@ -187,7 +187,7 @@ This enables the use of the Stepper Module as a headless unit (i.e., without con
       PUT 2 uInt8: 71, 84 ('GT')
       GET 1 uInt8: driver version [0 = unknown, 17 = TMC2130, 48 = TMC5360]
 
-* #### Get version information / USB handshake
+* #### Get firmware version / USB handshake
 
       PUT 1 uInt8:  212
       GET 1 uInt32: firmware version
