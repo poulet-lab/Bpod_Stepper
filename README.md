@@ -53,6 +53,13 @@ In addition to using end-switches, the motor can also be stopped by means of ser
 
       PUT 1 uInt8: 88 ('X')
 
+* #### Bind emergency stop to IO port
+  Configures an IO port for use with a limit switch.
+  
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: 76 ('L')
+
 
 ### Predefined targets
 The stepper module can store up to 9 target definitions.

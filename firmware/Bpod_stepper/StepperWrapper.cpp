@@ -664,7 +664,7 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 9:
       attachInput(idx, ISRpos9);
       break;
-    case 11:
+    case 'L':
       attachInput(idx, ISRlimit);
       break;
   }
