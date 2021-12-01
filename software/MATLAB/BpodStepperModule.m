@@ -174,10 +174,13 @@ classdef BpodStepperModule < handle
             obj.Port.write('X', 'uint8');
         end
 
-        function findLimitSwitch(obj, Dir)
-            % Turn stepper motor until limit switch is reached. Dir = 0
-            % (clockwise) or 1 (counterclockwise)
-            obj.Port.write('L', 'uint8', Dir>0, 'uint8');
+        function rotate(obj, varargin)
+            % Turn stepper motor until limit switch is reached. Dir = 1
+            % (clockwise, default) or -1 (counterclockwise)
+            p = inputParser;
+            p.addOptional('Dir', 1, @(x) mustBeMember(x,[-1 1])) ;
+            parse(p,varargin{:}),
+            obj.Port.write('D', 'uint8', p.Results.Dir, 'int8');
         end
         
         function out = getResistor(obj, idx)

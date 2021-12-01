@@ -134,7 +134,7 @@ void loop()
       Serial1COM.writeByte(2);
       wrapper->position(COM->readInt16());
       break;
-    case 'L':                                                     // Start rotating (pos = CW, neg = CCW)
+    case 'D':                                                     // Move in direction (pos = CW, neg = CCW)
       wrapper->rotate(COM->readInt8());
       Serial1COM.writeByte(2);
     case 'Z':                                                     // Reset position to zero
