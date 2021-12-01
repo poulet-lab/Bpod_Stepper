@@ -114,7 +114,7 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
 ### Configuration of motor parameters
 
 * #### Set RMS current
-  The RMS current output from the Stepper Module to the motor can be configured within the limits of the driver board.
+  Set the driver's RMS current output to the motor (up to 850mA for TMC2130, up to 2000mA for TMC5160).
 
       PUT 1 uInt8:  73 ('I')
       PUT 1 uInt16: RMS current [mA]
@@ -125,7 +125,7 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
       GET 1 uInt16: RMS current [mA]
 
 * #### Set chopper mode
-  You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. The PWM chopper is better suited for higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
+  You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. Depending on the use case, the PWM chopper can perform better at higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
 
       PUT 1 uInt8:  67 ('C')
       PUT 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
@@ -139,8 +139,7 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
 ### Configuration of IO ports
 
 * #### Set input configuration of IO port
-  When used as inputs the IO ports can be configured with different input modes.
-  Use this command to configure a specific port.
+  When used as inputs the IO ports can be configured with different input modes: floating, pull-up or pull-down.
 
       PUT 1 uInt8: 82 ('R')
       PUT 1 uInt8: 1 … 6 [number of IO port]
@@ -159,7 +158,7 @@ This way you can define default values for your specific setup.
 Stored values will automatically be loaded during start-up of the module.
 This enables the use of the Stepper Module as a headless unit (i.e., without connection to Bpod or USB host).
 
-* #### Store to EEPROM
+* #### Store settings to EEPROM
   To store the current configuration to EEPROM:
 
       PUT 1 uInt8: 69 ('E')
@@ -174,9 +173,28 @@ This enables the use of the Stepper Module as a headless unit (i.e., without con
   * function of IO ports.
 
 
-### System information
-TO DO: hardware revision, driver version, module info, USB handshake
+### System Information
 
+* #### Get Hardware version
+  Identify the Stepper Module's hardware revision
+
+      PUT 2 uInt8: 71, 72 ('GH')
+      GET 1 uInt8: hardware revision [multiplied by 10]
+
+* #### Get driver version
+  Identify the installed stepper driver.
+
+      PUT 2 uInt8: 71, 84 ('GT')
+      GET 1 uInt8: driver version [0 = unknown, 17 = TMC2130, 48 = TMC5360]
+
+* #### Get version information / USB handshake
+
+      PUT 1 uInt8:  212
+      GET 1 uInt32: firmware version
+
+* #### Get Module info (reserved)
+
+      PUT 1 uInt8:  255
 
 
 ## Bill of Materials
