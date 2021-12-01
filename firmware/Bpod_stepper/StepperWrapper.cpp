@@ -709,3 +709,7 @@ void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
   if (_ioMode[idx]>0)
     setIOmode(idx+1, _ioMode[idx]);
 }
+
+void StepperWrapper::rotate() {
+  this->rotate(1);
+}

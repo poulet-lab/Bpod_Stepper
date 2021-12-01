@@ -68,15 +68,17 @@ class StepperWrapper
 
     virtual float a() = 0;                      // get acceleration (full steps / s^2)
     virtual void a(float a) = 0;                // set acceleration (full steps / s^2)
+    virtual void hardStop() = 0;                // stop without slowing down
     virtual void moveSteps(int32_t steps) = 0;  // move to relative position (full steps)
     virtual int32_t position() = 0;             // get current position (full steps)
     virtual void position(int32_t target) = 0;  // go to absolute position (full steps)
     virtual void resetPosition() = 0;           // reset position to zero
+    virtual void rotate(int8_t direction) = 0;  // initiate rotation
+    virtual void softStop() = 0;                // stop after slowing down
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
-    virtual void hardStop() = 0;                // stop without slowing down
-    virtual void softStop() = 0;                // stop after slowing down
 
+    void rotate();
     void setChopper(uint8_t chopper);
     uint8_t getChopper();
     void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
@@ -138,14 +140,15 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
 
     float a();
     void a(float a);
+    void hardStop();
     void moveSteps(int32_t steps);
     int32_t position();
-    void position(int32_t);
+    void position(int32_t target);
     void resetPosition();
+    void rotate(int8_t direction);
+    void softStop();
     float vMax();
     void vMax(float v);
-    void hardStop();
-    void softStop();
 
   private:
     SmoothStepper* _stepper;
@@ -161,21 +164,24 @@ class StepperWrapper_TeensyStep : public StepperWrapper
 
     float a();
     void a(float a);
+    void hardStop();
     void moveSteps(int32_t steps);
     int32_t position();
-    void position(int32_t);
+    void position(int32_t target);
     void resetPosition();
+    void rotate(int8_t direction);
+    void softStop();
     float vMax();
     void vMax(float v);
-    void hardStop();
-    void softStop();
-
+    
   private:
     Stepper* _motor;
-    StepControl* _controller;
+    StepControl* _stepControl;
+    RotateControl* _rotateControl;
     uint32_t _a;
     int32_t _vMax;
     static void CBstop();
+    bool isRunning();
 };
 
 
@@ -188,14 +194,15 @@ class StepperWrapper_MotionControl : public StepperWrapper
 
     float a();
     void a(float a);
+    void hardStop();
     void moveSteps(int32_t steps);
     int32_t position();
-    void position(int32_t);
+    void position(int32_t target);
     void resetPosition();
+    void rotate(int8_t direction);
+    void softStop();
     float vMax();
     void vMax(float v);
-    void hardStop();
-    void softStop();
 
   private:
     TMC5160Stepper* _driver;

@@ -51,6 +51,11 @@ void StepperWrapper_SmoothStepper::a(float aHzs) {
   _stepper->setAcceleration(aHzs * (float) _microsteps);
 }
 
+void StepperWrapper_SmoothStepper::hardStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
 void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
   digitalWriteFast(LED_BUILTIN, HIGH);
@@ -75,6 +80,16 @@ void StepperWrapper_SmoothStepper::resetPosition() {
   _stepper->resetPosition();
 }
 
+void StepperWrapper_SmoothStepper::rotate(int8_t direction) {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
+void StepperWrapper_SmoothStepper::softStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
 float StepperWrapper_SmoothStepper::vMax() {
   DEBUG_PRINTFUN();
   return _stepper->getMaxSpeed() / _microsteps;
@@ -83,14 +98,4 @@ float StepperWrapper_SmoothStepper::vMax() {
 void StepperWrapper_SmoothStepper::vMax(float v) {
   DEBUG_PRINTFUN(v);
   _stepper->setMaxSpeed(v * (float) _microsteps);
-}
-
-void StepperWrapper_SmoothStepper::hardStop() {
-  DEBUG_PRINTFUN();
-  // TODO
-}
-
-void StepperWrapper_SmoothStepper::softStop() {
-  DEBUG_PRINTFUN();
-  // TODO
 }

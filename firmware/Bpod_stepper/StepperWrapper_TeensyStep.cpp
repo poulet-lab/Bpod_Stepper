@@ -25,9 +25,12 @@ _______________________________________________________________________________
 
 StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
-  _controller = new StepControl;
-  _controller->setCallback(CBstop);
   _motor->setInverseRotation(_invertPinDir);
+
+  _stepControl = new StepControl;
+  _stepControl->setCallback(CBstop);
+  
+  _rotateControl = new RotateControl;
 }
 
 void StepperWrapper_TeensyStep::init(uint16_t rms_current) {
@@ -42,18 +45,26 @@ float StepperWrapper_TeensyStep::a() {
 
 void StepperWrapper_TeensyStep::a(float aHzs) {
   DEBUG_PRINTFUN(aHzs);
-  if (_controller->isRunning())
+  if (this->isRunning())
     return;
   _a = round(aHzs * (float) _microsteps);
   _motor->setAcceleration(_a);
 }
 
+void StepperWrapper_TeensyStep::hardStop() {
+  DEBUG_PRINTFUN();
+  _stepControl->emergencyStop();
+  _rotateControl->emergencyStop();
+  digitalWriteFast(LED_BUILTIN, LOW);
+}
+
 void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
-  if (_controller->isRunning())
+  if (this->isRunning())
     return;
+  _motor->setMaxSpeed(_vMax);
   _motor->setTargetRel(steps * _microsteps);
-  _controller->moveAsync(*_motor);
+  _stepControl->moveAsync(*_motor);
   digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
@@ -64,18 +75,36 @@ int32_t StepperWrapper_TeensyStep::position() {
 
 void StepperWrapper_TeensyStep::position(int32_t target) {
   DEBUG_PRINTFUN(target);
-  if (_controller->isRunning())
+  if (this->isRunning())
     return;
+  _motor->setMaxSpeed(_vMax);
   _motor->setTargetAbs(target * _microsteps);
-  _controller->moveAsync(*_motor);
+  _stepControl->moveAsync(*_motor);
   digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
 void StepperWrapper_TeensyStep::resetPosition() {
   DEBUG_PRINTFUN();
-  if (_controller->isRunning())
+  if (this->isRunning())
     return;
   _motor->setPosition(0);
+}
+
+void StepperWrapper_TeensyStep::rotate(int8_t direction) {
+  DEBUG_PRINTFUN(direction);
+  if (this->isRunning())
+    return;
+  if (direction>=0)
+    _motor->setMaxSpeed(_vMax);
+  else
+    _motor->setMaxSpeed(-_vMax);
+  _rotateControl->rotateAsync(*_motor);
+}
+
+void StepperWrapper_TeensyStep::softStop() {
+  DEBUG_PRINTFUN();
+  _stepControl->stopAsync();
+  _rotateControl->stopAsync();
 }
 
 float StepperWrapper_TeensyStep::vMax() {
@@ -85,7 +114,7 @@ float StepperWrapper_TeensyStep::vMax() {
 
 void StepperWrapper_TeensyStep::vMax(float vMax) {
   DEBUG_PRINTFUN(vMax);
-  if (_controller->isRunning())
+  if (this->isRunning())
     return;
 
   // constrain speed
@@ -98,23 +127,17 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
   uint8_t exp = 8 - ceil( log(ceil(vMax*msMax/vMaxMax))/log(2.0) );
   this->setMicrosteps(pow(2,exp));
 
+  // TODO: correct macro position on change of microsteps
+
   // set vMax
   _vMax = round(vMax * _microsteps);
-  _motor->setMaxSpeed(_vMax);
-}
-
-void StepperWrapper_TeensyStep::hardStop() {
-  DEBUG_PRINTFUN();
-  _controller->emergencyStop();
-  digitalWriteFast(LED_BUILTIN, LOW);
-}
-
-void StepperWrapper_TeensyStep::softStop() {
-  DEBUG_PRINTFUN();
-  _controller->stopAsync();
 }
 
 void StepperWrapper_TeensyStep::CBstop() {
   DEBUG_PRINTFUN();
   digitalWriteFast(LED_BUILTIN, LOW);
+}
+
+bool StepperWrapper_TeensyStep::isRunning() {
+  return _stepControl->isRunning() || _rotateControl->isRunning();
 }

@@ -49,6 +49,11 @@ void StepperWrapper_MotionControl::a(float aHzs) {
   _driver->d1(a5160);
 }
 
+void StepperWrapper_MotionControl::hardStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
 void StepperWrapper_MotionControl::moveSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
   _driver->XTARGET(_driver->XACTUAL() + steps * (int32_t) _microsteps);
@@ -71,6 +76,16 @@ void StepperWrapper_MotionControl::resetPosition() {
   _driver->XACTUAL(0);
 }
 
+void StepperWrapper_MotionControl::rotate(int8_t direction) {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
+void StepperWrapper_MotionControl::softStop() {
+  DEBUG_PRINTFUN();
+  // TODO
+}
+
 float StepperWrapper_MotionControl::vMax() {
   DEBUG_PRINTFUN();
   return _driver->VMAX() / factV / _microsteps;
@@ -82,14 +97,4 @@ void StepperWrapper_MotionControl::vMax(float vHz) {
   uint32_t v5160 = round(constrain(vHz * factV * _microsteps, 0, pow(2,23)-512));
   _driver->VMAX(v5160);
   _driver->v1(0); // Disables A1 and D1 phase, use AMAX, DMAX only
-}
-
-void StepperWrapper_MotionControl::hardStop() {
-  DEBUG_PRINTFUN();
-  // TODO
-}
-
-void StepperWrapper_MotionControl::softStop() {
-  DEBUG_PRINTFUN();
-  // TODO
 }

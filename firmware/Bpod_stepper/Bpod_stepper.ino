@@ -32,7 +32,7 @@ ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
 ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
 ArCOM *COM;                       // Pointer to ArCOM object
 char  moduleName[] = "Stepper";   // Name of module for manual override UI and state machine assembler
-const char* eventNames[] = {"Error","Start", "Stop", "Limit"};
+const char* eventNames[] = {"Error", "Start", "Stop", "EmergencyStop"};
 #define FirmwareVersion 2
 
 // Variables
@@ -76,7 +76,7 @@ void setup()
 
   // Decide which implementation of StepperWrapper to load
   if (StepperWrapper::SDmode()) {
-    wrapper = new StepperWrapper_TeensyStep(*Serial1COM);
+    wrapper = new StepperWrapper_TeensyStep();
   } else {
     wrapper = new StepperWrapper_MotionControl();
   }
@@ -120,29 +120,23 @@ void loop()
     return;
   }
   switch(opCode) {
-    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
-      Serial1COM.writeByte(2);
-      wrapper->moveSteps(COM->readInt16());
-      Serial1COM.writeByte(3);
-      break;
-    case 'P':                                                     // Move to absolute position
-      Serial1COM.writeByte(2);
-      wrapper->position(COM->readInt16());
-      Serial1COM.writeByte(3);
-      break;
     case 'X':                                                     // Stop without slowing down
       wrapper->hardStop();
       break;
     case 'x':                                                     // Stop after slowing down
       wrapper->softStop();
       break;
-    case 'L':                                                     // Search for limit switch
+    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+      wrapper->moveSteps(COM->readInt16());
       Serial1COM.writeByte(2);
-      if (COM->readUint8())
-        wrapper->moveSteps(std::numeric_limits<int32_t>::max()/10);
-      else
-        wrapper->moveSteps(std::numeric_limits<int32_t>::min()/10);
       break;
+    case 'P':                                                     // Move to absolute position
+      Serial1COM.writeByte(2);
+      wrapper->position(COM->readInt16());
+      break;
+    case 'L':                                                     // Start rotating (pos = CW, neg = CCW)
+      wrapper->rotate(COM->readInt8());
+      Serial1COM.writeByte(2);
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();
       break;
