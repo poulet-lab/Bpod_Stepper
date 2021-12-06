@@ -33,9 +33,7 @@ const float PCBrev        = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
-volatile uint8_t go2pos   = 0;
-volatile int8_t rotateDir = 0;
-volatile bool limit       = false;
+volatile uint8_t ISRcode  = 0;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
@@ -429,39 +427,38 @@ void StepperWrapper::ISRblinkError() {
 }
 
 
-void StepperWrapper::ISRlimit() {
-  static uint32_t tInterrupt0  = 0;
-  uint32_t tInterrupt1 = millis();
-  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
-  {
-    limit = true;
-  }
-  tInterrupt0 = tInterrupt1;
+uint32_t StepperWrapper::ISRgeneric(uint32_t t0, uint8_t opCode) {
+  if (ISRcode>0)
+    return 0;
+  uint32_t t1 = millis();
+  if (t0 == 0 || t1 - t0 > debounceMillis)
+    ISRcode = opCode;
+  return t1;
+}
+
+
+void StepperWrapper::ISRsoftStop() {
+  static uint32_t t0  = 0;
+  t0 = StepperWrapper::ISRgeneric(t0,'x');
+}
+
+
+void StepperWrapper::ISRhardStop() {
+  static uint32_t t0  = 0;
+  t0 = StepperWrapper::ISRgeneric(t0,'X');
 }
 
 
 void StepperWrapper::ISRforwards() {
-  static uint32_t tInterrupt0  = 0;
-  uint32_t tInterrupt1 = millis();
-  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
-  {
-    rotateDir = 1;
-  }
-  tInterrupt0 = tInterrupt1;
+  static uint32_t t0  = 0;
+  t0 = StepperWrapper::ISRgeneric(t0,'F');
 }
 
 
 void StepperWrapper::ISRbackwards() {
-  static uint32_t tInterrupt0  = 0;
-  uint32_t tInterrupt1 = millis();
-  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
-  {
-    rotateDir = -1;
-  }
-  tInterrupt0 = tInterrupt1;
+  static uint32_t t0  = 0;
+  t0 = StepperWrapper::ISRgeneric(t0,'B');
 }
-
-
 
 
 void StepperWrapper::ISRpos1() { StepperWrapper::ISRposN(1); }
@@ -474,13 +471,8 @@ void StepperWrapper::ISRpos7() { StepperWrapper::ISRposN(7); }
 void StepperWrapper::ISRpos8() { StepperWrapper::ISRposN(8); }
 void StepperWrapper::ISRpos9() { StepperWrapper::ISRposN(9); }
 void StepperWrapper::ISRposN(uint8_t n) {
-  if (go2pos > 0)
-    return;
-  static uint32_t tInterrupt0[9]{0};
-  uint32_t tInterrupt1 = millis();
-  if (tInterrupt0[n-1] == 0 || tInterrupt1 - tInterrupt0[n-1] > debounceMillis)
-    go2pos = n;
-  tInterrupt0[n-1] = tInterrupt1;
+  static uint32_t t0[9]{0};
+  t0[n-1] = StepperWrapper::ISRgeneric(t0[n-1],n);
 }
 
 
@@ -690,8 +682,11 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 9:
       attachInput(idx, ISRpos9);
       break;
-    case 'L':
-      attachInput(idx, ISRlimit);
+    case 'x':
+      attachInput(idx, ISRsoftStop);
+      break;
+    case 'X':
+      attachInput(idx, ISRhardStop);
       break;
     case 'F':
       attachInput(idx, ISRforwards);

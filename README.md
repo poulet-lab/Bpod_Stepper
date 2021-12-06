@@ -40,6 +40,18 @@ The following serial commands control the movement of the motor. All movements c
 
       PUT 1 uInt8: 90 ('Z')
 
+* #### Bind forward rotation to IO port
+
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: 70 ('F')
+
+* #### Bind backward rotationto IO port
+
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: 66 ('B')
+
 ### Stopping the motor
 In addition to using end-switches, the motor can also be stopped by means of serial commands.
 
@@ -53,12 +65,18 @@ In addition to using end-switches, the motor can also be stopped by means of ser
 
       PUT 1 uInt8: 88 ('X')
 
+* #### Bind soft stop to IO port
+
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: 120 ('x')
+
 * #### Bind emergency stop to IO port
   Configures an IO port for use with a limit switch.
 
       PUT 1 uInt8: 77 ('M')
       PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 76 ('L')
+      PUT 1 uInt8: 88 ('X')
 
 
 ### Predefined targets

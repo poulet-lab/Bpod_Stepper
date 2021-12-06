@@ -96,27 +96,19 @@ void setup()
 
 void loop()
 {
-  if (limit) {                                                    // Limit switch reached (set by interrupt)
-    wrapper->hardStop();
-    limit = false;
+  if (ISRcode>0) {                                                // Byte set through interrupt sub-routine
+    opCode  = ISRcode;
+    ISRcode = 0;
   }
-  if (go2pos) {                                                   // Go to predefined target (set by interrupt)
-    wrapper->position(p.target[go2pos-1]);
-    go2pos = 0;
+  else {
+    if (usbCOM.available()>0)                                     // Byte available at usbCOM?
+      COM = &usbCOM;                                              //   Point *COM to usbCOM
+    else if (Serial1COM.available())                              // Byte available at Serial1COM?
+      COM = &Serial1COM;                                          //   Point *COM to Serial1COM
+    else                                                          // Otherwise
+      return;                                                     //   Skip to next iteration of loop()
+    opCode = COM->readByte();
   }
-  if (rotateDir) {                                                // Rotate in defined direction (set by interrupt)
-    wrapper->rotate(rotateDir);
-    rotateDir = 0;
-  }
-
-  if (usbCOM.available()>0)                                       // Byte available at usbCOM?
-    COM = &usbCOM;                                                //   Point *COM to usbCOM
-  else if (Serial1COM.available())                                // Byte available at Serial1COM?
-    COM = &Serial1COM;                                            //   Point *COM to Serial1COM
-  else                                                            // Otherwise
-    return;                                                       //   Skip to next iteration of loop()
-
-  opCode = COM->readByte();
 
   if (opCode <= 9 && opCode >= 1)  {                              // Move to predefined target (0-9)
     wrapper->position(p.target[opCode-1]);
@@ -135,8 +127,10 @@ void loop()
     case 'P':                                                     // Move to absolute position
       wrapper->position(COM->readInt16());
       break;
-    case 'D':                                                     // Move in direction (pos = CW, neg = CCW)
-      wrapper->rotate(COM->readInt8());
+    case 'F':                                                     // Start moving forwards
+      wrapper->rotate(1);
+    case 'B':                                                     // Start moving backwards
+      wrapper->rotate(-1);
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();
       break;

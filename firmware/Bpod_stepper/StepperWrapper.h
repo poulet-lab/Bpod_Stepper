@@ -46,10 +46,8 @@ struct teensyPins {
 extern const float PCBrev;                      // PCB revision
 extern const uint8_t vDriver;                   // version number of TMC stepper driver
 extern const teensyPins pin;                    // pin numbers
-extern volatile uint8_t errorID;                // error ID
-extern volatile uint8_t go2pos;                 // go to position
-extern volatile int8_t rotateDir;               // rotate in direction
-extern volatile bool limit;                     // limit switch reached
+extern volatile uint8_t errorID;                // error ID (set through interrupt sub-routine)
+extern volatile uint8_t ISRcode;                // opCode (set through interrupt sub-routine)
 
 class StepperWrapper
 {
@@ -108,7 +106,9 @@ class StepperWrapper
     static void ISRdiag0();                     // called when diag0 changes
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
-    static void ISRlimit();                     // IO: reached limit-switch
+    static uint32_t ISRgeneric(uint32_t t0, uint8_t opCode); // IO: ISR debouncer
+    static void ISRsoftStop();                  // IO: soft stop
+    static void ISRhardStop();                  // IO: emergency stop
     static void ISRforwards();                  // IO: start rotating forwards
     static void ISRbackwards();                 // IO: start totating backwards
     static void ISRpos1();                      // IO: go to predefined position 1
