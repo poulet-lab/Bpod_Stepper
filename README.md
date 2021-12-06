@@ -7,11 +7,15 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 ### Moving the Motor
 The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions.
 
-* #### Move in direction
-  Start continuous movement in a specific direction without a defined target position.
+* #### Move forwards
+  Start continuous movement forwards.
 
-      PUT 1 uInt8: 68 ('D')
-      PUT 1 Int8:  direction [1 = CW, -1 = CCW]
+      PUT 1 uInt8: 68 ('F')
+
+* #### Move backwards
+  Start continuous movement backwards.
+
+      PUT 1 uInt8: 68 ('B')
 
 * #### Move to a relative position
   Move a defined number of steps relative to the current position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
