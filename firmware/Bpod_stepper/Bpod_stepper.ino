@@ -104,6 +104,10 @@ void loop()
     wrapper->position(p.target[go2pos-1]);
     go2pos = 0;
   }
+  if (rotateDir) {                                                // Rotate in defined direction (set by interrupt)
+    wrapper->rotate(rotateDir);
+    rotateDir = 0;
+  }
 
   if (usbCOM.available()>0)                                       // Byte available at usbCOM?
     COM = &usbCOM;                                                //   Point *COM to usbCOM

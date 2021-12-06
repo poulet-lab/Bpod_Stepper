@@ -48,6 +48,7 @@ extern const uint8_t vDriver;                   // version number of TMC stepper
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID
 extern volatile uint8_t go2pos;                 // go to position
+extern volatile int8_t rotateDir;               // rotate in direction
 extern volatile bool limit;                     // limit switch reached
 
 class StepperWrapper
@@ -108,6 +109,8 @@ class StepperWrapper
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
     static void ISRlimit();                     // IO: reached limit-switch
+    static void ISRforwards();                  // IO: start rotating forwards
+    static void ISRbackwards();                 // IO: start totating backwards
     static void ISRpos1();                      // IO: go to predefined position 1
     static void ISRpos2();                      // IO: go to predefined position 2
     static void ISRpos3();                      // IO: go to predefined position 3

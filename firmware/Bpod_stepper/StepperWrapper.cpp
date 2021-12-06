@@ -34,6 +34,7 @@ const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
 volatile uint8_t go2pos   = 0;
+volatile int8_t rotateDir = 0;
 volatile bool limit       = false;
 IntervalTimer timerErrorBlink;
 
@@ -439,6 +440,30 @@ void StepperWrapper::ISRlimit() {
 }
 
 
+void StepperWrapper::ISRforwards() {
+  static uint32_t tInterrupt0  = 0;
+  uint32_t tInterrupt1 = millis();
+  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
+  {
+    rotateDir = 1;
+  }
+  tInterrupt0 = tInterrupt1;
+}
+
+
+void StepperWrapper::ISRbackwards() {
+  static uint32_t tInterrupt0  = 0;
+  uint32_t tInterrupt1 = millis();
+  if (tInterrupt0 == 0 || tInterrupt1 - tInterrupt0 > debounceMillis)
+  {
+    rotateDir = -1;
+  }
+  tInterrupt0 = tInterrupt1;
+}
+
+
+
+
 void StepperWrapper::ISRpos1() { StepperWrapper::ISRposN(1); }
 void StepperWrapper::ISRpos2() { StepperWrapper::ISRposN(2); }
 void StepperWrapper::ISRpos3() { StepperWrapper::ISRposN(3); }
@@ -667,6 +692,12 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
       break;
     case 'L':
       attachInput(idx, ISRlimit);
+      break;
+    case 'F':
+      attachInput(idx, ISRforwards);
+      break;
+    case 'B':
+      attachInput(idx, ISRbackwards);
       break;
   }
 }
