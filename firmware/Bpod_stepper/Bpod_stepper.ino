@@ -32,7 +32,7 @@ ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
 ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
 ArCOM *COM;                       // Pointer to ArCOM object
 char  moduleName[] = "Stepper";   // Name of module for manual override UI and state machine assembler
-const char* eventNames[] = {"Error", "Start", "Stop", "EmergencyStop"};
+const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
 #define FirmwareVersion 2
 
 // Variables
@@ -96,12 +96,11 @@ void setup()
 
 void loop()
 {
-  if (limit) {                                                    // Limit switch reached (called by interrupt)
+  if (limit) {                                                    // Limit switch reached (set by interrupt)
     wrapper->hardStop();
-    Serial1COM.writeByte(3);
     limit = false;
   }
-  if (go2pos) {                                                   // Go to predefined target (called by interrupt)
+  if (go2pos) {                                                   // Go to predefined target (set by interrupt)
     wrapper->position(p.target[go2pos-1]);
     go2pos = 0;
   }
@@ -128,15 +127,12 @@ void loop()
       break;
     case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
       wrapper->moveSteps(COM->readInt16());
-      Serial1COM.writeByte(2);
       break;
     case 'P':                                                     // Move to absolute position
-      Serial1COM.writeByte(2);
       wrapper->position(COM->readInt16());
       break;
     case 'D':                                                     // Move in direction (pos = CW, neg = CCW)
       wrapper->rotate(COM->readInt8());
-      Serial1COM.writeByte(2);
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();
       break;

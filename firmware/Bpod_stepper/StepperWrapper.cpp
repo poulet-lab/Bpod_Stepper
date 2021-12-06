@@ -28,6 +28,7 @@ _______________________________________________________________________________
 #include "SerialDebug.h"
 
 
+extern ArCOM Serial1COM;
 const float PCBrev        = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();

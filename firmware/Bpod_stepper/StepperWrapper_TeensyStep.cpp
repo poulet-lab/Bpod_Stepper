@@ -23,13 +23,15 @@ _______________________________________________________________________________
 #include "StepperWrapper.h"
 #include "SerialDebug.h"
 
+extern ArCOM Serial1COM;
+
 StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
   _motor->setInverseRotation(_invertPinDir);
 
   _stepControl = new StepControl;
   _stepControl->setCallback(CBstop);
-  
+
   _rotateControl = new RotateControl;
 }
 
@@ -55,6 +57,7 @@ void StepperWrapper_TeensyStep::hardStop() {
   DEBUG_PRINTFUN();
   _stepControl->emergencyStop();
   _rotateControl->emergencyStop();
+  Serial1COM.writeByte(4);
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
@@ -65,6 +68,7 @@ void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
   _motor->setMaxSpeed(_vMax);
   _motor->setTargetRel(steps * _microsteps);
   _stepControl->moveAsync(*_motor);
+  Serial1COM.writeByte(2);
   digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
@@ -80,6 +84,7 @@ void StepperWrapper_TeensyStep::position(int32_t target) {
   _motor->setMaxSpeed(_vMax);
   _motor->setTargetAbs(target * _microsteps);
   _stepControl->moveAsync(*_motor);
+  Serial1COM.writeByte(2);
   digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
@@ -99,12 +104,15 @@ void StepperWrapper_TeensyStep::rotate(int8_t direction) {
   else
     _motor->setMaxSpeed(-_vMax);
   _rotateControl->rotateAsync(*_motor);
+  Serial1COM.writeByte(2);
+  digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
 void StepperWrapper_TeensyStep::softStop() {
   DEBUG_PRINTFUN();
   _stepControl->stopAsync();
   _rotateControl->stopAsync();
+  Serial1COM.writeByte(3);
 }
 
 float StepperWrapper_TeensyStep::vMax() {
@@ -135,6 +143,7 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
 
 void StepperWrapper_TeensyStep::CBstop() {
   DEBUG_PRINTFUN();
+  Serial1COM.writeByte(3);
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 

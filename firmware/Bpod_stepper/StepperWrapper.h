@@ -23,6 +23,7 @@ _______________________________________________________________________________
 
 #include <TeensyStep.h>
 #include <TMCStepper.h>
+#include "ArCOM.h"
 #include "SmoothStepper.h"
 
 struct teensyPins {
@@ -99,6 +100,7 @@ class StepperWrapper
     uint16_t _microsteps = 1;
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
+    ArCOM *_COM;
 
   private:
     static void ISRchangeVM();                  // called when VM was (dis)connected
@@ -173,7 +175,7 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     void softStop();
     float vMax();
     void vMax(float v);
-    
+
   private:
     Stepper* _motor;
     StepControl* _stepControl;
