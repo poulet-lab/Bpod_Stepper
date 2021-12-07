@@ -5,17 +5,17 @@ Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpo
 ## Serial Command Interface
 
 ### Moving the Motor
-The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions.
+The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions. Some of the following commands can also be [bound to one of the IO ports](#bind-movement-trigger-to-IO-port).
 
 * #### Move forwards
   Start continuous movement forwards.
 
-      PUT 1 uInt8: 68 ('F')
+      PUT 1 uInt8: 70 ('F')
 
 * #### Move backwards
   Start continuous movement backwards.
 
-      PUT 1 uInt8: 68 ('B')
+      PUT 1 uInt8: 66 ('B')
 
 * #### Move to a relative position
   Move a defined number of steps relative to the current position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
@@ -44,20 +44,9 @@ The following serial commands control the movement of the motor. All movements c
 
       PUT 1 uInt8: 90 ('Z')
 
-* #### Bind forward rotation to IO port
-
-      PUT 1 uInt8: 77 ('M')
-      PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 70 ('F')
-
-* #### Bind backward rotationto IO port
-
-      PUT 1 uInt8: 77 ('M')
-      PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 66 ('B')
 
 ### Stopping the motor
-In addition to using end-switches, the motor can also be stopped by means of serial commands.
+In addition to using end-switches, the motor can also be stopped by means of serial commands. Either of the two stop commands can be [bound to one of the module's IO ports](#bind-movement-trigger-to-IO-port).
 
 * #### Soft stop
   Decelerate the motor to a complete standstill.
@@ -69,24 +58,11 @@ In addition to using end-switches, the motor can also be stopped by means of ser
 
       PUT 1 uInt8: 88 ('X')
 
-* #### Bind soft stop to IO port
-
-      PUT 1 uInt8: 77 ('M')
-      PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 120 ('x')
-
-* #### Bind emergency stop to IO port
-  Configures an IO port for use with a limit switch.
-
-      PUT 1 uInt8: 77 ('M')
-      PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 88 ('X')
-
 
 ### Predefined targets
 The stepper module can store up to 9 target definitions.
 Movement to one of these targets can be triggered by a single byte serial command (see [*Moving the Motor*](#move-to-a-predefined-target)).
-Alternatively, you can bind a trigger to one of the IO ports.
+Alternatively, you can [bind a trigger to one of the IO ports](#bind-movement-trigger-to-IO-port).
 
 
 * #### Define a target
@@ -100,12 +76,6 @@ Alternatively, you can bind a trigger to one of the IO ports.
       PUT 1 uInt8: 71 ('G')
       PUT 1 uInt8: 1 … 9 [target ID]
       GET 1 Int32: target position [steps]
-
-* #### Bind target trigger to IO port
-
-      PUT 1 uInt8: 77 ('M')
-      PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: 1 … 9 [target ID]
 
 
 ### Configuration of movement parameters
@@ -159,6 +129,20 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
 
 
 ### Configuration of IO ports
+
+
+* #### Bind movement trigger to IO port
+  Each of the 6 IO ports can be configured to trigger specific movement commands. Available trigger configurations are: None (```0```),Move to predefined target position (```1 … 9```), start forward rotation (```70 / 'F'```), start backward rotation (```66 / 'B'```), soft stop (```120 / x```), emergency stop (```88 / 'X'```).
+
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X']
+
+* #### Get movement trigger of IO port
+
+      PUT 2 uInt8: 71, 77 ('GM')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      GET 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X']
 
 * #### Set input configuration of IO port
   When used as inputs the IO ports can be configured with different input modes: floating, pull-up or pull-down.
