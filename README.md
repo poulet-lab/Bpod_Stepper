@@ -30,7 +30,7 @@ The following serial commands control the movement of the motor. All movements c
 
 
 * #### Move to a predefined target
-  See also: [predefined targets](#predefined-targets).
+  See also: [*predefined targets*](#predefined-targets).
 
       PUT 1 uInt8: 1 … 9 [target ID]
 
