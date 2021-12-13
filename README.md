@@ -132,18 +132,18 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
 ### Configuration of IO ports
 
 
-* #### Bind movement trigger to IO port
-  Each of the 6 IO ports can be configured to trigger specific movement commands. Available trigger configurations are: None (```0```),Move to predefined target position (```1 … 9```), start forward rotation (```70 / 'F'```), start backward rotation (```66 / 'B'```), soft stop (```120 / x```), emergency stop (```88 / 'X'```).
+* #### Bind function to IO port
+  Each of the 6 IO ports can be configured to trigger specific movement commands. Available trigger configurations are: None (```0```), Move to predefined target position (```1 … 9```), start forward rotation (```70 / 'F'```), start backward rotation (```66 / 'B'```), soft stop (```120 / x```), emergency stop (```88 / 'X'```), forward limit (```76 / 'L'```), backward limit (```74 / 'J'```).
 
       PUT 1 uInt8: 77 ('M')
       PUT 1 uInt8: 1 … 6 [IO port]
-      PUT 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X']
+      PUT 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X'; 'L'; 'J']
 
-* #### Get movement trigger of IO port
+* #### Get function of IO port
 
       PUT 2 uInt8: 71, 77 ('GM')
       PUT 1 uInt8: 1 … 6 [IO port]
-      GET 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X']
+      GET 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X'; 'L'; 'J']
 
 * #### Set input configuration of IO port
   When used as inputs the IO ports can be configured with different input modes: floating, pull-up or pull-down.

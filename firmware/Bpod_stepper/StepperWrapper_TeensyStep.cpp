@@ -63,13 +63,17 @@ void StepperWrapper_TeensyStep::hardStop() {
 
 void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
-  if (this->isRunning())
+  if (this->isRunning() || steps==0)            // return if moving or at target already
     return;
-  _motor->setMaxSpeed(_vMax);
-  _motor->setTargetRel(steps * _microsteps);
-  _stepControl->moveAsync(*_motor);
-  Serial1COM.writeByte(2);
-  digitalWriteFast(LED_BUILTIN, HIGH);
+  bool dir = (steps>0) ? 1 : -1;
+  if (this->atLimit(dir))                       // return if we are at a limit switch
+    return;
+  toggleISRlimit(dir);                          // attach ISRs for limit switches
+  _motor->setMaxSpeed(_vMax);                   // set speed
+  _motor->setTargetRel(steps * _microsteps);    // set relative target
+  _stepControl->moveAsync(*_motor);             // start moving
+  Serial1COM.writeByte(2);                      // send serial message 2: "Start"
+  digitalWriteFast(LED_BUILTIN, HIGH);          // enable built-in LED
 }
 
 int32_t StepperWrapper_TeensyStep::position() {
@@ -79,13 +83,7 @@ int32_t StepperWrapper_TeensyStep::position() {
 
 void StepperWrapper_TeensyStep::position(int32_t target) {
   DEBUG_PRINTFUN(target);
-  if (this->isRunning())
-    return;
-  _motor->setMaxSpeed(_vMax);
-  _motor->setTargetAbs(target * _microsteps);
-  _stepControl->moveAsync(*_motor);
-  Serial1COM.writeByte(2);
-  digitalWriteFast(LED_BUILTIN, HIGH);
+  this->moveSteps(target - this->position());   // convert to relative target
 }
 
 void StepperWrapper_TeensyStep::resetPosition() {
@@ -95,24 +93,24 @@ void StepperWrapper_TeensyStep::resetPosition() {
   _motor->setPosition(0);
 }
 
-void StepperWrapper_TeensyStep::rotate(int8_t direction) {
-  DEBUG_PRINTFUN(direction);
-  if (this->isRunning())
+void StepperWrapper_TeensyStep::rotate(int8_t dir) {
+  DEBUG_PRINTFUN(dir);
+
+  if (this->isRunning() || this->atLimit(dir))  // return if moving or at limit switch
     return;
-  if (direction>=0)
-    _motor->setMaxSpeed(_vMax);
-  else
-    _motor->setMaxSpeed(-_vMax);
-  _rotateControl->rotateAsync(*_motor);
-  Serial1COM.writeByte(2);
-  digitalWriteFast(LED_BUILTIN, HIGH);
+  toggleISRlimit(dir);                          // attach ISRs for limit switches
+  _motor->setMaxSpeed((dir>=0)?_vMax:-_vMax);   // set direction of rotation (via sign of _vMax)
+  _rotateControl->rotateAsync(*_motor);         // start moving
+  Serial1COM.writeByte(2);                      // send serial message 2: "Start"
+  digitalWriteFast(LED_BUILTIN, HIGH);          // enable built-in LED
 }
 
 void StepperWrapper_TeensyStep::softStop() {
   DEBUG_PRINTFUN();
   _stepControl->stopAsync();
   _rotateControl->stopAsync();
-  Serial1COM.writeByte(3);
+  Serial1COM.writeByte(3);  // TODO: this has not the correct timing!
+  digitalWriteFast(LED_BUILTIN, LOW);
 }
 
 float StepperWrapper_TeensyStep::vMax() {
@@ -126,10 +124,10 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
     return;
 
   // constrain speed
-  float msMax = (vDriver>0) ? 256.0 : 16.0; // maximum micro-stepping resolution
-  float vMaxMax = 100000;                   // maximum pulse-rate (TODO: verify!)
-  float vMaxMin = 1.0 / msMax;              // minimum pulse-rate
-  vMax = constrain(vMax, vMaxMin, vMaxMax); // sanitized pulse-rate
+  float msMax = (vDriver>0) ? 256.0 : 16.0;     // maximum micro-stepping resolution
+  float vMaxMax = 100000;                       // maximum pulse-rate (TODO: verify!)
+  float vMaxMin = 1.0 / msMax;                  // minimum pulse-rate
+  vMax = constrain(vMax, vMaxMin, vMaxMax);     // sanitized pulse-rate
 
   // always use the highest possible micro-stepping resolution for a given vMax
   uint8_t exp = 8 - ceil( log(ceil(vMax*msMax/vMaxMax))/log(2.0) );

@@ -129,8 +129,10 @@ void loop()
       break;
     case 'F':                                                     // Start moving forwards
       wrapper->rotate(1);
+      break;
     case 'B':                                                     // Start moving backwards
       wrapper->rotate(-1);
+      break;
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();
       break;

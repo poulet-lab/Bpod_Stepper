@@ -210,6 +210,9 @@ classdef BpodStepperModule < handle
                 {'scalar','integer','>=',1,'<=',6})
             obj.Port.write(['GM' idx], 'uint8');
             out = obj.Port.read(1, 'uint8');
+            if out
+                out = char(out);
+            end
         end
 
         function setMode(obj, idx, M)

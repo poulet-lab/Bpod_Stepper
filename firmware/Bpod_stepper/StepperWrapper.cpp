@@ -652,9 +652,6 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
 
   detachInterrupt(digitalPinToInterrupt(pin.IO[idx]));
   switch (mode) {
-    case 0:
-      pinMode(pin.IO[idx], INPUT);
-      break;
     case 1:
       attachInput(idx, ISRpos1);
       break;
@@ -694,6 +691,13 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 'B':
       attachInput(idx, ISRbackwards);
       break;
+    case 'J':
+    case 'L':
+      pinMode(pin.IO[idx], _ioResistor[idx]);
+      break;
+    default:
+      _ioMode[idx] = 0;
+      pinMode(pin.IO[idx], INPUT);
   }
 }
 
@@ -703,6 +707,31 @@ void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
   pinMode(pin.IO[idx], _ioResistor[idx]);
   uint8_t direction = (_ioResistor[idx]==INPUT_PULLUP) ? FALLING : RISING;
   attachInterrupt(digitalPinToInterrupt(pin.IO[idx]), userFunc, direction);
+}
+
+
+void StepperWrapper::toggleISRlimit(int8_t direction) {
+  direction = constrain(direction,-1,1);
+  for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
+    if (_ioMode[idx] == 'J' || _ioMode[idx] == 'L') {
+      if (_ioMode[idx] - 75 == direction)
+        attachInput(idx, ISRhardStop);
+      else
+        detachInterrupt(digitalPinToInterrupt(pin.IO[idx]));
+    }
+  }
+}
+
+
+bool StepperWrapper::atLimit(int8_t direction) {
+  direction = constrain(direction,-1,1);
+  for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
+    if (_ioMode[idx] - 75 == direction) {
+      if (digitalRead(pin.IO[idx]) ^ (_ioResistor[idx]==INPUT_PULLUP))
+        return true;
+    }
+  }
+  return false;
 }
 
 

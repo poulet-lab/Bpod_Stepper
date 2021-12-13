@@ -95,6 +95,8 @@ class StepperWrapper
     static void enableDriver(bool enable);      // enable driver board via EN pin?
     static void throwError(uint8_t errorID);    // throw error with specified numeric ID
     static void clearError();                   // clear error conditition
+    void toggleISRlimit(int8_t direction);
+    bool atLimit(int8_t direction);
     static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
     uint16_t _microsteps = 1;
     static constexpr bool _invertPinEn  = true;
