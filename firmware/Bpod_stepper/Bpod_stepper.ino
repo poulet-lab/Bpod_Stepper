@@ -172,7 +172,7 @@ void loop()
     }
     case 'T':                                                     // Set predefined target
     {
-      uint8_t  idx = COM->readUint8()-48;
+      uint8_t  idx = COM->readUint8();
       uint32_t pos = COM->readInt32();
       if (idx <= 9 && opCode >= 1)
         p.target[idx-1] = pos;
