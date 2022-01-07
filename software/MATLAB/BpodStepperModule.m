@@ -109,8 +109,7 @@ classdef BpodStepperModule < handle
         function set.RMScurrent(obj, newCurrent)
             validateattributes(newCurrent,{'numeric'},...
                 {'scalar','integer','nonnegative'})
-            obj.Port.write('I', 'uint8', newCurrent, 'uint16');
-            obj.Port.write('GI', 'uint8');
+            obj.Port.write('I', 'uint8', newCurrent, 'uint16', 'GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
         end
 
@@ -120,8 +119,8 @@ classdef BpodStepperModule < handle
         function set.ChopperMode(obj, mode)
             validateattributes(mode,{'numeric'},...
                 {'scalar','integer','nonnegative','<=',1})
-            obj.Port.write('C', 'uint8', mode, 'uint16', 'GI', 'uint8');
-            obj.privChopper = obj.Port.read(1, 'uint16');
+            obj.Port.write('C', 'uint8', mode, 'uint8', 'GC', 'uint8');
+            obj.privChopper = obj.Port.read(1, 'uint8');
         end
 
         function out = get.Position(obj)
