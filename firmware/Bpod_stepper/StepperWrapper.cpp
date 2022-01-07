@@ -106,8 +106,6 @@ void StepperWrapper::init(uint16_t rms_current) {
     init5160(rms_current);                  // initialize TMC5160
   else
     init2100();                             // initialize TMC2100
-
-  enableDriver(true);                       // activate motor outputs
 }
 
 
@@ -131,6 +129,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
   attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
 
+  // RMS current
   driver->rms_current(rms_current,1);       // set motor current, standstill reduction disabled
   enableDriver(true);                       // activate motor outputs
 
