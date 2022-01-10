@@ -128,7 +128,7 @@ class StepperWrapper
     static void ISRposN(uint8_t n);             // IO: go to predefined position N
 
     IntervalTimer TimerStream;
-    bool StatusTimerStream;
+    bool StatusTimerStream = false;
 
     void attachInput(uint8_t idx, void (*userFunc)(void));
     void init2100();
