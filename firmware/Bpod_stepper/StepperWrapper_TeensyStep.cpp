@@ -95,7 +95,6 @@ void StepperWrapper_TeensyStep::resetPosition() {
 
 void StepperWrapper_TeensyStep::rotate(int8_t dir) {
   DEBUG_PRINTFUN(dir);
-
   if (this->isRunning() || this->atLimit(dir))  // return if moving or at limit switch
     return;
   toggleISRlimit(dir);                          // attach ISRs for limit switches

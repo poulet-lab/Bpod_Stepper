@@ -597,11 +597,13 @@ void StepperWrapper::setChopper(uint8_t chopper) {
       {
         TMC2130Stepper* driver = get2130();
         driver->en_pwm_mode(chopper);
+        return;
       }
     case 0x30:
       {
         TMC5160Stepper* driver = get5160();
         driver->en_pwm_mode(chopper);
+        return;
       }
   }
 }
