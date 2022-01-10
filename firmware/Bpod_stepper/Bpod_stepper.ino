@@ -117,41 +117,41 @@ void loop()
   switch(opCode) {
     case 'X':                                                     // Stop without slowing down
       wrapper->hardStop();
-      break;
+      return;
     case 'x':                                                     // Stop after slowing down
       wrapper->softStop();
-      break;
+      return;
     case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
       wrapper->moveSteps(COM->readInt16());
-      break;
+      return;
     case 'P':                                                     // Move to absolute position
       wrapper->position(COM->readInt16());
-      break;
+      return;
     case 'F':                                                     // Start moving forwards
       wrapper->rotate(1);
-      break;
+      return;
     case 'B':                                                     // Start moving backwards
       wrapper->rotate(-1);
-      break;
+      return;
     case 'Z':                                                     // Reset position to zero
       wrapper->resetPosition();
-      break;
+      return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
       p.a = wrapper->a();
-      break;
+      return;
     case 'V':                                                     // Set peak velocity (steps / s)
       wrapper->vMax(COM->readUint16());
       p.vMax = wrapper->vMax();
-      break;
+      return;
     case 'I':                                                     // Set RMS current (mA)
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
-      break;
+      return;
     case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper)
       wrapper->setChopper(COM->readUint8());
       p.chopper = wrapper->getChopper();
-      break;
+      return;
     case 'M':                                                     // Set mode for IO port
     {
       uint8_t idx  = COM->readUint8();
@@ -159,7 +159,7 @@ void loop()
       wrapper->setIOmode(idx,mode);
       if (idx>0 && idx <= 6)
         p.IOmode[idx-1] = wrapper->getIOmode(idx);
-      break;
+      return;
     }
     case 'R':                                                     // Set input resistor for IO port (0 = no resistor, 1 = pullup, 2 = pulldown)
     {
@@ -168,7 +168,7 @@ void loop()
       wrapper->setIOresistor(idx,res);
       if (idx>0 && idx <= 6)
         p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
-      break;
+      return;
     }
     case 'T':                                                     // Set predefined target
     {
@@ -176,11 +176,23 @@ void loop()
       uint32_t pos = COM->readInt32();
       if (idx <= 9 && opCode >= 1)
         p.target[idx-1] = pos;
-      break;
+      return;
     }
     case 'E':                                                     // Store current settings to EEPROM
       EEstore<storageVars>::set(StoreAddress,p);
-      break;
+      return;
+    case 'L':                                                     // Toggle live streaming of motor status
+    {
+      bool enable = COM->readUint8();
+      wrapper->setStream(enable);
+      return;
+    }
+  }
+
+  // The following commands will also RETURN data via serial - they cannot be used during stream mode
+  if (COM == &usbCOM && wrapper->getStream())
+    return;
+  switch(opCode) {
     case 'G':                                                     // Get parameters
       opCode = COM->readByte();                                   //   Read Byte
       if (opCode <= 9 && opCode >= 1) {                           //   Return predefined target

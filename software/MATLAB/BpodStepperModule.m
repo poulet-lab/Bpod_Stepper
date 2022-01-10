@@ -241,5 +241,9 @@ classdef BpodStepperModule < handle
             % releases port)
             obj.Port = [];
         end
+
+        function liveView(obj)
+            BpodStepperLive(obj);
+        end
     end
 end

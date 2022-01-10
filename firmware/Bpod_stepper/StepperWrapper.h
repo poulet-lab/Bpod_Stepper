@@ -87,6 +87,8 @@ class StepperWrapper
     void setIOresistor(uint8_t r[6], uint8_t l);// set input resistor (all IO ports)
     void setIOresistor(uint8_t idx, uint8_t r); // set input resistor (specific IO port)
     uint8_t getIOresistor(uint8_t idx);         // get input resistor (specific IO port)
+    void setStream(bool enable);                // enable/disable live streaming of motor parameters
+    bool getStream();                           // get status of live stream
 
   protected:
     static TMC2130Stepper* get2130();
@@ -108,6 +110,7 @@ class StepperWrapper
     static void ISRdiag0();                     // called when diag0 changes
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
+    static void ISRstream();
     static uint32_t ISRgeneric(uint32_t t0, uint8_t opCode); // IO: ISR debouncer
     static void ISRsoftStop();                  // IO: soft stop
     static void ISRhardStop();                  // IO: emergency stop
@@ -123,6 +126,9 @@ class StepperWrapper
     static void ISRpos8();                      // IO: go to predefined position 8
     static void ISRpos9();                      // IO: go to predefined position 9
     static void ISRposN(uint8_t n);             // IO: go to predefined position N
+
+    IntervalTimer TimerStream;
+    bool StatusTimerStream;
 
     void attachInput(uint8_t idx, void (*userFunc)(void));
     void init2100();

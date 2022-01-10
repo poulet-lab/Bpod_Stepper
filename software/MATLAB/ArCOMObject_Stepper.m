@@ -111,7 +111,7 @@ classdef ArCOMObject_Stepper < handle
             obj.validDataTypes = {'char', 'uint8', 'uint16', 'uint32', 'int8', 'int16', 'int32'};
             switch obj.Interface
                 case 0
-                    obj.Port = serial(portString, 'BaudRate', 115200, 'Timeout', 1,'OutputBufferSize', 100000, 'InputBufferSize', 100000, 'DataTerminalReady', 'on', 'tag', 'ArCOM');
+                    obj.Port = serial(portString, 'BaudRate', 115200, 'Timeout', 1,'OutputBufferSize', 100000, 'InputBufferSize', 100000, 'DataTerminalReady', 'on', 'tag', 'ArCOM', 'BytesAvailableFcnMode', 'byte');
                     fopen(obj.Port);
                 case 1
                     if ispc

@@ -29,6 +29,8 @@ _______________________________________________________________________________
 
 
 extern ArCOM Serial1COM;
+extern ArCOM usbCOM;
+
 const float PCBrev        = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
@@ -57,10 +59,48 @@ StepperWrapper::StepperWrapper() {
       throwError(1);
   }
 
+  TimerStream.priority(255);                // lowest priority for stream
+
   enableDriver(false);                      // disable driver for now
   powerDriver(true);                        // power the driver
 }
 
+void StepperWrapper::ISRstream() {
+  static uint32_t data[3];
+
+  data[0] = millis();
+  switch (vDriver) {
+    case 0x11:
+      {
+        TMC2130Stepper* driver = get2130();
+        data[1] = driver->DRV_STATUS();
+        data[2] = driver->TSTEP();
+        break;
+      }
+    case 0x30:
+      {
+        TMC5160Stepper* driver = get5160();
+        data[1] = driver->DRV_STATUS();
+        data[2] = driver->TSTEP();
+      }
+  }
+
+  usbCOM.writeUint32Array(data,3);
+}
+
+bool StepperWrapper::getStream() {
+  return StatusTimerStream;
+}
+
+void StepperWrapper::setStream(bool enable) {
+  if (enable && !StatusTimerStream) {
+    StatusTimerStream = TimerStream.begin(StepperWrapper::ISRstream, 50000);
+    return;
+  }
+  else if (!enable && StatusTimerStream)
+    TimerStream.end();
+  StatusTimerStream = false;
+}
 
 void StepperWrapper::ISRdiag0() {
   DEBUG_PRINTFUN();
@@ -91,7 +131,7 @@ void StepperWrapper::ISRdiag1() {
 void StepperWrapper::ISRchangeVM() {
   DEBUG_PRINTFUN();
   if (digitalRead(pin.VM))
-   SCB_AIRCR = 0x05FA0004;                  // reset teensy
+    SCB_AIRCR = 0x05FA0004;                 // reset teensy
   else
     throwError(1);
 }
@@ -362,7 +402,6 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
 
 
 TMC2130Stepper* StepperWrapper::get2130() {
-  DEBUG_PRINTFUN();
   static bool initialized = false;
   static TMC2130Stepper* driver;
 
@@ -386,7 +425,6 @@ TMC2130Stepper* StepperWrapper::get2130() {
 
 
 TMC5160Stepper* StepperWrapper::get5160() {
-  DEBUG_PRINTFUN();
   static bool initialized = false;
   static TMC5160Stepper* driver;
 
