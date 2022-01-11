@@ -4,11 +4,10 @@ properties (Access = private)
     stepper
     dRec    = 10        % duration of data stored in ring-buffer [s]
     ts      = .05       % sample interval [s]
-    lData               % length of ring-buffer
     data                % ring-buffer for storing data
     h
     t0      = nan       % value of first time-stamp
-    fCLK;               % oscillatory frequency of driver clock [MHz]
+    vDiv;               % dividend for calculating steps/s from TSTEP
 end
 
 methods
@@ -19,15 +18,14 @@ methods
 
         switch obj.stepper.DriverVersion
             case 2130
-                obj.fCLK = 13.2E6;
+                obj.vDiv = 13.2E6 / 256;
             case 5160
-                obj.fCLK = 12E6;
+                obj.vDiv = 12.0E6 / 256;
             otherwise
                 error('Driver IC is not supported.')
         end
 
-        obj.lData     = obj.dRec / obj.ts;
-        obj.data      = nan(3,obj.lData);
+        obj.data      = nan(3,obj.dRec/obj.ts);
         obj.data(2,:) = 2^20-1;
 
         obj.h.figure = figure('Visible','off');
@@ -71,13 +69,12 @@ methods
             'DeleteFcn',        @obj.delete, ...
             'ToolBar',          'none', ...
             'MenuBar',          'none', ...
-            'Name',             'Stepper Motor Module — Live View', ...
+            'DockControls',     'off', ...
             'NumberTitle',      'off', ...
             'HandleVisibility', 'off', ...
-            'DockControls',     'off')
+            'Name',             'Stepper Motor Module — Live View')
         movegui(obj.h.figure,'center')
         set(obj.h.figure,'Visible','on')
-
         drawnow
 
         flushinput(obj.stepper.Port.Port)
@@ -86,19 +83,18 @@ methods
 
     function update(obj,~,~)
         incoming = double(obj.stepper.Port.read(3, 'uint32'));
-        obj.data = [obj.data(:,2:obj.lData) incoming];
+        obj.data = [obj.data(:,2:end) incoming];
 
         if isnan(obj.t0)
             obj.t0 = incoming(1) / 1E3;
         end
-
-        t = obj.data(1,:)/1E3-obj.t0;
-        v = (obj.fCLK / 256) ./ obj.data(3,:);
+        t = obj.data(1,:) / 1E3 - obj.t0;
+        v = obj.vDiv ./ obj.data(3,:);
 
         [obj.h.plot.XData]  = deal(t);
         obj.h.plot(1).YData = v;
         obj.h.plot(2).YData = [abs(diff(v)) NaN] / obj.ts;
-        obj.h.plot(3).YData = bitand(1023,obj.data(2,:));
+        obj.h.plot(3).YData = bitand(1023, obj.data(2,:));
 
         xlim(obj.h.axes(1), min(t) + [0 obj.dRec])
         drawnow limitrate
