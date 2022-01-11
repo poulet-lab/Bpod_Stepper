@@ -85,7 +85,7 @@ methods
         obj.h.plot(2).YData = [abs(diff(v)) NaN] / obj.ts;
         obj.h.plot(3).YData = bitand(1023,obj.data(2,:));
 
-        xlim(obj.h.axes(1), max([0 min(t)]) + [0 obj.dRec])
+        xlim(obj.h.axes(1), min(t) + [0 obj.dRec])
         drawnow limitrate
     end
 
