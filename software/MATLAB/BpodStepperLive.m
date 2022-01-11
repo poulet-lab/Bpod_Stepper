@@ -16,7 +16,7 @@ methods
         validateattributes(stepper,{'BpodStepperModule'},{'scalar'})
         obj.stepper = stepper;
         obj.stepper.Port.Port.BytesAvailableFcn = @obj.update;
-        
+
         switch obj.stepper.DriverVersion
             case 2130
                 obj.fCLK = 13.2E6;
@@ -25,46 +25,61 @@ methods
             otherwise
                 error('Driver IC is not supported.')
         end
-        
+
         obj.lData     = obj.dRec / obj.ts;
         obj.data      = nan(3,obj.lData);
         obj.data(2,:) = 2^20-1;
 
-        obj.h.figure = figure(...
-            'DeleteFcn',    @obj.delete, ...
-            'ToolBar',      'none', ...
-            'MenuBar',      'none', ...
-            'Name',         'Stepper Motor Module — Live View', ...
-            'NumberTitle',  'off');
-        obj.h.axes(1) = subplot(3,1,1);
-        obj.h.plot(1) = plot(obj.h.axes(1),NaN,NaN,'k','linewidth',2);
-        title('velocity')
-        ylabel('v [steps/s]')
-        ylim([0 obj.stepper.MaxSpeed*1.2])
-        set(gca,'XTickLabel',[])
+        obj.h.figure = figure('Visible','off');
 
-        obj.h.axes(2) = subplot(3,1,2);
-        obj.h.plot(2) = plot(obj.h.axes(2),NaN,NaN,'k','linewidth',2);
-        title('acceleration')
-        ylabel('|a| [steps/s^2]')
-        ylim([0 obj.stepper.Acceleration*1.2])
-        set(gca,'XTickLabel',[])
+        tmp(1) = subplot(3,1,1);
+        title(tmp(1),'Velocity')
+        ylabel(tmp(1),'v [steps/s]')
+        ylim(tmp(1),[0 obj.stepper.MaxSpeed*1.2])
 
-        obj.h.axes(3) = subplot(3,1,3);
-        obj.h.plot(3) = plot(obj.h.axes(3),NaN,NaN,'k','linewidth',2);
-        title('load')
-        xlabel('time [s]')
-        ylim([0 1023])
+        tmp(2) = subplot(3,1,2);
+        title(tmp(2),'Acceleration')
+        ylabel(tmp(2),'|a| [steps/s^2]')
+        ylim(tmp(2),[0 obj.stepper.Acceleration*1.2])
+
+        tmp(3) = subplot(3,1,3);
+        title(tmp(3),'Mechanical Load')
+        ylim(tmp(3),[0 1023])
         set(gca,'YDir','reverse')
 
+        set(tmp, ...
+            'XTick',    [], ...
+            'XColor',   'none', ...
+            'TickDir',  'out')
+        for ii = 1:numel(tmp)
+            obj.h.axes(ii) = axes();
+            obj.h.plot(ii) = plot(obj.h.axes(ii),NaN,NaN,'k','linewidth',2);
+            linkprop([tmp(ii) obj.h.axes(ii)],{'Position','YLim','YDir'});
+        end
+
         set(obj.h.axes, ...
-            'tickdir',  'out', ...
-            'xgrid',    'on', ...
-            'ygrid',    'on', ...
-            'box',      'off')
+            'TickDir',  'out', ...
+            'XGrid',    'on', ...
+            'YGrid',    'on', ...
+            'Box',      'off', ...
+            'Ycolor',   'none', ...
+            'Color',    'none')
+        xlabel(obj.h.axes(end),'time [s]')
         linkaxes(obj.h.axes,'x')
+
+        set(obj.h.figure, ......
+            'DeleteFcn',        @obj.delete, ...
+            'ToolBar',          'none', ...
+            'MenuBar',          'none', ...
+            'Name',             'Stepper Motor Module — Live View', ...
+            'NumberTitle',      'off', ...
+            'HandleVisibility', 'off', ...
+            'DockControls',     'off')
+        movegui(obj.h.figure,'center')
+        set(obj.h.figure,'Visible','on')
+
         drawnow
-        
+
         flushinput(obj.stepper.Port.Port)
         obj.stepper.Port.write(['L' 1], 'uint8');
     end
@@ -72,14 +87,14 @@ methods
     function update(obj,~,~)
         incoming = double(obj.stepper.Port.read(3, 'uint32'));
         obj.data = [obj.data(:,2:obj.lData) incoming];
-        
+
         if isnan(obj.t0)
             obj.t0 = incoming(1) / 1E3;
         end
-        
+
         t = obj.data(1,:)/1E3-obj.t0;
-        v = obj.tstep2step(obj.data(3,:));
-        
+        v = (obj.fCLK / 256) ./ obj.data(3,:);
+
         [obj.h.plot.XData]  = deal(t);
         obj.h.plot(1).YData = v;
         obj.h.plot(2).YData = [abs(diff(v)) NaN] / obj.ts;
@@ -89,14 +104,6 @@ methods
         drawnow limitrate
     end
 
-    function out = tstep2step(obj,in)
-        persistent fact;
-        if isempty(fact)
-            fact = obj.fCLK / 256;
-        end
-        out = fact ./ in;
-    end
-    
     function delete(obj,~,~)
         obj.stepper.Port.write(['L' 0], 'uint8');
         obj.stepper.Port.Port.BytesAvailableFcn = '';
