@@ -194,8 +194,17 @@ classdef BpodStepperModule < handle
             %   0 = no input resistor
             %   1 = pullup resistor
             %   2 = pulldown resistor
-            obj.Port.write(['GR' idx], 'uint8');
-            out = obj.Port.read(1, 'uint8');
+            if ~exist('idx','var')
+                idx = 1:6;
+            else
+                validateattributes(idx,{'numeric'},...
+                    {'2d','increasing','integer','>=',1,'<=',6})
+            end
+            out = nan(1,numel(idx));
+            for ii = 1:numel(idx)
+                obj.Port.write(['GR' idx(ii)], 'uint8');
+                out(ii) = obj.Port.read(1, 'uint8');
+            end
         end
 
         function setResistor(obj, idx, R)
@@ -204,30 +213,37 @@ classdef BpodStepperModule < handle
             %   R = 1: pullup resistor
             %   R = 2: pulldown resistor
             validateattributes(idx,{'numeric'},...
-                {'scalar','integer','>=',1,'<=',6})
+                {'2d','increasing','integer','>=',1,'<=',6})
             validateattributes(R,{'numeric'},...
                 {'scalar','integer','>=',0,'<=',2})
-            obj.Port.write(['R' idx R], 'uint8');
+            for ii = 1:numel(idx)
+                obj.Port.write(['R' idx(ii) R], 'uint8');
+            end
         end
 
         function out = getMode(obj, idx)
             % Return the currently configured mode of IO port IDX
-            validateattributes(idx,{'numeric'},...
-                {'scalar','integer','>=',1,'<=',6})
-            obj.Port.write(['GM' idx], 'uint8');
-            out = obj.Port.read(1, 'uint8');
-            if out
-                out = char(out);
+            if ~exist('idx','var')
+                idx = 1:6;
+            else
+                validateattributes(idx,{'numeric'},...
+                    {'2d','increasing','integer','>=',1,'<=',6})
+            end
+            out = nan(1,numel(idx));
+            for ii = 1:numel(idx)
+                obj.Port.write(['GM' idx(ii)], 'uint8');
+                out(ii) = obj.Port.read(1, 'uint8');
             end
         end
 
         function setMode(obj, idx, M)
             % Set the input mode M for IO port IDX (cf. readme)
             validateattributes(idx,{'numeric'},...
-                {'scalar','integer','>=',1,'<=',6})
-            validateattributes(idx,{'numeric'},...
-                {'scalar','integer','nonnegative'})
-            obj.Port.write(['M' idx M], 'uint8');
+                {'2d','increasing','integer','>=',1,'<=',6})
+            validateattributes(M,{'numeric','char'},{'scalar'})
+            for ii = 1:numel(idx)
+                obj.Port.write(['M' idx(ii) M], 'uint8');
+            end
         end
 
         function storeDefaults(obj)
