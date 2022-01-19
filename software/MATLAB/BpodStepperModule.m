@@ -189,11 +189,13 @@ classdef BpodStepperModule < handle
             end
         end
 
-        function out = getResistor(obj, idx)
+        function varargout = getResistor(obj, idx)
             % Return the input resistor for IO port IDX
             %   0 = no input resistor
             %   1 = pullup resistor
             %   2 = pulldown resistor
+            nargoutchk(0,1)
+            narginchk(1,2)
             if ~exist('idx','var')
                 idx = 1:6;
             else
@@ -204,6 +206,14 @@ classdef BpodStepperModule < handle
             for ii = 1:numel(idx)
                 obj.Port.write(['GR' idx(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
+            end
+            if nargout
+                varargout{1} = out;
+            else
+                tmp = {'floating', 'pull-up', 'pull-down'};
+                for ii = 1:numel(out)
+                    fprintf('IO%d: %d (%s)\n',idx(ii),out(ii),tmp{out(ii)+1});
+                end
             end
         end
 
@@ -221,8 +231,10 @@ classdef BpodStepperModule < handle
             end
         end
 
-        function out = getMode(obj, idx)
+        function varargout = getMode(obj, idx)
             % Return the currently configured mode of IO port IDX
+            nargoutchk(0,1)
+            narginchk(1,2)
             if ~exist('idx','var')
                 idx = 1:6;
             else
@@ -233,6 +245,13 @@ classdef BpodStepperModule < handle
             for ii = 1:numel(idx)
                 obj.Port.write(['GM' idx(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
+            end
+            if nargout
+                varargout{1} = out;
+            else
+                for ii = 1:numel(out)
+                    fprintf('IO%d: %d (''%c'')\n',idx(ii),out(ii),out(ii));
+                end
             end
         end
 
