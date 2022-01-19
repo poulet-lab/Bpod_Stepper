@@ -202,7 +202,7 @@ classdef BpodStepperModule < handle
                 validateattributes(idx,{'numeric'},...
                     {'2d','increasing','integer','>=',1,'<=',6})
             end
-            out = nan(1,numel(idx));
+            out = zeros(1,numel(idx));
             for ii = 1:numel(idx)
                 obj.Port.write(['GR' idx(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
@@ -241,7 +241,7 @@ classdef BpodStepperModule < handle
                 validateattributes(idx,{'numeric'},...
                     {'2d','increasing','integer','>=',1,'<=',6})
             end
-            out = nan(1,numel(idx));
+            out = zeros(1,numel(idx));
             for ii = 1:numel(idx)
                 obj.Port.write(['GM' idx(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
@@ -250,7 +250,11 @@ classdef BpodStepperModule < handle
                 varargout{1} = out;
             else
                 for ii = 1:numel(out)
-                    fprintf('IO%d: %d (''%c'')\n',idx(ii),out(ii),out(ii));
+                    if out(ii)
+                        fprintf('IO%d: %2d (''%c'')\n',idx(ii),out(ii),out(ii));
+                    else
+                        fprintf('IO%d:  0 (unconfigured)\n',idx(ii));
+                    end
                 end
             end
         end
