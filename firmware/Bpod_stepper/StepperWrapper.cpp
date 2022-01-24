@@ -819,6 +819,7 @@ void StepperWrapper::rotate() {
 }
 
 int32_t StepperWrapper::readPosition() {
+  DEBUG_PRINTFUN();
   if (!this->useSD)
     return 0;
   int32_t pos;
@@ -830,10 +831,16 @@ int32_t StepperWrapper::readPosition() {
 }
 
 bool StepperWrapper::writePosition(int32_t pos) {
-  if (!this->useSD)
+  DEBUG_PRINTFUN(pos);
+  static int32_t lastPos = this->readPosition();
+  if (!this->useSD || pos == lastPos)
     return false;
   this->filePos.rewind();
   size_t count = this->filePos.write((uint8_t*) &pos, 4);
   this->filePos.sync();
-  return count == 4;
+  if (count == 4) {
+    lastPos = pos;
+    return true;
+  } else
+    return false;
 }
