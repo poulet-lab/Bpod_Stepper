@@ -115,8 +115,6 @@ void StepperWrapper_TeensyStep::softStop() {
     _rotateControl->stopAsync();
     this->CBstop(); // incorrect timing due to manual call
   }
-  else
-    return;
 }
 
 float StepperWrapper_TeensyStep::vMax() {
