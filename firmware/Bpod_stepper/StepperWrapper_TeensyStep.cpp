@@ -111,8 +111,10 @@ void StepperWrapper_TeensyStep::softStop() {
   DEBUG_PRINTFUN();
   if (_stepControl->isRunning())
     _stepControl->stopAsync();
-  else if (_rotateControl->isRunning())
+  else if (_rotateControl->isRunning()) {
     _rotateControl->stopAsync();
+    this->CBstop(); // incorrect timing due to manual call
+  }
   else
     return;
 }
