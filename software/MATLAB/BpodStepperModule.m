@@ -250,10 +250,13 @@ classdef BpodStepperModule < handle
                 varargout{1} = out;
             else
                 for ii = 1:numel(out)
-                    if out(ii)
-                        fprintf('IO%d: %2d (''%c'')\n',idx(ii),out(ii),out(ii));
+                    fprintf('IO%d: %3d ',idx(ii),out(ii));
+                    if out(ii) == 0
+                        fprintf('(unconfigured)\n');
+                    elseif out(ii) < 10
+                        fprintf('(go to predefined target #%d)\n',out(ii));
                     else
-                        fprintf('IO%d:  0 (unconfigured)\n',idx(ii));
+                        fprintf('(''%c'')\n',out(ii));
                     end
                 end
             end
