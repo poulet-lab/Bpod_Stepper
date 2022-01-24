@@ -109,11 +109,12 @@ void StepperWrapper_TeensyStep::rotate(int8_t dir) {
 
 void StepperWrapper_TeensyStep::softStop() {
   DEBUG_PRINTFUN();
-  _stepControl->stopAsync();
-  _rotateControl->stopAsync();
-  Serial1COM.writeByte(3);  // TODO: incorrect timing!
-  digitalWriteFast(LED_BUILTIN, LOW);
-  this->writePosition(_motor->getPosition());
+  if (_stepControl->isRunning())
+    _stepControl->stopAsync();
+  else if (_rotateControl->isRunning())
+    _rotateControl->stopAsync();
+  else
+    return;
 }
 
 float StepperWrapper_TeensyStep::vMax() {
