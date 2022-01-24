@@ -82,7 +82,8 @@ void setup()
   }
   wrapper->init(p.rms_current);
 
-  // Set default values
+  // Load parameters/defaults
+  wrapper->setPosition(wrapper->readPosition());
   wrapper->vMax(p.vMax);
   wrapper->a(p.a);
   wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
@@ -134,7 +135,7 @@ void loop()
       wrapper->rotate(-1);
       return;
     case 'Z':                                                     // Reset position to zero
-      wrapper->resetPosition();
+      wrapper->setPosition(0);
       return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());

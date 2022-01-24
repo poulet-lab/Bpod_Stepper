@@ -23,6 +23,7 @@ _______________________________________________________________________________
 
 #include <TeensyStep.h>
 #include <TMCStepper.h>
+#include "SdFat.h"
 #include "ArCOM.h"
 #include "SmoothStepper.h"
 
@@ -72,7 +73,7 @@ class StepperWrapper
     virtual void moveSteps(int32_t steps) = 0;  // move to relative position (full steps)
     virtual int32_t position() = 0;             // get current position (full steps)
     virtual void position(int32_t target) = 0;  // go to absolute position (full steps)
-    virtual void resetPosition() = 0;           // reset position to zero
+    virtual void setPosition(int32_t pos) = 0;  // set position without moving (microsteps)
     virtual void rotate(int8_t direction) = 0;  // initiate rotation
     virtual void softStop() = 0;                // stop after slowing down
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
@@ -89,6 +90,7 @@ class StepperWrapper
     uint8_t getIOresistor(uint8_t idx);         // get input resistor (specific IO port)
     void setStream(bool enable);                // enable/disable live streaming of motor parameters
     bool getStream();                           // get status of live stream
+    int32_t readPosition();                          // Read position from SD card
 
   protected:
     static TMC2130Stepper* get2130();
@@ -104,6 +106,7 @@ class StepperWrapper
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     ArCOM *_COM;
+    bool writePosition(int32_t pos);            // Write position to SD card
 
   private:
     static void ISRchangeVM();                  // called when VM was (dis)connected
@@ -129,6 +132,10 @@ class StepperWrapper
 
     IntervalTimer TimerStream;
     bool StatusTimerStream = false;
+
+    bool useSD = false;                         // Bool: SD available?
+    SdFs SD;                                    // SD file system class
+    FsFile filePos;                             // File for storing current position
 
     void attachInput(uint8_t idx, void (*userFunc)(void));
     void init2100();
@@ -157,7 +164,7 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
     void moveSteps(int32_t steps);
     int32_t position();
     void position(int32_t target);
-    void resetPosition();
+    void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();
     float vMax();
@@ -181,7 +188,7 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     void moveSteps(int32_t steps);
     int32_t position();
     void position(int32_t target);
-    void resetPosition();
+    void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();
     float vMax();
@@ -211,7 +218,7 @@ class StepperWrapper_MotionControl : public StepperWrapper
     void moveSteps(int32_t steps);
     int32_t position();
     void position(int32_t target);
-    void resetPosition();
+    void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();
     float vMax();

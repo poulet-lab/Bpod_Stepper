@@ -70,10 +70,10 @@ void StepperWrapper_MotionControl::position(int32_t target) {
   _driver->XTARGET(target * _microsteps);
 }
 
-void StepperWrapper_MotionControl::resetPosition() {
+void StepperWrapper_MotionControl::setPosition(int32_t pos) {
   DEBUG_PRINTFUN();
   _driver->RAMPMODE(3);
-  _driver->XACTUAL(0);
+  _driver->XACTUAL(pos);
 }
 
 void StepperWrapper_MotionControl::rotate(int8_t direction) {

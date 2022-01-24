@@ -123,8 +123,8 @@ void SmoothStepper::moveSteps(int32_t nSteps) {
   _isRunning = false;
 }
 
-void SmoothStepper::resetPosition() {
-  _position = 0;
+void SmoothStepper::setPosition(int32_t position) {
+  _position = position;
 }
 
 int32_t SmoothStepper::getPosition() {

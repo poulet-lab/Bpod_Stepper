@@ -59,6 +59,11 @@ StepperWrapper::StepperWrapper() {
       throwError(1);
   }
 
+  // Initialize SDcard, load position
+  this->useSD = this->SD.begin(SdioConfig(FIFO_SDIO));
+  if (this->useSD)
+    this->filePos.open("position.bin", O_RDWR | O_CREAT);
+
   TimerStream.priority(255);                // lowest priority for stream
 
   enableDriver(false);                      // disable driver for now
@@ -188,6 +193,10 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   driver->tbl(2);
   driver->hstrt(4);
   driver->hend(0);
+
+  driver->sgt(0);
+  driver->sfilt(true);
+
   driver->TPWMTHRS(0);                      // Disable SpreadCycle chopper (use StealthChop only)
 
   // Power savings
@@ -807,4 +816,24 @@ void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
 
 void StepperWrapper::rotate() {
   this->rotate(1);
+}
+
+int32_t StepperWrapper::readPosition() {
+  if (!this->useSD)
+    return 0;
+  int32_t pos;
+  this->filePos.rewind();
+  int count = this->filePos.read((uint8_t*) &pos, 4);
+  if (count != 4)
+    return 0;
+  return pos;
+}
+
+bool StepperWrapper::writePosition(int32_t pos) {
+  if (!this->useSD)
+    return false;
+  this->filePos.rewind();
+  size_t count = this->filePos.write((uint8_t*) &pos, 4);
+  this->filePos.sync();
+  return count == 4;
 }

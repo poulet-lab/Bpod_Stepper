@@ -33,7 +33,6 @@ void StepperWrapper_SmoothStepper::init(uint16_t rms_current) {
   _stepper->setPinEnable(pin.En);             // We do want to use the enable pin
   _stepper->setInvertEnable(_invertPinEn);    // Enable pin on TMC2100 is inverted
   _stepper->setInvertDirection(_invertPinDir);// Invert the direction pin?
-  _stepper->resetPosition();                  // Reset position of motor
 }
 
 void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
@@ -43,7 +42,7 @@ void StepperWrapper_SmoothStepper::setMicrosteps(uint16_t ms) {
 
 float StepperWrapper_SmoothStepper::a() {
   DEBUG_PRINTFUN();
-  return _stepper->getAcceleration() / _microsteps;
+  return round(_stepper->getAcceleration() / _microsteps);
 }
 
 void StepperWrapper_SmoothStepper::a(float aHzs) {
@@ -65,7 +64,7 @@ void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
 
 int32_t StepperWrapper_SmoothStepper::position() {
   DEBUG_PRINTFUN();
-  return _stepper->getPosition() / (int32_t) _microsteps;
+  return round(_stepper->getPosition() / (int32_t) _microsteps);
 }
 
 void StepperWrapper_SmoothStepper::position(int32_t target) {
@@ -75,9 +74,9 @@ void StepperWrapper_SmoothStepper::position(int32_t target) {
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
-void StepperWrapper_SmoothStepper::resetPosition() {
+void StepperWrapper_SmoothStepper::setPosition(int32_t pos) {
   DEBUG_PRINTFUN();
-  _stepper->resetPosition();
+  _stepper->setPosition(pos);
 }
 
 void StepperWrapper_SmoothStepper::rotate(int8_t direction) {
@@ -92,7 +91,7 @@ void StepperWrapper_SmoothStepper::softStop() {
 
 float StepperWrapper_SmoothStepper::vMax() {
   DEBUG_PRINTFUN();
-  return _stepper->getMaxSpeed() / _microsteps;
+  return round(_stepper->getMaxSpeed() / _microsteps);
 }
 
 void StepperWrapper_SmoothStepper::vMax(float v) {

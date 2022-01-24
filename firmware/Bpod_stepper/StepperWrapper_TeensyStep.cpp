@@ -24,6 +24,7 @@ _______________________________________________________________________________
 #include "SerialDebug.h"
 
 extern ArCOM Serial1COM;
+extern StepperWrapper* wrapper;
 
 StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
@@ -59,6 +60,7 @@ void StepperWrapper_TeensyStep::hardStop() {
   _rotateControl->emergencyStop();
   Serial1COM.writeByte(4);
   digitalWriteFast(LED_BUILTIN, LOW);
+  this->writePosition(_motor->getPosition());
 }
 
 void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
@@ -86,11 +88,12 @@ void StepperWrapper_TeensyStep::position(int32_t target) {
   this->moveSteps(target - this->position());   // convert to relative target
 }
 
-void StepperWrapper_TeensyStep::resetPosition() {
-  DEBUG_PRINTFUN();
+void StepperWrapper_TeensyStep::setPosition(int32_t pos) {
+  DEBUG_PRINTFUN(pos);
   if (this->isRunning())
     return;
-  _motor->setPosition(0);
+  _motor->setPosition(pos);
+  this->writePosition(_motor->getPosition());
 }
 
 void StepperWrapper_TeensyStep::rotate(int8_t dir) {
@@ -108,8 +111,9 @@ void StepperWrapper_TeensyStep::softStop() {
   DEBUG_PRINTFUN();
   _stepControl->stopAsync();
   _rotateControl->stopAsync();
-  Serial1COM.writeByte(3);  // TODO: this has not the correct timing!
+  Serial1COM.writeByte(3);  // TODO: incorrect timing!
   digitalWriteFast(LED_BUILTIN, LOW);
+  this->writePosition(_motor->getPosition());
 }
 
 float StepperWrapper_TeensyStep::vMax() {
@@ -142,6 +146,8 @@ void StepperWrapper_TeensyStep::CBstop() {
   DEBUG_PRINTFUN();
   Serial1COM.writeByte(3);
   digitalWriteFast(LED_BUILTIN, LOW);
+  StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) wrapper;
+  w->writePosition(w->_motor->getPosition());
 }
 
 bool StepperWrapper_TeensyStep::isRunning() {
