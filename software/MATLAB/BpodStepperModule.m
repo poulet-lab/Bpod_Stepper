@@ -152,11 +152,27 @@ classdef BpodStepperModule < handle
             obj.Port.write(target, 'int32');
         end
 
-        function out = getTarget(obj, id)
-            validateattributes(id,{'numeric'},...
-                {'scalar','integer','>=',1,'<=',9})
-            obj.Port.write(['G' id], 'uint8');
-            out = obj.Port.read(1, 'int32');
+        function varargout = getTarget(obj, id)
+            nargoutchk(0,1)
+            narginchk(1,2)
+            if ~exist('id','var')
+                id = 1:9;
+            else
+                validateattributes(id,{'numeric'},...
+                    {'2d','increasing','integer','>=',1,'<=',9})
+            end
+            out = zeros(1,numel(id));
+            for ii = 1:numel(id)
+                obj.Port.write(['G' id(ii)], 'uint8');
+                out(ii) = obj.Port.read(1, 'int32');
+            end
+            if nargout
+                varargout{1} = out;
+            else
+                pad = floor(log10(max(abs(out)))) + 1 + (min(out)<0);
+                pad = pad .* ones(size(id));
+                fprintf('Target %d: %*d\n',[id; pad; out]);
+            end
         end
 
         function moveToTarget(obj,id)
