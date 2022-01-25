@@ -145,11 +145,12 @@ classdef BpodStepperModule < handle
 
         function setTarget(obj, id, target)
             validateattributes(id,{'numeric'},...
-                {'scalar','integer','>=',1,'<=',9})
+                {'2d','increasing','integer','>=',1,'<=',9})
             validateattributes(target,{'numeric'},{'scalar','integer',...
                 '>=',intmin('int32'),'<=',intmax('int32')})
-            obj.Port.write(['T' id], 'uint8');
-            obj.Port.write(target, 'int32');
+            for ii = 1:numel(id)
+                obj.Port.write(['T' id(ii)], 'uint8', target, 'int32');
+            end
         end
 
         function varargout = getTarget(obj, id)
@@ -169,8 +170,7 @@ classdef BpodStepperModule < handle
             if nargout
                 varargout{1} = out;
             else
-                pad = floor(log10(max(abs(out)))) + 1 + (min(out)<0);
-                pad = pad .* ones(size(id));
+                pad = repmat(size(num2str(out(:)),2),size(id));
                 fprintf('Target %d: %*d\n',[id; pad; out]);
             end
         end
