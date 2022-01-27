@@ -31,23 +31,23 @@ methods
         
         obj.h.figure = figure('Visible','off');
         obj.yMax = [obj.s.MaxSpeed obj.s.Acceleration 10];
+        t = {'Velocity','Acceleration','Mechanical Load'};
         for ii = 1:3
             obj.h.axes(ii) = subplot(3,1,ii);
-            obj.h.plot(ii) = plot(obj.h.axes(ii),NaN,NaN,'k','linewidth',2);
+            obj.h.plot(ii) = line(obj.h.axes(ii),NaN,NaN,'Color','k','linewidth',2);
             ylim(obj.h.axes(ii),[0 obj.yMax(ii)]);
+            title(obj.h.axes(ii),t{ii})
         end
-        title(obj.h.axes(1),'Velocity')
-        title(obj.h.axes(2),'Acceleration')
-        title(obj.h.axes(3),'Mechanical Load')
         ylabel(obj.h.axes(1),'v [steps/s]')
         ylabel(obj.h.axes(2),'|a| [steps/s^2]')
         xlabel(obj.h.axes(end),'time [s]')
         set(obj.h.axes(3),'YDir','reverse')
         set(obj.h.axes, ...
-            'TickDir',  'out', ...
-            'XGrid',    'on', ...
-            'YGrid',    'on', ...
-            'Box',      'off')
+            'TickDir',      'out', ...
+            'XGrid',        'on', ...
+            'YGrid',        'on', ...
+            'Box',          'off', ...
+            'XTickLabel',   [])
         linkaxes(obj.h.axes,'x')
 
         set(obj.h.figure, ......
@@ -71,7 +71,7 @@ methods
         obj.data = [obj.data(:,2:end) incoming];
 
         if isnan(obj.t0)
-            obj.t0 = incoming(1) / 1E3;
+           obj.t0 = incoming(1) / 1E3;
         end
         t = obj.data(1,:) / 1E3 - obj.t0;
         v = obj.vDiv ./ obj.data(3,:);
