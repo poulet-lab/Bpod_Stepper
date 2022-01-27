@@ -133,9 +133,10 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
   float vMaxMin = 1.0 / msMax;                  // minimum pulse-rate
   vMax = constrain(vMax, vMaxMin, vMaxMax);     // sanitized pulse-rate
 
-  // always use the highest possible micro-stepping resolution for a given vMax
-  uint8_t exp = 8 - ceil( log(ceil(vMax*msMax/vMaxMax))/log(2.0) );
-  this->setMicrosteps(pow(2,exp));
+  // always use the highest possible micro-stepping resolution for a given vMax --- TODO: Doesn't work properly
+  //uint8_t exp = 8 - ceil( log(ceil(vMax*msMax/vMaxMax))/log(2.0) );
+  //this->setMicrosteps(pow(2,exp));
+  this->setMicrosteps(0);
 
   // TODO: correct macro position on change of microsteps
 

@@ -143,18 +143,51 @@ classdef BpodStepperModule < handle
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
 
-        function setTarget(obj, id, target)
-            validateattributes(id,{'numeric'},...
-                {'2d','increasing','integer','>=',1,'<=',9})
-            validateattributes(target,{'numeric'},{'scalar','integer',...
-                '>=',intmin('int32'),'<=',intmax('int32')})
+        function setTarget(obj, varargin)
+            nargoutchk(0,0)
+            narginchk(3,5)
+            varargin(nargin:4) = {[]};
+            
+            if isempty(varargin{1})
+                varargin{1} = 1:9;
+            else
+                validateattributes(varargin{1},{'numeric'},{'2d',...
+                    'increasing','integer','>=',1,'<=',9},mfilename,'ID')
+            end
+
+            state = cell(1,3);
+            if any(cellfun(@isempty,varargin(2:end)))
+                [state{:}] = obj.getTarget(varargin{1});
+            end
+            for ii = 2:4
+                if isempty(varargin{ii})
+                    varargin{ii} = state{ii-1};
+                elseif isscalar(varargin{ii})
+                    varargin{ii} = repmat(varargin{ii},size(varargin{1}));
+                end
+                varargin{ii}(isnan(varargin{ii})) = 0;
+            end            
+            [id, p, a, v] = varargin{:};
+
+            s = size(id);
+            validateattributes(p,{'numeric'},{'integer','size',s,...
+                '>=',intmin('int32'),'<=',intmax('int32')},'','Position')
+            validateattributes(a,{'numeric'},{'integer','size',s,...
+                'nonnegative','<=',intmax('int16')},'','Acceleration')
+            validateattributes(v,{'numeric'},{'integer','size',s,...
+                'nonnegative','<=',intmax('int16')},'','Peak Acceleration')
+            
+            % write values
             for ii = 1:numel(id)
-                obj.Port.write(['T' id(ii)], 'uint8', target, 'int32');
+                obj.Port.write(['T' id(ii)],'uint8')
+                obj.Port.write(p(ii),'int32')
+                obj.Port.write(a(ii),'uint16')
+                obj.Port.write(v(ii),'uint16')
             end
         end
 
         function varargout = getTarget(obj, id)
-            nargoutchk(0,1)
+            nargoutchk(0,3)
             narginchk(1,2)
             if ~exist('id','var')
                 id = 1:9;
@@ -162,16 +195,23 @@ classdef BpodStepperModule < handle
                 validateattributes(id,{'numeric'},...
                     {'2d','increasing','integer','>=',1,'<=',9})
             end
-            out = zeros(1,numel(id));
-            for ii = 1:numel(id)
+            n   = numel(id);
+            out = zeros(n,3);
+            for ii = 1:n
                 obj.Port.write(['G' id(ii)], 'uint8');
-                out(ii) = obj.Port.read(1, 'int32');
+                out(ii,1) = obj.Port.read(1, 'int32');
+                out(ii,2) = obj.Port.read(1, 'uint16');
+                out(ii,3) = obj.Port.read(1, 'uint16');
             end
+            out([false(n,1) out(:,2:3)==0]) = NaN;
             if nargout
-                varargout{1} = out;
+                varargout = mat2cell(out',[1 1 1],n);
             else
-                pad = repmat(size(num2str(out(:)),2),size(id));
-                fprintf('Target %d: %*d\n',[id; pad; out]);
+                rn = arrayfun(@(x) {sprintf('Target #%d',x)},id);
+                t = table(out(:,1),out(:,2),out(:,3),'VariableNames',...
+                    {'Position', 'Acceleration', 'Peak Velocity'}, ...
+                    'RowNames',rn);
+                disp(t)
             end
         end
 

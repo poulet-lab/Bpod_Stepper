@@ -26,6 +26,7 @@ _______________________________________________________________________________
 #include "SdFat.h"
 #include "ArCOM.h"
 #include "SmoothStepper.h"
+#include "EEstoreStruct.h" 
 
 struct teensyPins {
   uint8_t Dir;
@@ -49,6 +50,7 @@ extern const uint8_t vDriver;                   // version number of TMC stepper
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID (set through interrupt sub-routine)
 extern volatile uint8_t ISRcode;                // opCode (set through interrupt sub-routine)
+extern storageVars p;
 
 class StepperWrapper
 {
@@ -79,6 +81,7 @@ class StepperWrapper
     virtual float vMax() = 0;                   // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
 
+    void go2target(uint8_t id);
     void rotate();
     void setChopper(uint8_t chopper);
     uint8_t getChopper();

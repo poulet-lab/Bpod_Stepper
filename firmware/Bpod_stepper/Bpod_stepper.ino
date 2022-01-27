@@ -101,7 +101,7 @@ void loop()
   }
 
   if (opCode <= 9 && opCode >= 1)  {                              // Move to predefined target (0-9)
-    wrapper->position(p.target[opCode-1]);
+    wrapper->go2target(opCode-1);
     return;
   }
   switch(opCode) {
@@ -112,15 +112,23 @@ void loop()
       wrapper->softStop();
       return;
     case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
       wrapper->moveSteps(COM->readInt16());
       return;
     case 'P':                                                     // Move to absolute position
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
       wrapper->position(COM->readInt16());
       return;
     case 'F':                                                     // Start moving forwards
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
       wrapper->rotate(1);
       return;
     case 'B':                                                     // Start moving backwards
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
       wrapper->rotate(-1);
       return;
     case 'Z':                                                     // Reset position to zero
@@ -162,10 +170,12 @@ void loop()
     }
     case 'T':                                                     // Set predefined target
     {
-      uint8_t  idx = COM->readUint8();
-      uint32_t pos = COM->readInt32();
-      if (idx <= 9 && opCode >= 1)
-        p.target[idx-1] = pos;
+      uint8_t idx = COM->readUint8() - 1;
+      if (idx <= 8 && idx >= 0) {
+        p.target[idx]     = COM->readInt32();
+        p.aTarget[idx]    = COM->readUint16();
+        p.vMaxTarget[idx] = COM->readUint16();
+      }
       return;
     }
     case 'E':                                                     // Store current settings to EEPROM
@@ -186,7 +196,10 @@ void loop()
     case 'G':                                                     // Get parameters
       opCode = COM->readByte();                                   //   Read Byte
       if (opCode <= 9 && opCode >= 1) {                           //   Return predefined target
-        COM->writeInt32(p.target[opCode-1]);
+        uint8_t idx = opCode - 1;
+        COM->writeInt32(p.target[idx]);
+        COM->writeUint16(round(p.aTarget[idx]));
+        COM->writeUint16(round(p.vMaxTarget[idx]));
         return;
       }
       switch (opCode) {
