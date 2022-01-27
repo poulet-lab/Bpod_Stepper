@@ -166,7 +166,7 @@ classdef BpodStepperModule < handle
                     varargin{ii} = repmat(varargin{ii},size(varargin{1}));
                 end
                 varargin{ii}(isnan(varargin{ii})) = 0;
-            end            
+            end
             [id, p, a, v] = varargin{:};
 
             s = size(id);
@@ -176,13 +176,10 @@ classdef BpodStepperModule < handle
                 'nonnegative','<=',intmax('int16')},'','Acceleration')
             validateattributes(v,{'numeric'},{'integer','size',s,...
                 'nonnegative','<=',intmax('int16')},'','Peak Acceleration')
-            
-            % write values
+
             for ii = 1:numel(id)
-                obj.Port.write(['T' id(ii)],'uint8')
-                obj.Port.write(p(ii),'int32')
-                obj.Port.write(a(ii),'uint16')
-                obj.Port.write(v(ii),'uint16')
+                obj.Port.write(['T' id(ii)],'uint8',p(ii),'int32',...
+                    [a(ii) v(ii)],'uint16')
             end
         end
 
@@ -199,9 +196,8 @@ classdef BpodStepperModule < handle
             out = zeros(n,3);
             for ii = 1:n
                 obj.Port.write(['G' id(ii)], 'uint8');
-                out(ii,1) = obj.Port.read(1, 'int32');
-                out(ii,2) = obj.Port.read(1, 'uint16');
-                out(ii,3) = obj.Port.read(1, 'uint16');
+                out(ii,1)   = obj.Port.read(1, 'int32');
+                out(ii,2:3) = obj.Port.read(2, 'uint16');
             end
             out([false(n,1) out(:,2:3)==0]) = NaN;
             if nargout
