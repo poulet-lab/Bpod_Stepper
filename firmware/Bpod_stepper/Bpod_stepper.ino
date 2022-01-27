@@ -24,6 +24,7 @@ _______________________________________________________________________________
 #include <limits>
 #include "ArCOM.h"                // Import serial communication wrapper
 #include "EEstore.h"              // Import EEstore library
+#include "EEstoreStruct.h"        // Parameters to be loaded from EEPROM (and default values)
 #include "StepperWrapper.h"       // Import StepperWrapper
 #include "SerialDebug.h"
 
@@ -42,19 +43,7 @@ extern const float PCBrev;        // PCB revision
 extern const uint8_t vDriver;     // version number of TMC stepper driver
 extern const teensyPins pin;      // pin numbers
 extern volatile uint8_t errorID;  // error ID
-
-// Parameters to be loaded from EEPROM (and default values)
-static const int StoreAddress = 0;
-typedef struct{
-  uint16_t rms_current = 800;     // motor RMS current (mA)
-  float vMax = 200;
-  float a = 800;
-  uint8_t chopper = 1;
-  int32_t target[9] {0};
-  uint8_t IOmode[6] {0};
-  uint8_t IOresistor[6] {0};
-}storageVars;
-storageVars p;
+storageVars p;                    // struct for EEPROM storage (see EEstoreStruct.h)
 
 // Pointer to StepperWrapper
 StepperWrapper* wrapper;
@@ -67,7 +56,7 @@ void setup()
   Serial1.begin(1312500);
 
   // Load parameters from EEPROM
-  EEstore<storageVars>::getOrDefault(StoreAddress,p);
+  EEstore<storageVars>::getOrDefault(p);
 
   // Manage error interrupt
   pinMode(pin.Error, OUTPUT);
@@ -180,7 +169,7 @@ void loop()
       return;
     }
     case 'E':                                                     // Store current settings to EEPROM
-      EEstore<storageVars>::set(StoreAddress,p);
+      EEstore<storageVars>::set(p);
       return;
     case 'L':                                                     // Toggle live streaming of motor status
     {

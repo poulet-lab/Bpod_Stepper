@@ -19,6 +19,7 @@ _______________________________________________________________________________
 REVISION HISTORY
 
 version 1.0.0   initial release (thank you: Florian Uekermann)
+version 1.0.1   default address: 0
 
 _______________________________________________________________________________
 */
@@ -57,8 +58,16 @@ class EEstore {
         EEstore<T>::set(address, dataRef);
     }
 
+    static void getOrDefault(T &dataRef) {
+      getOrDefault(0, dataRef);
+    }
+
     static void set(const int address, T &dataRef) {
       EEstore<T> storage(dataRef);
       EEPROM.put(address,storage);
+    }
+
+    static void set(T &dataRef) {
+      set(0, dataRef);
     }
 };
