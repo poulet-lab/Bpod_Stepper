@@ -1,22 +1,23 @@
 classdef BpodStepperLive < handle
 
 properties (Access = private)
-    stepper
+    s
     dRec    = 10        % duration of data stored in ring-buffer [s]
     ts      = .05       % sample interval [s]
     data                % ring-buffer for storing data
     h
     t0      = nan       % value of first time-stamp
     vDiv;               % dividend for calculating steps/s from TSTEP
+    yMax
 end
 
 methods
     function obj = BpodStepperLive(stepper)
         validateattributes(stepper,{'BpodStepperModule'},{'scalar'})
-        obj.stepper = stepper;
-        obj.stepper.Port.Port.BytesAvailableFcn = @obj.update;
+        obj.s = stepper;
+        obj.s.Port.Port.BytesAvailableFcn = @obj.update;
 
-        switch obj.stepper.DriverVersion
+        switch obj.s.DriverVersion
             case 2130
                 obj.vDiv = 13.2E6 / 256;
             case 5160
@@ -26,43 +27,27 @@ methods
         end
 
         obj.data      = nan(3,obj.dRec/obj.ts);
-        obj.data(2,:) = 2^20-1;
-
+        obj.data(2,:) = 0;
+        
         obj.h.figure = figure('Visible','off');
-
-        tmp(1) = subplot(3,1,1);
-        title(tmp(1),'Velocity')
-        ylabel(tmp(1),'v [steps/s]')
-        ylim(tmp(1),[0 obj.stepper.MaxSpeed*1.2])
-
-        tmp(2) = subplot(3,1,2);
-        title(tmp(2),'Acceleration')
-        ylabel(tmp(2),'|a| [steps/s^2]')
-        ylim(tmp(2),[0 obj.stepper.Acceleration*1.2])
-
-        tmp(3) = subplot(3,1,3);
-        title(tmp(3),'Mechanical Load')
-        ylim(tmp(3),[0 1023])
-        set(gca,'YDir','reverse')
-
-        set(tmp, ...
-            'XTick',    [], ...
-            'XColor',   'none', ...
-            'TickDir',  'out')
-        for ii = 1:numel(tmp)
-            obj.h.axes(ii) = axes();
+        obj.yMax = [obj.s.MaxSpeed obj.s.Acceleration 10];
+        for ii = 1:3
+            obj.h.axes(ii) = subplot(3,1,ii);
             obj.h.plot(ii) = plot(obj.h.axes(ii),NaN,NaN,'k','linewidth',2);
-            linkprop([tmp(ii) obj.h.axes(ii)],{'Position','YLim','YDir'});
+            ylim(obj.h.axes(ii),[0 obj.yMax(ii)]);
         end
-
+        title(obj.h.axes(1),'Velocity')
+        title(obj.h.axes(2),'Acceleration')
+        title(obj.h.axes(3),'Mechanical Load')
+        ylabel(obj.h.axes(1),'v [steps/s]')
+        ylabel(obj.h.axes(2),'|a| [steps/s^2]')
+        xlabel(obj.h.axes(end),'time [s]')
+        set(obj.h.axes(3),'YDir','reverse')
         set(obj.h.axes, ...
             'TickDir',  'out', ...
             'XGrid',    'on', ...
             'YGrid',    'on', ...
-            'Box',      'off', ...
-            'Ycolor',   'none', ...
-            'Color',    'none')
-        xlabel(obj.h.axes(end),'time [s]')
+            'Box',      'off')
         linkaxes(obj.h.axes,'x')
 
         set(obj.h.figure, ......
@@ -74,15 +59,15 @@ methods
             'HandleVisibility', 'off', ...
             'Name',             'Stepper Motor Module — Live View')
         movegui(obj.h.figure,'center')
-        set(obj.h.figure,'Visible','on')
         drawnow
+        set(obj.h.figure,'Visible','on')
 
-        flushinput(obj.stepper.Port.Port)
-        obj.stepper.Port.write(['L' 1], 'uint8');
+        flushinput(obj.s.Port.Port)
+        obj.s.Port.write(['L' 1], 'uint8');
     end
 
     function update(obj,~,~)
-        incoming = double(obj.stepper.Port.read(3, 'uint32'));
+        incoming = double(obj.s.Port.read(3, 'uint32'));
         obj.data = [obj.data(:,2:end) incoming];
 
         if isnan(obj.t0)
@@ -96,14 +81,21 @@ methods
         obj.h.plot(2).YData = [abs(diff(v)) NaN] / obj.ts;
         obj.h.plot(3).YData = bitand(1023, obj.data(2,:));
 
+        for ii = 1:3
+            tmp = max(obj.h.plot(ii).YData);
+            if tmp > obj.yMax(ii)
+                obj.yMax(ii) = ceil(tmp/10)*10;
+                ylim(obj.h.axes(ii),[0 obj.yMax(ii)]);
+            end
+        end
         xlim(obj.h.axes(1), min(t) + [0 obj.dRec])
         drawnow limitrate
     end
 
     function delete(obj,~,~)
-        obj.stepper.Port.write(['L' 0], 'uint8');
-        obj.stepper.Port.Port.BytesAvailableFcn = '';
-        flushinput(obj.stepper.Port.Port)
+        obj.s.Port.write(['L' 0], 'uint8');
+        obj.s.Port.Port.BytesAvailableFcn = '';
+        flushinput(obj.s.Port.Port)
     end
 end
 
