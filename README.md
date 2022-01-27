@@ -61,22 +61,26 @@ In addition to using end-switches, the motor can also be stopped by means of ser
 
 
 ### Predefined targets
-The stepper module can store up to 9 target definitions.
+The stepper module can store up to 9 target definitions, along with individual peak velocities and accelerations.
 Movement to one of these targets can be triggered by a single byte serial command (see [*Moving the Motor*](#move-to-a-predefined-target)).
 Alternatively, you can [bind a trigger to one of the IO ports](#bind-movement-trigger-to-IO-port).
 
 
 * #### Define a target
 
-      PUT 1 uInt8: 84 ('T')
-      PUT 1 uInt8: 1 … 9 [target ID]
-      PUT 1 Int32: target position [steps]
+      PUT 1 uInt8:  84 ('T')
+      PUT 1 uInt8:  1 … 9 [target ID]
+      PUT 1 Int32:  target position [steps]
+      PUT 1 uInt16: peak velocity [steps / s, 0 = use global peak velocity]
+      PUT 1 uInt16: acceleration [steps / s^2, 0 = use global acceleration]
 
 * #### Get the definition of a target
 
       PUT 1 uInt8: 71 ('G')
       PUT 1 uInt8: 1 … 9 [target ID]
       GET 1 Int32: target position [steps]
+      GET 1 uInt16: peak velocity [steps / s, 0 = use global peak velocity]
+      GET 1 uInt16: acceleration [steps / s^2, 0 = use global acceleration]
 
 
 ### Configuration of movement parameters
