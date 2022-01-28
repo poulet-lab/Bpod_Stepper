@@ -5,10 +5,10 @@ properties (Access = private)
     dRec    = 10        % duration of data stored in ring-buffer [s]
     ts      = .05       % sample interval [s]
     data                % ring-buffer for storing data
-    h
-    t0      = nan       % value of first time-stamp
-    vDiv;               % dividend for calculating steps/s from TSTEP
+    h                   % handles
+    vDiv                % dividend for calculating steps/s from TSTEP
     yMax
+    yNow    = inf(3,1)
 end
 
 methods
@@ -26,18 +26,21 @@ methods
                 error('Driver IC is not supported.')
         end
 
-        obj.data      = nan(3,obj.dRec/obj.ts);
-        obj.data(2,:) = 0;
-        
+        obj.data      = nan(4,obj.dRec/obj.ts);
+        obj.data(1,:) = (-obj.dRec/obj.ts:-1)*obj.ts;
+
         obj.h.figure = figure('Visible','off');
-        obj.yMax = [obj.s.MaxSpeed obj.s.Acceleration 10];
+        obj.yMax = [obj.s.MaxSpeed; obj.s.Acceleration; 10];
+
         t = {'Velocity','Acceleration','Mechanical Load'};
         for ii = 1:3
             obj.h.axes(ii) = subplot(3,1,ii);
-            obj.h.plot(ii) = line(obj.h.axes(ii),NaN,NaN,'Color','k','linewidth',2);
-            ylim(obj.h.axes(ii),[0 obj.yMax(ii)]);
+            obj.h.plot(ii) = line(obj.h.axes(ii),obj.data(1,:),...
+                obj.data(ii,:),'Color','k','linewidth',2);
             title(obj.h.axes(ii),t{ii})
         end
+        xlim(obj.h.axes, [-obj.dRec 0])
+        ylim(obj.h.axes, [0 inf])
         ylabel(obj.h.axes(1),'v [steps/s]')
         ylabel(obj.h.axes(2),'|a| [steps/s^2]')
         xlabel(obj.h.axes(end),'time [s]')
@@ -46,7 +49,6 @@ methods
             'TickDir',      'out', ...
             'XGrid',        'on', ...
             'YGrid',        'on', ...
-            'Box',          'off', ...
             'XTickLabel',   [])
         linkaxes(obj.h.axes,'x')
 
@@ -68,27 +70,34 @@ methods
 
     function update(obj,~,~)
         incoming = double(obj.s.Port.read(3, 'uint32'));
-        obj.data = [obj.data(:,2:end) incoming];
 
-        if isnan(obj.t0)
-           obj.t0 = incoming(1) / 1E3;
+        if isnan(obj.data(1,end))
+           obj.data(1,:) = obj.data(1,:) + incoming(1)/1E3;
         end
-        t = obj.data(1,:) / 1E3 - obj.t0;
-        v = obj.vDiv ./ obj.data(3,:);
 
-        [obj.h.plot.XData]  = deal(t);
-        obj.h.plot(1).YData = v;
-        obj.h.plot(2).YData = [abs(diff(v)) NaN] / obj.ts;
-        obj.h.plot(3).YData = bitand(1023, obj.data(2,:));
+        tmp      = nan(4,1);
+        tmp(1)   = incoming(1) / 1E3;                       % time-stamp
+        tmp(2)   = obj.vDiv ./ incoming(3);                 % velocity
+        tmp(3)   = abs(tmp(2)-obj.data(2,end)) / obj.ts;    % acceleration
+        tmp(4)   = bitand(1023, incoming(2));               % load
+        obj.data = [obj.data(:,2:end) tmp];
 
+        [obj.h.plot.XData]  = deal(obj.data(1,:)-obj.data(1,end));
+        obj.h.plot(1).YData = obj.data(2,:);
+        obj.h.plot(2).YData = obj.data(3,:);
+        obj.h.plot(3).YData = obj.data(4,:);
+
+        dmax = max(obj.data(2:end,:),[],2) > obj.yMax;
+        yinf = isinf(obj.yNow);
         for ii = 1:3
-            tmp = max(obj.h.plot(ii).YData);
-            if tmp > obj.yMax(ii)
-                obj.yMax(ii) = ceil(tmp/10)*10;
-                ylim(obj.h.axes(ii),[0 obj.yMax(ii)]);
+            if ~yinf(ii) && dmax(ii)
+                obj.yNow(ii) = inf;
+                obj.h.axes(ii).YLim(2) = obj.yNow(ii);
+            elseif yinf(ii) && ~dmax(ii)
+                obj.yNow(ii) = obj.yMax(ii);
+                obj.h.axes(ii).YLim(2) = obj.yNow(ii);
             end
         end
-        xlim(obj.h.axes(1), min(t) + [0 obj.dRec])
         drawnow limitrate
     end
 
