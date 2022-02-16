@@ -18,7 +18,6 @@ _______________________________________________________________________________
 */
 
 
-#include <Arduino.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <limits>
@@ -51,12 +50,12 @@ StepperWrapper* wrapper;
 void setup()
 {
   DEBUG_DELAY(1000);
+  DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
+  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev);
+  DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
 
-  // Initialize serial communication
-  Serial1.begin(1312500);
-
-  // Load parameters from EEPROM
-  EEstore<storageVars>::getOrDefault(p);
+  Serial1.begin(1312500);                                         // Initialize serial communication
+  EEstore<storageVars>::getOrDefault(p);                          // Load parameters from EEPROM
 
   // Manage error interrupt
   pinMode(pin.Error, OUTPUT);
@@ -72,15 +71,14 @@ void setup()
   wrapper->init(p.rms_current);
 
   // Load parameters/defaults
-  wrapper->setPosition(wrapper->readPosition());
+  wrapper->readPosition();                                        // read last known position from SD-card
   wrapper->vMax(p.vMax);
   wrapper->a(p.a);
   wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
   wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
   wrapper->setChopper(p.chopper);
 
-  // Indicate successful start-up
-  StepperWrapper::blinkenlights();
+  StepperWrapper::blinkenlights();                                // Indicate successful start-up
 }
 
 

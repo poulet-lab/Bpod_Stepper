@@ -18,8 +18,6 @@ _______________________________________________________________________________
 */
 
 
-#include <Arduino.h>
-#include <SPI.h>
 #include <TMCStepper.h>
 #include "EEstore.h"                        // Import EEstore library
 #include "StepperWrapper.h"
@@ -39,8 +37,6 @@ volatile uint8_t ISRcode  = 0;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
-  DEBUG_PRINTFUN();
-
   _nIO = (PCBrev<1.2) ? 2 : 6;              // set number of IO pins
 
   pinMode(pin.En, OUTPUT);
@@ -61,6 +57,7 @@ StepperWrapper::StepperWrapper() {
 
   // Initialize SDcard, load position
   this->useSD = this->SD.begin(SdioConfig(FIFO_SDIO));
+  DEBUG_PRINTF("SD card %sdetected.%s\n",(this->useSD) ? "" : "NOT ", (this->useSD) ? " Initalizing." : "");
   if (this->useSD)
     this->filePos.open("position.bin", O_RDWR | O_CREAT);
 
@@ -143,8 +140,6 @@ void StepperWrapper::ISRchangeVM() {
 
 
 void StepperWrapper::init(uint16_t rms_current) {
-  DEBUG_PRINTFUN(rms_current);
-
   if (vDriver == 0x11)
     init2130(rms_current);                  // initialize TMC2130
   else if (vDriver == 0x30)
@@ -155,13 +150,13 @@ void StepperWrapper::init(uint16_t rms_current) {
 
 
 void StepperWrapper::init2100() {
-  DEBUG_PRINTFUN();
+  DEBUG_PRINTLN("Initializing driver: TMC2100");
   StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
 
 
 void StepperWrapper::init2130(uint16_t rms_current) {
-  DEBUG_PRINTFUN();
+  DEBUG_PRINTLN("Initializing driver: TMC2130");
 
   _invertPinDir = true;
 
@@ -208,7 +203,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
 
 
 void StepperWrapper::init5160(uint16_t rms_current) {
-  DEBUG_PRINTFUN(rms_current);
+  DEBUG_PRINTLN("Initializing driver: TMC5160");
 
   _invertPinDir = false;
 
@@ -271,7 +266,7 @@ void StepperWrapper::init5160(uint16_t rms_current) {
 
 
 void StepperWrapper::blinkenlights() {
-  DEBUG_PRINTFUN();
+  DEBUG_PRINTLN("Blinkenlights!");
   pinMode(LED_BUILTIN, OUTPUT);
   for (int i = 750; i > 0; i--) {
     delayMicroseconds(i);
@@ -285,11 +280,12 @@ void StepperWrapper::blinkenlights() {
     delay(50);
     digitalWriteFast(LED_BUILTIN, LOW);
   }
+  DEBUG_PRINTLN("Start-up finished. Waiting for commands.\n");
 }
 
 
 void StepperWrapper::powerDriver(bool power) {
-  DEBUG_PRINTFUN(power);
+  DEBUG_PRINTF("Powering %s driver.\n",(power) ? "up" : "down");
   pinMode(pin.VIO, OUTPUT);
   if (PCBrev>=1.4) {
     digitalWrite(pin.VIO, power);
@@ -299,7 +295,8 @@ void StepperWrapper::powerDriver(bool power) {
 
 
 void StepperWrapper::enableDriver(bool enable) {
-  DEBUG_PRINTFUN(enable);
+  DEBUG_PRINTF("%s driver: EN=%s\n",(enable)?"Enabling":"Disabling",
+    (enable^_invertPinEn)?"HIGH":"LOW");
   pinMode(pin.En, OUTPUT);
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
@@ -326,8 +323,7 @@ float StepperWrapper::idPCB() {
   }
   if (x)
     return 1.3 + x / 10.0;
-  else {
-    // revisions older than 1.4 can be identified by other means:
+  else {                          // revisions older than 1.4:
     pinMode(29, INPUT);
     if (digitalRead(29)) {        // with r1.2 and r1.3 pin 29 reads HIGH
       pinMode(29, INPUT_DISABLE);
@@ -349,17 +345,14 @@ float StepperWrapper::idPCB() {
 
 
 uint8_t StepperWrapper::idDriver() {
-  DEBUG_PRINTFUN();
   TMC2130Stepper* driver = get2130();
-  if (!driver->test_connection()) // if we can connect via SPI
-    return driver->version();     // return driver version
-  else
-    return 0;
+  if (!driver->test_connection())
+    return driver->version();
+  return 0;
 }
 
 
 teensyPins StepperWrapper::getPins(float PCBrev) {
-  DEBUG_PRINTFUN(PCBrev);
   teensyPins pin;
   pin.Error = 33;
   if (PCBrev <= 1.1) {  // the original layout
@@ -400,7 +393,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.En    = 12;
     pin.IO[3] = 15;     // IO4
   }
-  if (PCBrev >= 1.4) {
+  if (PCBrev >= 1.4) {  // r1.4: support for DIAG pins, VIO control and VM monitoring
     pin.Diag0 = 24;
     pin.Diag1 = 25;
     pin.VIO   = 28;
@@ -425,6 +418,7 @@ TMC2130Stepper* StepperWrapper::get2130() {
       SPI.setSCK(pin.CFG2);
       SPI.begin();
     }
+    delay(50);
     driver->begin();
     initialized = true;
   }
@@ -448,6 +442,7 @@ TMC5160Stepper* StepperWrapper::get5160() {
       SPI.setSCK(pin.CFG2);
       SPI.begin();
     }
+    delay(50);
     driver->begin();
     initialized = true;
   }
@@ -457,13 +452,13 @@ TMC5160Stepper* StepperWrapper::get5160() {
 
 
 bool StepperWrapper::SDmode() {
-  DEBUG_PRINTFUN();
   bool sd_mode = true;
   if (vDriver == 0x30) {
     TMC5160Stepper* driver = get5160();
     if (!driver->test_connection())
       sd_mode = driver->sd_mode();
   }
+  DEBUG_PRINTF("Driver configured for %s.\n",(sd_mode) ? "step/dir interface" : "internal ramp generator");
   return sd_mode;
 }
 
@@ -477,8 +472,9 @@ uint32_t StepperWrapper::ISRgeneric(uint32_t t0, uint8_t opCode) {
   if (ISRcode>0)
     return 0;
   uint32_t t1 = millis();
-  if (t0 == 0 || t1 - t0 > debounceMillis)
+  if (t0 == 0 || t1 - t0 > debounceMillis) {
     ISRcode = opCode;
+  }
   return t1;
 }
 
@@ -504,6 +500,12 @@ void StepperWrapper::ISRforwards() {
 void StepperWrapper::ISRbackwards() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'B');
+}
+
+
+void StepperWrapper::ISRzero() {
+  static uint32_t t0  = 0;
+  t0 = StepperWrapper::ISRgeneric(t0,'Z');
 }
 
 
@@ -544,6 +546,7 @@ void StepperWrapper::clearError() {
 
 
 void StepperWrapper::RMS(uint16_t rms_current) {
+  DEBUG_PRINTF("Setting RMS current to %d mA\n",rms_current);
   switch (vDriver) {
     case 0x11:
       {
@@ -582,11 +585,11 @@ uint16_t StepperWrapper::RMS() {
   }
 }
 
+uint16_t StepperWrapper::getMicrosteps() {
+  return _microsteps;
+}
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
-  DEBUG_PRINTFUN(ms);
-
-  // sanitize input argument
   ms = constrain(ms,1,256);
   ms = pow(2,ceil(log(ms)/log(2)));
   ms = (ms==1) ? 0 : ms;
@@ -598,7 +601,7 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       driver->microsteps(ms);
       _microsteps = driver->microsteps();
       _microsteps = (_microsteps==0) ? 1 : _microsteps;
-      return;
+      break;
       }
     case 0x30:
       {
@@ -606,39 +609,39 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       driver->microsteps(ms);
       _microsteps = driver->microsteps();
       _microsteps = (_microsteps==0) ? 1 : _microsteps;
-      return;
+      break;
       }
+    otherwise: // assume TMC2100
+      switch (ms) {
+        case 16:
+          pinMode(pin.CFG1, INPUT);
+          pinMode(pin.CFG2, INPUT);
+          break;
+        case 4:
+          pinMode(pin.CFG1, OUTPUT);
+          pinMode(pin.CFG2, INPUT);
+          digitalWrite(pin.CFG1, HIGH);
+          break;
+        case 2:
+          pinMode(pin.CFG1, INPUT);
+          pinMode(pin.CFG2, OUTPUT);
+          digitalWrite(pin.CFG2, LOW);
+          break;
+        default:
+          ms = 1;
+          pinMode(pin.CFG1, OUTPUT);
+          pinMode(pin.CFG2, OUTPUT);
+          digitalWrite(pin.CFG1, LOW);
+          digitalWrite(pin.CFG2, LOW);
+      }
+      _microsteps = ms;
   }
-
-  // for TMC2100:
-  switch (ms) {
-    case 16:
-      pinMode(pin.CFG1, INPUT);
-      pinMode(pin.CFG2, INPUT);
-      break;
-    case 4:
-      pinMode(pin.CFG1, OUTPUT);
-      pinMode(pin.CFG2, INPUT);
-      digitalWrite(pin.CFG1, HIGH);
-      break;
-    case 2:
-      pinMode(pin.CFG1, INPUT);
-      pinMode(pin.CFG2, OUTPUT);
-      digitalWrite(pin.CFG2, LOW);
-      break;
-    default:
-      ms = 1;
-      pinMode(pin.CFG1, OUTPUT);
-      pinMode(pin.CFG2, OUTPUT);
-      digitalWrite(pin.CFG1, LOW);
-      digitalWrite(pin.CFG2, LOW);
-  }
-  _microsteps = ms;
+  DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
 
 
-void StepperWrapper::setChopper(uint8_t chopper) {
-  chopper = constrain(chopper,0,1);
+void StepperWrapper::setChopper(bool chopper) {
+  DEBUG_PRINTF("Switching to %s chopper\n",(chopper) ? "voltage" : "PWM");
   switch (vDriver) {
     case 0x11:
       {
@@ -656,7 +659,7 @@ void StepperWrapper::setChopper(uint8_t chopper) {
 }
 
 
-uint8_t StepperWrapper::getChopper() {
+bool StepperWrapper::getChopper() {
   switch (vDriver) {
     case 0x11:
       {
@@ -684,14 +687,13 @@ uint8_t StepperWrapper::getIOmode(uint8_t idx) {
 
 
 void StepperWrapper::setIOmode(uint8_t mode[], uint8_t l) {
-  DEBUG_PRINTFUN();
   for (uint8_t idx = 1; idx <= l; idx++)
     setIOmode(idx,mode[idx-1]);
 }
 
 
 void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
-  DEBUG_PRINTFUN(idx);
+  DEBUG_PRINTF("Setting IO%d to mode %d\n",idx,mode);
   idx--;
   if (idx>=_nIO)
     return;
@@ -739,6 +741,9 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 'B':
       attachInput(idx, ISRbackwards);
       break;
+    case 'Z':
+      attachInput(idx, ISRzero);
+      break;
     case 'J':
     case 'L':
       pinMode(pin.IO[idx], _ioResistor[idx]);
@@ -751,7 +756,6 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
 
 
 void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
-  DEBUG_PRINTFUN(idx);
   pinMode(pin.IO[idx], _ioResistor[idx]);
   uint8_t direction = (_ioResistor[idx]==INPUT_PULLUP) ? FALLING : RISING;
   attachInterrupt(digitalPinToInterrupt(pin.IO[idx]), userFunc, direction);
@@ -759,7 +763,6 @@ void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
 
 
 void StepperWrapper::toggleISRlimit(int8_t direction) {
-  direction = constrain(direction,-1,1);
   for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
     if (_ioMode[idx] == 'J' || _ioMode[idx] == 'L') {
       if (_ioMode[idx] - 75 == direction)
@@ -772,7 +775,6 @@ void StepperWrapper::toggleISRlimit(int8_t direction) {
 
 
 bool StepperWrapper::atLimit(int8_t direction) {
-  direction = constrain(direction,-1,1);
   for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
     if (_ioMode[idx] - 75 == direction) {
       if (digitalRead(pin.IO[idx]) ^ (_ioResistor[idx]==INPUT_PULLUP))
@@ -807,6 +809,7 @@ void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
   idx--;
   if (idx>=_nIO || r > 2)
     return;
+
   if (r > 0)
     r++;
   _ioResistor[idx] = r;
@@ -818,8 +821,7 @@ void StepperWrapper::rotate() {
   this->rotate(1);
 }
 
-int32_t StepperWrapper::readPosition() {
-  DEBUG_PRINTFUN();
+void StepperWrapper::readPosition() {
   if (!this->useSD)
     return 0;
   int32_t pos;
@@ -827,25 +829,29 @@ int32_t StepperWrapper::readPosition() {
   int count = this->filePos.read((uint8_t*) &pos, 4);
   if (count != 4)
     return 0;
+  DEBUG_PRINTF("Loading current position from SD card: %d\n",pos);
   return pos;
 }
 
-bool StepperWrapper::writePosition(int32_t pos) {
-  DEBUG_PRINTFUN(pos);
-  static int32_t lastPos = this->readPosition();
-  if (!this->useSD || pos == lastPos)
+bool StepperWrapper::writePosition() {
+  static int32_t lastPos = _microPosition;
+  if (!this->useSD || _microPosition == lastPos)
     return false;
   this->filePos.rewind();
-  size_t count = this->filePos.write((uint8_t*) &pos, 4);
+  size_t count = this->filePos.write((uint8_t*) &_microPosition, 4);
   this->filePos.sync();
   if (count == 4) {
-    lastPos = pos;
+    lastPos = _microPosition;
+    DEBUG_PRINTF("Storing current position to SD card: %d\n\n",_microPosition);
     return true;
   } else
     return false;
 }
 
 void StepperWrapper::go2target(uint8_t id) {
+  if (this->isRunning() || this->position() == p.target[id])
+    return;
+  DEBUG_PRINTF("Predefined target #%d\n",id);
   this->a((p.aTarget[id]>0) ? p.aTarget[id] : p.a);
   this->vMax((p.vMaxTarget[id]>0) ? p.vMaxTarget[id] : p.vMax);
   this->position(p.target[id]);

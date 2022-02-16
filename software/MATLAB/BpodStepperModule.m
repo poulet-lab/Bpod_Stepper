@@ -47,6 +47,12 @@ classdef BpodStepperModule < handle
     methods
         function obj = BpodStepperModule(portString)
 
+            % try to guess portString
+            if ~exist('portString','var') && ~verLessThan('matlab','9.7')
+                tmp = sort(serialportlist("available"));
+                portString = tmp{1};
+            end
+            
             % connect to stepper module
             obj.Port = ArCOMObject_Stepper(portString, 115200);
             obj.Port.write(212, 'uint8');
@@ -283,26 +289,26 @@ classdef BpodStepperModule < handle
             end
         end
 
-        function varargout = getMode(obj, idx)
+        function varargout = getMode(obj, id)
             % Return the currently configured mode of IO port IDX
             nargoutchk(0,1)
             narginchk(1,2)
-            if ~exist('idx','var')
-                idx = 1:6;
+            if ~exist('id','var')
+                id = 1:6;
             else
-                validateattributes(idx,{'numeric'},...
-                    {'2d','increasing','integer','>=',1,'<=',6})
+                validateattributes(id,{'numeric'},...
+                    {'2d','increasing','integer','>=',1,'<=',6},'','ID')
             end
-            out = zeros(1,numel(idx));
-            for ii = 1:numel(idx)
-                obj.Port.write(['GM' idx(ii)], 'uint8');
+            out = zeros(1,numel(id));
+            for ii = 1:numel(id)
+                obj.Port.write(['GM' id(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
             end
             if nargout
                 varargout{1} = out;
             else
                 for ii = 1:numel(out)
-                    fprintf('IO%d: %3d ',idx(ii),out(ii));
+                    fprintf('IO%d: %3d ',id(ii),out(ii));
                     if out(ii) == 0
                         fprintf('(unconfigured)\n');
                     elseif out(ii) < 10
@@ -314,13 +320,16 @@ classdef BpodStepperModule < handle
             end
         end
 
-        function setMode(obj, idx, M)
-            % Set the input mode M for IO port IDX (cf. readme)
-            validateattributes(idx,{'numeric'},...
-                {'2d','increasing','integer','>=',1,'<=',6})
-            validateattributes(M,{'numeric','char'},{'scalar'})
-            for ii = 1:numel(idx)
-                obj.Port.write(['M' idx(ii) M], 'uint8');
+        function setMode(obj, id, M)
+            % Set the input mode M for IO port ID (cf. readme)
+            validateattributes(id,{'numeric'},...
+                {'2d','increasing','integer','>=',1,'<=',6},'','ID')
+            if isscalar(M)
+                M = repmat(M,size(id));
+            end
+            validateattributes(M,{'numeric','char'},{'size',size(id)})
+            for ii = 1:numel(id)
+                obj.Port.write(['M' id(ii) M(ii)], 'uint8');
             end
         end
 

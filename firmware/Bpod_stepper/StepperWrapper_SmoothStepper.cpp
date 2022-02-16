@@ -98,3 +98,7 @@ void StepperWrapper_SmoothStepper::vMax(float v) {
   DEBUG_PRINTFUN(v);
   _stepper->setMaxSpeed(v * (float) _microsteps);
 }
+
+bool StepperWrapper_SmoothStepper::isRunning() {
+  return _stepper->isRunning();
+}
