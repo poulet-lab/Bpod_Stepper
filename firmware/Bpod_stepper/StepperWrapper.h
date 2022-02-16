@@ -205,8 +205,6 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     void softStop();
     float vMax();
     void vMax(float v);
-    IntervalTimer postStopTimer;
-    static void PostStop();
 
   private:
     uint32_t _aMu;
@@ -216,8 +214,10 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     Stepper* _motor;
     StepControl* _stepControl;
     RotateControl* _rotateControl;
-    static void CBstop();
     void updateMicroPosition();
+    static void CBstop();
+    IntervalTimer postStopTimer;
+    static void PostStop();
 };
 
 

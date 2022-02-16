@@ -18,7 +18,6 @@ _______________________________________________________________________________
 */
 
 
-#include <Arduino.h>
 #include <TMCStepper.h>
 #include "StepperWrapper.h"
 #include "SerialDebug.h"
@@ -157,7 +156,7 @@ void StepperWrapper_TeensyStep::CBstop() {
   w->postStopTimer.begin(StepperWrapper_TeensyStep::PostStop, 50);
 }
 
-static void StepperWrapper_TeensyStep::PostStop() {
+void StepperWrapper_TeensyStep::PostStop() {
   StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) wrapper;
   w->postStopTimer.end();
   w->updateMicroPosition();
