@@ -26,6 +26,7 @@ methods
                 error('Driver IC is not supported.')
         end
 
+        obj.dRec      = obj.dRec + 10*obj.ts;
         obj.data      = nan(4,obj.dRec/obj.ts);
         obj.data(1,:) = (-obj.dRec/obj.ts:-1)*obj.ts;
 
@@ -39,7 +40,7 @@ methods
                 obj.data(ii,:),'Color','k','linewidth',2);
             title(obj.h.axes(ii),t{ii})
         end
-        xlim(obj.h.axes, [-obj.dRec 0])
+        xlim(obj.h.axes, [-obj.dRec+10*obj.ts 0])
         ylim(obj.h.axes, [0 inf])
         ylabel(obj.h.axes(1),'v [steps/s]')
         ylabel(obj.h.axes(2),'|a| [steps/s^2]')
