@@ -71,7 +71,7 @@ void setup()
   wrapper->init(p.rms_current);
 
   // Load parameters/defaults
-  wrapper->readPosition();                                        // read last known position from SD-card
+  wrapper->setPosition(wrapper->readPosition());                  // read last known position from SD-card
   wrapper->vMax(p.vMax);
   wrapper->a(p.a);
   wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));

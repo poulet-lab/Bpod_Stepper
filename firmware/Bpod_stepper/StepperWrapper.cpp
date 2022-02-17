@@ -611,7 +611,7 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
       }
-    otherwise: // assume TMC2100
+    default: // assume TMC2100
       switch (ms) {
         case 16:
           pinMode(pin.CFG1, INPUT);
@@ -821,7 +821,7 @@ void StepperWrapper::rotate() {
   this->rotate(1);
 }
 
-void StepperWrapper::readPosition() {
+int32_t StepperWrapper::readPosition() {
   if (!this->useSD)
     return 0;
   int32_t pos;
@@ -833,16 +833,16 @@ void StepperWrapper::readPosition() {
   return pos;
 }
 
-bool StepperWrapper::writePosition() {
-  static int32_t lastPos = _microPosition;
-  if (!this->useSD || _microPosition == lastPos)
+bool StepperWrapper::writePosition(int32_t pos) {
+  static int32_t lastPos = readPosition();
+  if (!this->useSD || pos == lastPos)
     return false;
   this->filePos.rewind();
   size_t count = this->filePos.write((uint8_t*) &_microPosition, 4);
   this->filePos.sync();
   if (count == 4) {
-    lastPos = _microPosition;
-    DEBUG_PRINTF("Storing current position to SD card: %d\n\n",_microPosition);
+    lastPos = pos;
+    DEBUG_PRINTF("Storing current position to SD card: %d\n\n",pos);
     return true;
   } else
     return false;

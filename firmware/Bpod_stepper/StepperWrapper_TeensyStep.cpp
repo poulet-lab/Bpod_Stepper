@@ -29,10 +29,8 @@ StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
   _motor->setInverseRotation(_invertPinDir);
   _motor->setPosition(0);
-
   _stepControl = new StepControl;
   _stepControl->setCallback(CBstop);
-
   _rotateControl = new RotateControl;
 }
 
@@ -60,7 +58,7 @@ void StepperWrapper_TeensyStep::hardStop() {
   Serial1COM.writeByte(4);
   digitalWriteFast(LED_BUILTIN, LOW);
   updateMicroPosition();
-  writePosition();
+  writePosition(_microPosition);
 }
 
 void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
@@ -99,9 +97,11 @@ void StepperWrapper_TeensyStep::setPosition(int32_t pos) {
   if (isRunning() || pos == _microPosition)
     return;
   DEBUG_PRINTF("Setting position to %d micro-steps\n",pos);
+  noInterrupts();
   _microPosition = pos;
+  interrupts();
   _motor->setPosition(pos);
-  writePosition();
+  writePosition(pos);
 }
 
 void StepperWrapper_TeensyStep::rotate(int8_t dir) {
@@ -153,7 +153,7 @@ void StepperWrapper_TeensyStep::CBstop() {
   digitalWriteFast(LED_BUILTIN, LOW);
 
   // Bit of a hack, as the callback is sometimes fired slightly too early:
-  w->postStopTimer.begin(StepperWrapper_TeensyStep::PostStop, 50);
+  w->postStopTimer.begin(StepperWrapper_TeensyStep::PostStop, 1);
 }
 
 void StepperWrapper_TeensyStep::PostStop() {
@@ -161,7 +161,7 @@ void StepperWrapper_TeensyStep::PostStop() {
   w->postStopTimer.end();
   w->updateMicroPosition();
   DEBUG_PRINTF("Motor stopped at position %d\n",w->_microPosition);
-  w->writePosition();
+  w->writePosition(w->_microPosition);
 }
 
 bool StepperWrapper_TeensyStep::isRunning() {
@@ -176,6 +176,8 @@ void StepperWrapper_TeensyStep::setMicrosteps(uint16_t ms) {
 }
 
 void StepperWrapper_TeensyStep::updateMicroPosition() {
+  noInterrupts();
   _microPosition += floor(_motor->getPosition() * (_msRes/_microsteps));
+  interrupts();
   _motor->setPosition(0);
 }

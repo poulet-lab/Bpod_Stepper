@@ -23,7 +23,7 @@ _______________________________________________________________________________
 
 #include <TeensyStep.h>
 #include <TMCStepper.h>
-#include "SdFat.h"
+#include <SdFat.h>
 #include "ArCOM.h"
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
@@ -95,7 +95,7 @@ class StepperWrapper
     uint8_t getIOresistor(uint8_t idx);         // get input resistor (specific IO port)
     void setStream(bool enable);                // enable/disable live streaming of motor parameters
     bool getStream();                           // get status of live stream
-    void readPosition();                        // read _microPosition from SD card
+    int32_t readPosition();                     // read _microPosition from SD card
 
   protected:
     volatile int32_t _microPosition;
@@ -112,7 +112,7 @@ class StepperWrapper
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     ArCOM *_COM;
-    bool writePosition();                       // Write _microPosition to SD card
+    bool writePosition(int32_t pos);            // Write _microPosition to SD card
     const uint16_t _msRes = (vDriver>0)?256:16; // highest microstepping resolution available
 
   private:
