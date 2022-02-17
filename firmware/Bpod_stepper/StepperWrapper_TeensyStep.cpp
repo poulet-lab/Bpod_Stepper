@@ -169,8 +169,8 @@ bool StepperWrapper_TeensyStep::isRunning() {
 }
 
 void StepperWrapper_TeensyStep::setMicrosteps(uint16_t ms) {
-  updateMicroPosition();
   StepperWrapper::setMicrosteps(ms);
+  updateMicroPosition();
   _vMaxMu = round(_vMax * _microsteps);
   _aMu    = round(_a * _microsteps);
 }
