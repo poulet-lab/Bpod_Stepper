@@ -12,14 +12,9 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-_______________________________________________________________________________
 */
 
-
 #include <avr/io.h>
-#include <avr/interrupt.h>
 #include <limits>
 #include "ArCOM.h"                // Import serial communication wrapper
 #include "EEstore.h"              // Import EEstore library
@@ -77,6 +72,7 @@ void setup()
   wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
   wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
   wrapper->setChopper(p.chopper);
+  wrapper->RMS(p.rms_current);
 
   StepperWrapper::blinkenlights();                                // Indicate successful start-up
 }
@@ -245,9 +241,7 @@ void loop()
 }
 
 void throwError() {
-  // Placeholder for proper error handler
-  DEBUG_PRINT("Error ");
-  DEBUG_PRINTLN(errorID);
+  // TODO: Implement proper error handler
   Serial1COM.writeByte(1);
 }
 
@@ -258,7 +252,7 @@ void returnModuleInfo() {
   Serial1COM.writeCharArray(moduleName, sizeof(moduleName) - 1);  // Module name
   Serial1COM.writeByte(1);                                        // 1 if more info follows, 0 if not
   Serial1COM.writeByte('#');                                      // Op code for: Number of behavior events this module can generate
-  Serial1COM.writeByte(3);                                        // 3 states ("Start", "Stop" and "Limit")
+  Serial1COM.writeByte(nEventNames);
   Serial1COM.writeByte(1);                                        // 1 if more info follows, 0 if not
   Serial1COM.writeByte('E');                                      // Op code for: Behavior event names
   Serial1COM.writeByte(nEventNames);

@@ -17,7 +17,6 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 _______________________________________________________________________________
 */
 
-
 #include <TMCStepper.h>
 #include "EEstore.h"                        // Import EEstore library
 #include "StepperWrapper.h"
@@ -44,10 +43,10 @@ StepperWrapper::StepperWrapper() {
   if (PCBrev>=1.4) {
     pinMode(pin.VIO, OUTPUT);
 
-    pinMode(pin.Diag0, INPUT_PULLUP);       // DIAG pins on TMC5160 ...
-    pinMode(pin.Diag1, INPUT_PULLUP);       // use open collector output
-    //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
-    //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
+    pinMode(pin.Diag0, INPUT_PULLUP);
+    pinMode(pin.Diag1, INPUT_PULLUP);
+    //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, RISING);
+    //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, RISING);
 
     pinMode(pin.VM, INPUT);
     attachInterrupt(digitalPinToInterrupt(pin.VM), ISRchangeVM, CHANGE);
@@ -105,30 +104,28 @@ void StepperWrapper::setStream(bool enable) {
 }
 
 void StepperWrapper::ISRdiag0() {
-  DEBUG_PRINTFUN();
   if (errorID)
     return;
-  TMC2130Stepper* driver = get2130();
-  if (driver->drv_err()) {
-    if (driver->uv_cp())
-      throwError(3);                        // undervoltage charge-pump
-    else if (driver->otpw())
-      throwError(4);                        // overtemperature pre-warning threshold is exceeded
-    else if (driver->ot())
-      throwError(5);                        // overtemperature limit has been reached
-    else if (driver->s2gb())
-      throwError(6);                        // short to ground indicator phase B
-    else if (driver->s2ga())
-      throwError(7);                        // short to ground indicator phase A
+  uint8_t gstat = get2130()->GSTAT();
+  if (bitRead(gstat,2))
+    throwError(3);                          // undervoltage charge-pump
+  else if (bitRead(gstat,1)) {
+    uint32_t status = get2130()->DRV_STATUS();
+    if (bitRead(status, 25))
+      throwError(4);                        // overtemperature limit has been reached
+    else if (bitRead(status, 26))
+      throwError(5);                        // overtemperature pre-warning threshold is exceeded
+    else if (bitRead(status, 27))
+      throwError(6);                        // short to ground indicator phase A
+    else if (bitRead(status, 28))
+      throwError(7);                        // short to ground indicator phase B
   }
   // TODO
 }
 
-
 void StepperWrapper::ISRdiag1() {
-  DEBUG_PRINTFUN();
+  DEBUG_PRINTLN("Stall detected!");
 }
-
 
 void StepperWrapper::ISRchangeVM() {
   DEBUG_PRINTFUN();
@@ -137,7 +134,6 @@ void StepperWrapper::ISRchangeVM() {
   else
     throwError(1);
 }
-
 
 void StepperWrapper::init(uint16_t rms_current) {
   if (vDriver == 0x11)
@@ -148,12 +144,10 @@ void StepperWrapper::init(uint16_t rms_current) {
     init2100();                             // initialize TMC2100
 }
 
-
 void StepperWrapper::init2100() {
   DEBUG_PRINTLN("Initializing driver: TMC2100");
   StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
-
 
 void StepperWrapper::init2130(uint16_t rms_current) {
   DEBUG_PRINTLN("Initializing driver: TMC2130");
@@ -164,10 +158,13 @@ void StepperWrapper::init2130(uint16_t rms_current) {
 
   // configuration of DIAG pins & interrupts
   driver->GSTAT(0b111);                     // reset error flags
+
   driver->diag0_error(true);                // enable DIAG0 active on driver errors
-  driver->diag0_otpw(true);                 // enable DIAG0 active on driver over temperature prewarning
-  attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, CHANGE);
+  driver->diag1_stall(true);
+  driver->diag0_int_pushpull(false);
+  driver->diag1_pushpull(false);
+  attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, FALLING);
+  attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, FALLING);
 
   // RMS current
   driver->rms_current(rms_current,1);       // set motor current, standstill reduction disabled
@@ -200,7 +197,6 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   driver->iholddelay(0);                    // instant IHOLD
   driver->freewheel(0x01);                  // 0x00 = normal operation, 0x01 = freewheeling
 }
-
 
 void StepperWrapper::init5160(uint16_t rms_current) {
   DEBUG_PRINTLN("Initializing driver: TMC5160");
@@ -264,7 +260,6 @@ void StepperWrapper::init5160(uint16_t rms_current) {
   // driver->chm(0);
 }
 
-
 void StepperWrapper::blinkenlights() {
   DEBUG_PRINTLN("Blinkenlights!");
   pinMode(LED_BUILTIN, OUTPUT);
@@ -283,7 +278,6 @@ void StepperWrapper::blinkenlights() {
   DEBUG_PRINTLN("Start-up finished. Waiting for commands.\n");
 }
 
-
 void StepperWrapper::powerDriver(bool power) {
   DEBUG_PRINTF("Powering %s driver.\n",(power) ? "up" : "down");
   pinMode(pin.VIO, OUTPUT);
@@ -293,14 +287,12 @@ void StepperWrapper::powerDriver(bool power) {
   }
 }
 
-
 void StepperWrapper::enableDriver(bool enable) {
   DEBUG_PRINTF("%s driver: EN=%s\n",(enable)?"Enabling":"Disabling",
     (enable^_invertPinEn)?"HIGH":"LOW");
   pinMode(pin.En, OUTPUT);
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
-
 
 float StepperWrapper::idPCB() {
   DEBUG_PRINTFUN();
@@ -343,14 +335,12 @@ float StepperWrapper::idPCB() {
   }
 }
 
-
 uint8_t StepperWrapper::idDriver() {
   TMC2130Stepper* driver = get2130();
   if (!driver->test_connection())
     return driver->version();
   return 0;
 }
-
 
 teensyPins StepperWrapper::getPins(float PCBrev) {
   teensyPins pin;
@@ -402,7 +392,6 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
   return pin;
 }
 
-
 TMC2130Stepper* StepperWrapper::get2130() {
   static bool initialized = false;
   static TMC2130Stepper* driver;
@@ -425,7 +414,6 @@ TMC2130Stepper* StepperWrapper::get2130() {
 
   return driver;
 }
-
 
 TMC5160Stepper* StepperWrapper::get5160() {
   static bool initialized = false;
@@ -450,7 +438,6 @@ TMC5160Stepper* StepperWrapper::get5160() {
   return driver;
 }
 
-
 bool StepperWrapper::SDmode() {
   bool sd_mode = true;
   if (vDriver == 0x30) {
@@ -462,11 +449,9 @@ bool StepperWrapper::SDmode() {
   return sd_mode;
 }
 
-
 void StepperWrapper::ISRblinkError() {
   digitalWriteFast(LED_BUILTIN, !digitalReadFast(LED_BUILTIN));
 }
-
 
 uint32_t StepperWrapper::ISRgeneric(uint32_t t0, uint8_t opCode) {
   if (ISRcode>0)
@@ -478,36 +463,30 @@ uint32_t StepperWrapper::ISRgeneric(uint32_t t0, uint8_t opCode) {
   return t1;
 }
 
-
 void StepperWrapper::ISRsoftStop() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'x');
 }
-
 
 void StepperWrapper::ISRhardStop() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'X');
 }
 
-
 void StepperWrapper::ISRforwards() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'F');
 }
-
 
 void StepperWrapper::ISRbackwards() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'B');
 }
 
-
 void StepperWrapper::ISRzero() {
   static uint32_t t0  = 0;
   t0 = StepperWrapper::ISRgeneric(t0,'Z');
 }
-
 
 void StepperWrapper::ISRpos1() { StepperWrapper::ISRposN(1); }
 void StepperWrapper::ISRpos2() { StepperWrapper::ISRposN(2); }
@@ -523,9 +502,8 @@ void StepperWrapper::ISRposN(uint8_t n) {
   t0[n-1] = StepperWrapper::ISRgeneric(t0[n-1],n);
 }
 
-
 void StepperWrapper::throwError(uint8_t ID) {
-  DEBUG_PRINTFUN(ID);
+  DEBUG_PRINTF("ERROR %d\n",ID);
   if (errorID)
     return;
   enableDriver(false);
@@ -535,51 +513,33 @@ void StepperWrapper::throwError(uint8_t ID) {
   timerErrorBlink.begin(ISRblinkError, 250000);
 }
 
-
 void StepperWrapper::clearError() {
-  DEBUG_PRINTFUN();
   errorID = 0;
   digitalWrite(pin.Error, LOW);
   timerErrorBlink.end();
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
-
 void StepperWrapper::RMS(uint16_t rms_current) {
-  DEBUG_PRINTF("Setting RMS current to %d mA\n",rms_current);
   switch (vDriver) {
     case 0x11:
-      {
-        rms_current = constrain(rms_current,0,850);
-        TMC2130Stepper* driver = get2130();
-        driver->rms_current(rms_current);
-        return;
-      }
+      get2130()->rms_current(min(rms_current, 850));
+      break;
     case 0x30:
-      {
-        rms_current = constrain(rms_current,0,2000);
-        TMC5160Stepper* driver = get5160();
-        driver->rms_current(rms_current);
-        return;
-      }
+      get5160()->rms_current(min(rms_current,2000));
+      break;
     default:
       return;
   }
+  DEBUG_PRINTF("RMS current set to %d mA\n",RMS());
 }
-
 
 uint16_t StepperWrapper::RMS() {
   switch (vDriver) {
     case 0x11:
-      {
-        TMC2130Stepper* driver = get2130();
-        return(driver->rms_current());
-      }
+      return get2130()->rms_current();
     case 0x30:
-      {
-        TMC5160Stepper* driver = get5160();
-        return(driver->rms_current());
-      }
+      return get5160()->rms_current();
     default:
       return 0;
   }
@@ -590,28 +550,22 @@ uint16_t StepperWrapper::getMicrosteps() {
 }
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
-  ms = constrain(ms,1,256);
+  ms = constrain(ms,1,_msRes);
   ms = pow(2,ceil(log(ms)/log(2)));
   ms = (ms==1) ? 0 : ms;
 
   switch (vDriver) {
-    case 0x11:
-      {
-      TMC2130Stepper* driver = get2130();
-      driver->microsteps(ms);
-      _microsteps = driver->microsteps();
+    case 0x11:  // TMC2130
+      get2130()->microsteps(ms);
+      _microsteps = get2130()->microsteps();
       _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
-      }
-    case 0x30:
-      {
-      TMC5160Stepper* driver = get5160();
-      driver->microsteps(ms);
-      _microsteps = driver->microsteps();
+    case 0x30:  // TMC5160
+      get5160()->microsteps(ms);
+      _microsteps = get5160()->microsteps();
       _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
-      }
-    default: // assume TMC2100
+    default:    // TMC2100 (assumed)
       switch (ms) {
         case 16:
           pinMode(pin.CFG1, INPUT);
@@ -619,8 +573,8 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
           break;
         case 4:
           pinMode(pin.CFG1, OUTPUT);
-          pinMode(pin.CFG2, INPUT);
           digitalWrite(pin.CFG1, HIGH);
+          pinMode(pin.CFG2, INPUT);
           break;
         case 2:
           pinMode(pin.CFG1, INPUT);
@@ -630,8 +584,8 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
         default:
           ms = 1;
           pinMode(pin.CFG1, OUTPUT);
-          pinMode(pin.CFG2, OUTPUT);
           digitalWrite(pin.CFG1, LOW);
+          pinMode(pin.CFG2, OUTPUT);
           digitalWrite(pin.CFG2, LOW);
       }
       _microsteps = ms;
@@ -639,61 +593,43 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
   DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
 
-
 void StepperWrapper::setChopper(bool chopper) {
   DEBUG_PRINTF("Switching to %s chopper\n",(chopper) ? "voltage" : "PWM");
   switch (vDriver) {
     case 0x11:
-      {
-        TMC2130Stepper* driver = get2130();
-        driver->en_pwm_mode(chopper);
-        return;
-      }
+      get2130()->en_pwm_mode(chopper);
+      return;
     case 0x30:
-      {
-        TMC5160Stepper* driver = get5160();
-        driver->en_pwm_mode(chopper);
-        return;
-      }
+      get5160()->en_pwm_mode(chopper);
+      return;
   }
 }
-
 
 bool StepperWrapper::getChopper() {
   switch (vDriver) {
     case 0x11:
-      {
-        TMC2130Stepper* driver = get2130();
-        return driver->en_pwm_mode();
-      }
+      return get2130()->en_pwm_mode();
     case 0x30:
-      {
-        TMC5160Stepper* driver = get5160();
-        return driver->en_pwm_mode();
-      }
+      return get5160()->en_pwm_mode();
     default:
       return 0;
   }
 }
 
-
 uint8_t StepperWrapper::getIOmode(uint8_t idx) {
-  DEBUG_PRINTFUN(idx);
   idx--;
   if (idx>=_nIO)
     return 0;
   return _ioMode[idx];
 }
 
-
 void StepperWrapper::setIOmode(uint8_t mode[], uint8_t l) {
   for (uint8_t idx = 1; idx <= l; idx++)
     setIOmode(idx,mode[idx-1]);
 }
 
-
 void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
-  DEBUG_PRINTF("Setting IO%d to mode %d\n",idx,mode);
+  DEBUG_PRINTF("Setting IO%d to mode %3d\n",idx,mode);
   idx--;
   if (idx>=_nIO)
     return;
@@ -754,13 +690,11 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
   }
 }
 
-
 void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
   pinMode(pin.IO[idx], _ioResistor[idx]);
   uint8_t direction = (_ioResistor[idx]==INPUT_PULLUP) ? FALLING : RISING;
   attachInterrupt(digitalPinToInterrupt(pin.IO[idx]), userFunc, direction);
 }
-
 
 void StepperWrapper::toggleISRlimit(int8_t direction) {
   for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
@@ -773,7 +707,6 @@ void StepperWrapper::toggleISRlimit(int8_t direction) {
   }
 }
 
-
 bool StepperWrapper::atLimit(int8_t direction) {
   for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++ ) {
     if (_ioMode[idx] - 75 == direction) {
@@ -784,9 +717,7 @@ bool StepperWrapper::atLimit(int8_t direction) {
   return false;
 }
 
-
 uint8_t StepperWrapper::getIOresistor(uint8_t idx) {
-  DEBUG_PRINTFUN(idx);
   idx--;
   if (idx>=_nIO)
     return 0;
@@ -796,20 +727,16 @@ uint8_t StepperWrapper::getIOresistor(uint8_t idx) {
   return output;
 }
 
-
 void StepperWrapper::setIOresistor(uint8_t r[], uint8_t l) {
-  DEBUG_PRINTFUN();
   for (uint8_t idx = 1; idx <= l; idx++)
     setIOresistor(idx,r[idx-1]);
 }
 
-
 void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
-  DEBUG_PRINTFUN(idx);
+  DEBUG_PRINTF("Setting IO%d to %s\n",idx,(r==0?"floating":(r==1?"pull-up":"pull-down")));
   idx--;
   if (idx>=_nIO || r > 2)
     return;
-
   if (r > 0)
     r++;
   _ioResistor[idx] = r;

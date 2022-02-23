@@ -88,7 +88,7 @@ int32_t StepperWrapper_TeensyStep::position() {
 }
 
 void StepperWrapper_TeensyStep::position(int32_t target) {
-  DEBUG_PRINTF("Moving to position %d\n",target);
+  DEBUG_PRINTF("Target position: %d micro-steps\n",target*_msRes);
   target = (target*_msRes - _microPosition) / (_msRes/_microsteps);
   moveMicroSteps(target);   // convert to relative target
 }
