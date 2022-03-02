@@ -245,5 +245,6 @@ This enables the use of the Stepper Module as a headless unit (i.e., without con
   * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
 * Firmare uses the following libraries:
   * [ArCOM](https://github.com/sanworks/ArCOM) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [TeensyStep](https://github.com/luni64/TeensyStep) by luni64 ([MIT](https://opensource.org/licenses/MIT))
   * [SmoothStepper](https://github.com/bimac/SmoothStepper) by Florian Rau ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
-  * [TMCStepper](https://github.com/teemuatlut/TMCStepper) ([MIT](https://opensource.org/licenses/MIT))
+  * [TMCStepper](https://github.com/teemuatlut/TMCStepper) by teemuatlut ([MIT](https://opensource.org/licenses/MIT))
