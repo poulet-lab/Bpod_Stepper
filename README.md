@@ -238,8 +238,8 @@ This enables the use of the Stepper Module as a headless unit (i.e., without con
 ## Credits ##
 <img align="right" src="images/module.png" width="350px">
 
-* Concept & firmware by Florian Rau
-* PCB layout by Christopher Schultz and Florian Rau
+* Concept & firmware by Florian Rau and Josh Sanders
+* PCB layout by Christopher Schultz, Josh Sanders and Florian Rau
 * PCB layout partially based on:
   * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
   * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
