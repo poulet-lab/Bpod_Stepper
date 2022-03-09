@@ -75,13 +75,19 @@ methods
         if isnan(obj.data(1,end))
            obj.data(1,:) = obj.data(1,:) + incoming(1)/1E3;
         end
-
-        tmp      = nan(4,1);
-        tmp(1)   = incoming(1) / 1E3;                       % time-stamp
-        tmp(2)   = obj.vDiv ./ incoming(3);                 % velocity
-        tmp(3)   = abs(tmp(2)-obj.data(2,end)) / obj.ts;    % acceleration
-        tmp(4)   = bitand(1023, incoming(2));               % load
-        obj.data = [obj.data(:,2:end) tmp];
+        
+        tmp     = nan(4,1);
+        tmp(1)  = incoming(1) / 1E3;                        % time-stamp
+        tmp(2)  = obj.vDiv ./ incoming(3);                  % velocity
+        tmp(3)  = abs(tmp(2)-obj.data(2,end)) / obj.ts;     % acceleration
+        tmp(4)	= bitand(1023, incoming(2));                % load
+        
+        if incoming(1) / 1E3 > obj.data(1,end) + 1.5 * obj.ts
+            tmp(3)   = NaN;
+            obj.data = [obj.data(:,3:end) nan(4,1) tmp];
+        else
+            obj.data = [obj.data(:,2:end) tmp];
+        end
 
         [obj.h.plot.XData]  = deal(obj.data(1,:)-obj.data(1,end));
         obj.h.plot(1).YData = obj.data(2,:);
