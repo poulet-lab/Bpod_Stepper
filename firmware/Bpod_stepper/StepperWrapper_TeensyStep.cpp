@@ -100,7 +100,7 @@ void StepperWrapper_TeensyStep::setPosition(int32_t pos) {
   noInterrupts();
   _microPosition = pos;
   interrupts();
-  _motor->setPosition(pos);
+  _motor->setPosition(0);
   writePosition(pos);
 }
 
