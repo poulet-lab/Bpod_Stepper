@@ -1,5 +1,6 @@
 *.vscode
-*.asv
 *.b#*
 *.s#*
+*.asv
 *.m~
+*.hex
