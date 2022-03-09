@@ -128,7 +128,6 @@ void StepperWrapper::ISRdiag1() {
 }
 
 void StepperWrapper::ISRchangeVM() {
-  DEBUG_PRINTFUN();
   if (digitalRead(pin.VM))
     SCB_AIRCR = 0x05FA0004;                 // reset teensy
   else
@@ -295,7 +294,6 @@ void StepperWrapper::enableDriver(bool enable) {
 }
 
 float StepperWrapper::idPCB() {
-  DEBUG_PRINTFUN();
   // r1.4 onwards has the revision number coded in hardware.
   // It can be read by checking if pins 20-23 are connected
   // to GND. The connection status forms a binary code:
