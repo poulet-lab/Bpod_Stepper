@@ -65,8 +65,7 @@ methods
         drawnow
         set(obj.h.figure,'Visible','on')
 
-        flushinput(obj.s.Port.Port)
-        obj.s.Port.write(['L' 1], 'uint8');
+        obj.s.StreamingMode = true;
     end
 
     function update(obj,~,~)
@@ -109,9 +108,8 @@ methods
     end
 
     function delete(obj,~,~)
-        obj.s.Port.write(['L' 0], 'uint8');
         obj.s.Port.Port.BytesAvailableFcn = '';
-        flushinput(obj.s.Port.Port)
+        obj.s.StreamingMode = false;
     end
 end
 

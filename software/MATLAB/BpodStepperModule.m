@@ -35,12 +35,17 @@ classdef BpodStepperModule < handle
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
     end
+    
+    properties (Dependent, Access = {?BpodStepperLive})
+        StreamingMode
+    end
 
     properties (Access = private)
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
         privChopper                 % private: Chopper mode
+        privStreamingMode = false   % private: streaming mode
         CurrentFirmwareVersion = 2  % most recent firmware version
     end
 
@@ -96,8 +101,10 @@ classdef BpodStepperModule < handle
         end
         function set.MaxSpeed(obj, newSpeed)
             obj.Port.write('V', 'uint8', newSpeed, 'uint16');
+            obj.pauseStreaming(true);
             obj.Port.write('GV', 'uint8');
             obj.privMaxSpeed = obj.Port.read(1, 'uint16');
+            obj.pauseStreaming(false);
         end
 
         function out = get.Acceleration(obj)
@@ -105,8 +112,10 @@ classdef BpodStepperModule < handle
         end
         function set.Acceleration(obj, newAccel)
             obj.Port.write('A', 'uint8', newAccel, 'uint16');
+            obj.pauseStreaming(true);
             obj.Port.write('GA', 'uint8');
             obj.privAcceleration = obj.Port.read(1, 'uint16');
+            obj.pauseStreaming(false);
         end
 
         function out = get.RMScurrent(obj)
@@ -115,8 +124,11 @@ classdef BpodStepperModule < handle
         function set.RMScurrent(obj, newCurrent)
             validateattributes(newCurrent,{'numeric'},...
                 {'scalar','integer','nonnegative'})
-            obj.Port.write('I', 'uint8', newCurrent, 'uint16', 'GI', 'uint8');
+            obj.Port.write('I', 'uint8', newCurrent, 'uint16');
+            obj.pauseStreaming(true);
+            obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
+            obj.pauseStreaming(false);
         end
 
         function out = get.ChopperMode(obj)
@@ -125,13 +137,18 @@ classdef BpodStepperModule < handle
         function set.ChopperMode(obj, mode)
             validateattributes(mode,{'numeric'},...
                 {'scalar','integer','nonnegative','<=',1})
-            obj.Port.write('C', 'uint8', mode, 'uint8', 'GC', 'uint8');
+            obj.Port.write('C', 'uint8', mode, 'uint8');
+            obj.pauseStreaming(true);
+            obj.Port.write('GC', 'uint8');
             obj.privChopper = obj.Port.read(1, 'uint8');
+            obj.pauseStreaming(false);
         end
 
         function out = get.Position(obj)
+            obj.pauseStreaming(true);
             obj.Port.write('GP', 'uint8');
             out = obj.Port.read(1, 'int16');
+            obj.pauseStreaming(false);
         end
         function set.Position(obj,position)
             validateattributes(position,{'numeric'},{'scalar','integer'})
@@ -200,11 +217,13 @@ classdef BpodStepperModule < handle
             end
             n   = numel(id);
             out = zeros(n,3);
+            obj.pauseStreaming(true);
             for ii = 1:n
                 obj.Port.write(['G' id(ii)], 'uint8');
                 out(ii,1)   = obj.Port.read(1, 'int32');
                 out(ii,2:3) = obj.Port.read(2, 'uint16');
             end
+            obj.pauseStreaming(false);
             out([false(n,1) out(:,2:3)==0]) = NaN;
             if nargout
                 varargout = mat2cell(out',[1 1 1],n);
@@ -261,10 +280,12 @@ classdef BpodStepperModule < handle
                     {'2d','increasing','integer','>=',1,'<=',6})
             end
             out = zeros(1,numel(idx));
+            obj.pauseStreaming(true);
             for ii = 1:numel(idx)
                 obj.Port.write(['GR' idx(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
             end
+            obj.pauseStreaming(false);
             if nargout
                 varargout{1} = out;
             else
@@ -300,10 +321,12 @@ classdef BpodStepperModule < handle
                     {'2d','increasing','integer','>=',1,'<=',6},'','ID')
             end
             out = zeros(1,numel(id));
+            obj.pauseStreaming(true);
             for ii = 1:numel(id)
                 obj.Port.write(['GM' id(ii)], 'uint8');
                 out(ii) = obj.Port.read(1, 'uint8');
             end
+            obj.pauseStreaming(false);
             if nargout
                 varargout{1} = out;
             else
@@ -347,6 +370,49 @@ classdef BpodStepperModule < handle
 
         function liveView(obj)
             BpodStepperLive(obj);
+        end
+        
+        function out = get.StreamingMode(obj)
+            out = obj.privStreamingMode;
+        end
+        
+        function set.StreamingMode(obj,enable)
+            if xor(obj.privStreamingMode,enable)
+                if enable
+                    flushinput(obj.Port.Port)
+                    obj.Port.write(['L' 1], 'uint8');
+                else
+                    obj.Port.write(['L' 0], 'uint8');
+                    flushinput(obj.Port.Port)
+                end
+                obj.privStreamingMode = enable;
+            end
+        end
+    end
+    
+    methods (Access = private)
+        function pauseStreaming(obj,doPause)
+            persistent BytesAvailableFcn isPaused;
+            if isempty(BytesAvailableFcn)
+                BytesAvailableFcn = '';
+                isPaused = false;
+            end
+            if doPause
+                if isPaused || ~obj.privStreamingMode
+                    return
+                end
+                BytesAvailableFcn = obj.Port.Port.BytesAvailableFcn;
+                obj.Port.Port.BytesAvailableFcn = '';
+                obj.StreamingMode = false;
+                isPaused = true;
+            else
+                if ~isPaused || obj.privStreamingMode
+                    return
+                end
+                obj.Port.Port.BytesAvailableFcn = BytesAvailableFcn;
+                obj.StreamingMode = true;
+                isPaused = false;
+            end
         end
     end
 end
