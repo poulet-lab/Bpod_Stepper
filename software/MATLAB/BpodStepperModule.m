@@ -35,7 +35,7 @@ classdef BpodStepperModule < handle
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
     end
-    
+
     properties (Dependent, Access = {?BpodStepperLive})
         StreamingMode
     end
@@ -57,7 +57,7 @@ classdef BpodStepperModule < handle
                 tmp = sort(serialportlist("available"));
                 portString = tmp{1};
             end
-            
+
             % connect to stepper module
             obj.Port = ArCOMObject_Stepper(portString, 115200);
             obj.Port.write(212, 'uint8');
@@ -170,7 +170,7 @@ classdef BpodStepperModule < handle
             nargoutchk(0,0)
             narginchk(3,5)
             varargin(nargin:4) = {[]};
-            
+
             if isempty(varargin{1})
                 varargin{1} = 1:9;
             else
@@ -371,11 +371,11 @@ classdef BpodStepperModule < handle
         function liveView(obj)
             BpodStepperLive(obj);
         end
-        
+
         function out = get.StreamingMode(obj)
             out = obj.privStreamingMode;
         end
-        
+
         function set.StreamingMode(obj,enable)
             if xor(obj.privStreamingMode,enable)
                 if enable
@@ -389,7 +389,7 @@ classdef BpodStepperModule < handle
             end
         end
     end
-    
+
     methods (Access = private)
         function pauseStreaming(obj,doPause)
             persistent BytesAvailableFcn isPaused;
