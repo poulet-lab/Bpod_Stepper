@@ -18,8 +18,7 @@ _______________________________________________________________________________
 */
 
 
-#ifndef StepperWrapper_h
-#define StepperWrapper_h
+#pragma once
 
 #include <TeensyStep.h>
 #include <TMCStepper.h>
@@ -246,4 +245,3 @@ class StepperWrapper_MotionControl : public StepperWrapper
     static constexpr float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));
     static constexpr float factV = (float)(1ul<<24) / (fCLK);
 };
-#endif

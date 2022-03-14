@@ -1,5 +1,4 @@
-#ifndef EEstoreStruct
-#define EEstoreStruct
+#pragma once
 
 typedef struct{
   uint16_t rms_current = 800;     // motor RMS current (mA)
@@ -12,5 +11,3 @@ typedef struct{
   uint8_t IOmode[6] {0};
   uint8_t IOresistor[6] {0};
 }storageVars;
-
-#endif

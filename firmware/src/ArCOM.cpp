@@ -10,8 +10,8 @@ This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.
 
-This program is distributed  WITHOUT ANY WARRANTY and without even the 
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+This program is distributed  WITHOUT ANY WARRANTY and without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
@@ -134,7 +134,7 @@ void ArCOM::writeCharArray(char charArray[], unsigned int nValues) {
   ArCOMstream->write(charArray, nValues);
 }
 void ArCOM::writeInt8Array(int8_t numArray[], unsigned int nValues) {
-  for (int i = 0; i < nValues; i++) {
+  for (unsigned int i = 0; i < nValues; i++) {
     typeBuffer.int8 = numArray[i];
     ArCOMstream->write(typeBuffer.byteArray[0]);
   }
@@ -146,7 +146,7 @@ void ArCOM::writeUint16Array(unsigned short numArray[], unsigned int nValues) {
   }
 }
 void ArCOM::writeInt16Array(int16_t numArray[], unsigned int nValues) {
-  for (int i = 0; i < nValues; i++) {
+  for (unsigned int i = 0; i < nValues; i++) {
     typeBuffer.int16 = numArray[i];
     ArCOMstream->write(typeBuffer.byteArray, 2);
   }
