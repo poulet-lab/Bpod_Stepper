@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <Arduino.h>
 #include <avr/io.h>
 #include <limits>
 #include "ArCOM.h"                // Import serial communication wrapper
@@ -21,6 +22,9 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "EEstoreStruct.h"        // Parameters to be loaded from EEPROM (and default values)
 #include "StepperWrapper.h"       // Import StepperWrapper
 #include "SerialDebug.h"
+
+void throwError();
+void returnModuleInfo();
 
 // Module setup
 ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
