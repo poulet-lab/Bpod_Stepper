@@ -17,7 +17,7 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <Arduino.h>
 #include <avr/io.h>
 #include <limits>
-#include "ArCOM.h"                // Import serial communication wrapper
+#include <ArCOM.h>                // Import serial communication wrapper
 #include "EEstore.h"              // Import EEstore library
 #include "EEstoreStruct.h"        // Parameters to be loaded from EEPROM (and default values)
 #include "StepperWrapper.h"       // Import StepperWrapper

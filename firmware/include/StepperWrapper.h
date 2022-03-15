@@ -23,7 +23,7 @@ _______________________________________________________________________________
 #include <TeensyStep.h>
 #include <TMCStepper.h>
 #include <SdFat.h>
-#include "ArCOM.h"
+#include <ArCOM.h>
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
 
