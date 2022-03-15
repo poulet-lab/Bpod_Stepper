@@ -1,4 +1,3 @@
-//#define DEBUG
 #ifdef DEBUG
   #include <string.h>
   #include <time.h>
