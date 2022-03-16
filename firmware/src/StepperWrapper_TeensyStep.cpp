@@ -32,6 +32,7 @@ StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _stepControl = new StepControl;
   _stepControl->setCallback(CBstop);
   _rotateControl = new RotateControl;
+  _rotateControl->setCallback(CBstop);
 }
 
 void StepperWrapper_TeensyStep::init(uint16_t rms_current) {
@@ -124,7 +125,6 @@ void StepperWrapper_TeensyStep::softStop() {
     _stepControl->stopAsync();
   else if (_rotateControl->isRunning()) {
     _rotateControl->stopAsync();
-    CBstop(); // incorrect timing due to manual call
   }
 }
 
