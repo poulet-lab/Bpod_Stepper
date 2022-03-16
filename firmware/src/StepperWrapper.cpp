@@ -145,6 +145,7 @@ void StepperWrapper::init(uint16_t rms_current) {
 
 void StepperWrapper::init2100() {
   DEBUG_PRINTLN("Initializing driver: TMC2100");
+  enableDriver(true);                       // activate motor outputs
   StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
 
