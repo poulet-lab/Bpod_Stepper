@@ -79,9 +79,9 @@ classdef BpodStepperModule < handle
             obj.HardwareVersion = double(obj.Port.read(1, 'uint8')) / 10;
             obj.Port.write('GT', 'uint8');
             switch obj.Port.read(1, 'uint8')
-                case 0x11
+                case 17  % 0x11
                     obj.DriverVersion = 2130;
-                case 0x30
+                case 48  % 0x30
                     obj.DriverVersion = 5160;
                 otherwise
                     obj.DriverVersion = NaN;
