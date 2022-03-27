@@ -12,7 +12,7 @@ properties (Access = private)
 end
 
 methods
-    function obj = BpodStepperLive(stepper)
+    function obj = BpodStepperLive(stepper,parent)
         validateattributes(stepper,{'BpodStepperModule'},{'scalar'})
         obj.s = stepper;
         obj.s.Port.Port.BytesAvailableFcn = @obj.update;
@@ -29,13 +29,23 @@ methods
         obj.dRec      = obj.dRec + 10*obj.ts;
         obj.data      = nan(4,obj.dRec/obj.ts);
         obj.data(1,:) = (-obj.dRec/obj.ts:-1)*obj.ts;
+        obj.yMax      = [obj.s.MaxSpeed; obj.s.Acceleration; 10];
 
-        obj.h.figure = figure('Visible','off');
-        obj.yMax = [obj.s.MaxSpeed; obj.s.Acceleration; 10];
-
+        if exist('parent','var') && isvalid(parent)
+            obj.h.parent = parent;
+        else
+            obj.h.parent = figure(...
+                'ToolBar',          'none', ...
+                'MenuBar',          'none', ...
+                'DockControls',     'off', ...
+                'NumberTitle',      'off', ...
+                'Visible',          'off', ...
+                'Name',             'Stepper Motor Module — Live View', ...
+                'HandleVisibility', 'off');
+        end
         t = {'Velocity','Acceleration','Mechanical Load'};
         for ii = 1:3
-            obj.h.axes(ii) = subplot(3,1,ii);
+            obj.h.axes(ii) = subplot(3,1,ii,'Parent',obj.h.parent);
             obj.h.plot(ii) = line(obj.h.axes(ii),obj.data(1,:),...
                 obj.data(ii,:),'Color','k','linewidth',2);
             title(obj.h.axes(ii),t{ii})
@@ -52,18 +62,12 @@ methods
             'YGrid',        'on', ...
             'XTickLabel',   [])
         linkaxes(obj.h.axes,'x')
-
-        set(obj.h.figure, ......
-            'DeleteFcn',        @obj.delete, ...
-            'ToolBar',          'none', ...
-            'MenuBar',          'none', ...
-            'DockControls',     'off', ...
-            'NumberTitle',      'off', ...
-            'HandleVisibility', 'off', ...
-            'Name',             'Stepper Motor Module — Live View')
-        movegui(obj.h.figure,'center')
-        drawnow
-        set(obj.h.figure,'Visible','on')
+        obj.h.DeleteFcn = @obj.delete;
+        if ismember(obj.h.parent.Type,{'figure','uifigure'})
+            movegui(obj.h.parent,'center')
+            drawnow
+            set(obj.h.parent,'Visible','on')
+        end
 
         obj.s.StreamingMode = true;
     end
