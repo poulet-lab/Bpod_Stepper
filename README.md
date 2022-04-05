@@ -1,6 +1,6 @@
 # Bpod Stepper Module
 
-Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
+<img align="right" src="images/module.png" width="350px">Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
 
@@ -236,7 +236,6 @@ This enables the use of the Stepper Module as a headless unit (i.e., without con
 
 
 ## Credits ##
-<img align="right" src="images/module.png" width="350px">
 
 * Concept & firmware by Florian Rau and Josh Sanders
 * PCB layout by Christopher Schultz, Josh Sanders and Florian Rau
