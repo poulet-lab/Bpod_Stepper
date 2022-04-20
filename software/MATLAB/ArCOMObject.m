@@ -270,7 +270,7 @@ classdef ArCOMObject < handle
             assert(~obj.isOctave,   'BytesAvailableFcn is not available with GNU/Octave.')
             assert(obj.Interface~=1,'BytesAvailableFcn is not available with PsychToolbox.')
             if isempty(obj.Port)
-                out = '';
+                out = function_handle.empty;
             else
                 out = obj.Port.BytesAvailableFcn;
             end
