@@ -190,7 +190,7 @@ classdef ArCOMObject < handle
                         case 'timeout'
                             obj.timeout = argvals{ii};
                         case 'bytesavailablefcn'
-                            obj.BytesAvailableFcn = argvals{ii};
+                            BytesAvailableFcn = argvals{ii};
                         case 'bytesavailablefcncount'
                             obj.BytesAvailableFcnCount = argvals{ii};
                         otherwise
@@ -207,7 +207,6 @@ classdef ArCOMObject < handle
                         'Timeout',                  obj.timeout, ...
                         'OutputBufferSize',         obj.outputBuffer, ...
                         'InputBufferSize',          obj.inputBuffer, ...
-                        'BytesAvailableFcn',        obj.BytesAvailableFcn, ...
                         'BytesAvailableFcnCount',   obj.BytesAvailableFcnCount, ...
                         'BytesAvailableFcnMode',    'Byte', ...
                         'DataTerminalReady',        'on', ...
@@ -217,7 +216,10 @@ classdef ArCOMObject < handle
                     obj.readFcn = @(nBytes) fread(obj.Port,nBytes,'uint8');
                     obj.flushFcn = @() obj.flushSerial;
                     obj.getBytesAvailableFcn = @() obj.Port.BytesAvailable;
-
+                    if exist('BytesAvailableFcn','var')
+                        obj.BytesAvailableFcn = BytesAvailableFcn;
+                    end
+                    
                 case 1  % PsychToolbox
                     if ispc
                         portString = ['\\.\' portString];
@@ -253,9 +255,8 @@ classdef ArCOMObject < handle
                     obj.readFcn = @(nBytes) read(obj.Port,nBytes,'uint8');
                     obj.flushFcn = @() flush(obj.Port);
                     obj.getBytesAvailableFcn = @() obj.Port.NumBytesAvailable;
-                    if ~obj.isOctave
-                        configureCallback(obj.Port,'Byte',...
-                            obj.BytesAvailableFcnCount,obj.BytesAvailableFcn)
+                    if ~obj.isOctave && exist('BytesAvailableFcn','var')
+                        obj.BytesAvailableFcn = BytesAvailableFcn;
                     end
             end
             pause(.2);
