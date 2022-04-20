@@ -52,14 +52,14 @@ classdef BpodStepperModule < handle
     methods
         function obj = BpodStepperModule(portString)
 
-            % try to guess portString
-            if ~exist('portString','var') && ~verLessThan('matlab','9.7')
-                tmp = sort(serialportlist("available"));
-                portString = tmp{1};
+            % handle empty portString
+            if ~exist('portString','var')
+                portString = [];
             end
 
             % connect to stepper module
-            obj.Port = ArCOMObject_Stepper(portString, 115200);
+            obj.Port = ArCOMObject(portString, 115200, 'java', ...
+                'BytesAvailableFcnCount', 12);
             obj.Port.write(212, 'uint8');
             if obj.Port.read(1, 'uint8') ~= 211
                 error('Could not connect =( ')
@@ -379,11 +379,12 @@ classdef BpodStepperModule < handle
         function set.StreamingMode(obj,enable)
             if xor(obj.privStreamingMode,enable)
                 if enable
-                    flushinput(obj.Port.Port)
+                    obj.Port.flush
                     obj.Port.write(['L' 1], 'uint8');
                 else
+                    obj.Port.flush
                     obj.Port.write(['L' 0], 'uint8');
-                    flushinput(obj.Port.Port)
+                    obj.Port.flush
                 end
                 obj.privStreamingMode = enable;
             end
@@ -401,15 +402,15 @@ classdef BpodStepperModule < handle
                 if isPaused || ~obj.privStreamingMode
                     return
                 end
-                BytesAvailableFcn = obj.Port.Port.BytesAvailableFcn;
-                obj.Port.Port.BytesAvailableFcn = '';
+                BytesAvailableFcn = obj.Port.BytesAvailableFcn;
+                obj.Port.BytesAvailableFcn = '';
                 obj.StreamingMode = false;
                 isPaused = true;
             else
                 if ~isPaused || obj.privStreamingMode
                     return
                 end
-                obj.Port.Port.BytesAvailableFcn = BytesAvailableFcn;
+                obj.Port.BytesAvailableFcn = BytesAvailableFcn;
                 obj.StreamingMode = true;
                 isPaused = false;
             end

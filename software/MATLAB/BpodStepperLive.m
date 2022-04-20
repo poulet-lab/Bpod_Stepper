@@ -15,7 +15,7 @@ methods
     function obj = BpodStepperLive(stepper)
         validateattributes(stepper,{'BpodStepperModule'},{'scalar'})
         obj.s = stepper;
-        obj.s.Port.Port.BytesAvailableFcn = @obj.update;
+        obj.s.Port.BytesAvailableFcn = @obj.update;
 
         switch obj.s.DriverVersion
             case 2130
@@ -108,7 +108,7 @@ methods
     end
 
     function delete(obj,~,~)
-        obj.s.Port.Port.BytesAvailableFcn = '';
+        obj.s.Port.BytesAvailableFcn = '';
         obj.s.StreamingMode = false;
     end
 end
