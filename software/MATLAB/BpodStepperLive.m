@@ -62,7 +62,7 @@ methods
             'YGrid',        'on', ...
             'XTickLabel',   [])
         linkaxes(obj.h.axes,'x')
-        obj.h.DeleteFcn = @obj.delete;
+        obj.h.parent.DeleteFcn = @obj.delete;
         if ismember(obj.h.parent.Type,{'figure','uifigure'})
             movegui(obj.h.parent,'center')
             drawnow

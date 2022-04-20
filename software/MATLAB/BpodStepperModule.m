@@ -382,7 +382,6 @@ classdef BpodStepperModule < handle
                     obj.Port.flush
                     obj.Port.write(['L' 1], 'uint8');
                 else
-                    obj.Port.flush
                     obj.Port.write(['L' 0], 'uint8');
                     obj.Port.flush
                 end
