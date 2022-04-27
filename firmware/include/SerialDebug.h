@@ -1,3 +1,5 @@
+#pragma once
+
 #ifdef DEBUG
   #include <string.h>
   #include <time.h>
