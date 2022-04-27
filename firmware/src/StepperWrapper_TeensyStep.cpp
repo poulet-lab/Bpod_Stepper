@@ -86,7 +86,7 @@ void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
 }
 
 int32_t StepperWrapper_TeensyStep::position() {
-  return _microPosition/_msRes + (_motor->getPosition()/_microsteps);
+  return _microPosition/_msRes + _motor->getPosition()/_microsteps;
 }
 
 void StepperWrapper_TeensyStep::position(int32_t target) {

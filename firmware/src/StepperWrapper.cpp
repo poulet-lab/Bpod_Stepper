@@ -153,6 +153,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   DEBUG_PRINTLN("Initializing driver: TMC2130");
 
   _invertPinDir = true;
+  StepperWrapper::setMicrosteps(256);
 
   TMC2130Stepper* driver = get2130();
 
@@ -202,6 +203,7 @@ void StepperWrapper::init5160(uint16_t rms_current) {
   DEBUG_PRINTLN("Initializing driver: TMC5160");
 
   _invertPinDir = false;
+  StepperWrapper::setMicrosteps(256);
 
   TMC5160Stepper* driver = get5160();
 
