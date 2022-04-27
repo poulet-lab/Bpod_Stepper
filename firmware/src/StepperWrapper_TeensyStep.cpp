@@ -55,10 +55,11 @@ void StepperWrapper_TeensyStep::hardStop() {
   noInterrupts();
   _stepControl->emergencyStop();
   _rotateControl->emergencyStop();
-  interrupts();
   Serial1COM.writeByte(4);
+  interrupts();
   digitalWriteFast(LED_BUILTIN, LOW);
   updateMicroPosition();
+  DEBUG_PRINTF("Emergency stop at position %d\n",_microPosition);
   writePosition(_microPosition);
 }
 
