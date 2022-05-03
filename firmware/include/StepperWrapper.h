@@ -24,7 +24,7 @@ _______________________________________________________________________________
 #include <TMCStepper.h>
 #include <SdFat.h>
 #include <ArCOM.h>
-#include <Encoder.h>
+#include <QuadDecode_def.h>
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
 
@@ -97,7 +97,7 @@ class StepperWrapper
     bool getStream();                           // get status of live stream
     int32_t readPosition();                     // read _microPosition from SD card
     int32_t encoderPosition();
-    void setEncoderPosition(int32_t position);
+    void resetEncoderPosition();
 
   protected:
     volatile int32_t _microPosition;
@@ -158,9 +158,7 @@ class StepperWrapper
     uint8_t _ioResistor[6] {0};                 // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
     
     void initEncoder();
-    bool _useABZ = false;
-    int8_t _pinABZ[3] = {-1, -1, -1};
-    Encoder* _enc; 
+    QuadDecode<2>* _enc = nullptr; 
 };
 
 

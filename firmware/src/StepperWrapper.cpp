@@ -18,7 +18,6 @@ _______________________________________________________________________________
 */
 
 #include <TMCStepper.h>
-#include <Encoder.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include "EEstore.h"                        // Import EEstore library
@@ -198,7 +197,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
   driver->TPOWERDOWN(0);
   driver->iholddelay(0);                    // instant IHOLD
-  driver->freewheel(0x01);                  // 0x00 = normal operation, 0x01 = freewheeling
+  driver->freewheel(0x00);                  // 0x00 = normal operation, 0x01 = freewheeling
 }
 
 void StepperWrapper::init5160(uint16_t rms_current) {
@@ -391,6 +390,8 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.Diag1 = 25;
     pin.VIO   = 28;
     pin.VM    = 4 ;
+    pin.IO[0] = 30;     // IO1 - watch out, zero indexing!
+    pin.IO[1] = 29;     // IO2
   }
   return pin;
 }
@@ -688,8 +689,10 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
       pinMode(pin.IO[idx], _ioResistor[idx]);
       break;
     case 'a':
+      _ioMode[idx] = (idx==0 && PCBrev >= 1.4) ? mode : 0;
+      break;
     case 'b':
-    case 'z':
+      _ioMode[idx] = (idx==1 && PCBrev >= 1.4) ? mode : 0;
       break;
     default:
       _ioMode[idx] = 0;
@@ -794,34 +797,29 @@ void StepperWrapper::go2target(uint8_t id) {
 
 void StepperWrapper::initEncoder() {
   // check if all encoder lines are assigned
-  bool useABZ = true;
-  const char cABZ[] = {'a', 'b', 'z'};
-  for (uint8_t iABZ = 0; iABZ < 3; iABZ++) {
-    for (uint8_t iIO = 0; iIO < _nIO; iIO++) {
-      if (_ioMode[iIO] == cABZ[iABZ]) {
-        _pinABZ[iABZ] = pin.IO[iIO];
-        break;
-      }
-      else if (iIO == _nIO-1) {
-        _pinABZ[iABZ] = -1;
-        useABZ = false;
-      }
-    }
-  }
+  bool useEncoder = _ioMode[0]=='a' && _ioMode[1]=='b';
 
-  // take a shortcut if possible
-  if (useABZ == _useABZ)
+  // decide what to do
+  if (useEncoder == (_enc != nullptr))
     return;
-  
-  _useABZ = useABZ;
-  _enc = (_useABZ) ? new Encoder(_pinABZ[0], _pinABZ[1]) : nullptr;
+  else if (useEncoder) {
+    DEBUG_PRINTLN("Enabling hardware quadrature encoder");
+    _enc = new QuadDecode<2>;
+    _enc->setup();
+    _enc->start();
+    _enc->zeroFTM();
+  }
+  else {
+    DEBUG_PRINTLN("Disabling hardware quadrature encoder");
+    _enc = nullptr;
+  }
 }
 
 int32_t StepperWrapper::encoderPosition() {
-  return (_useABZ) ? _enc->read() : 0;
+  return (_enc == nullptr) ? 0 : _enc->calcPosn();
 }
 
-void StepperWrapper::setEncoderPosition(int32_t position) {
-  if (_useABZ)
-    _enc->write(position);
+void StepperWrapper::resetEncoderPosition() {
+  if (_enc != nullptr)
+    _enc->zeroFTM();
 }

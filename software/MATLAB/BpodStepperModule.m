@@ -353,8 +353,6 @@ classdef BpodStepperModule < handle
                                 detail = ' - incremental encoder signal A';
                             case 'b'
                                 detail = ' - incremental encoder signal B';
-                            case 'z'
-                                detail = ' - incremental encoder signal Z';
                             otherwise
                                 detail = '';
                         end

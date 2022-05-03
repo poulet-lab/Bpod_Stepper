@@ -132,8 +132,8 @@ void loop()
     case 'Z':                                                     // Reset position to zero
       wrapper->setPosition(0);
       return;
-    case 'z':                                                     // Reset position to zero
-      wrapper->setEncoderPosition(0);
+    case 'z':                                                     // Reset encoder position to zero
+      wrapper->resetEncoderPosition();
       return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
