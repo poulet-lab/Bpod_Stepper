@@ -132,6 +132,9 @@ void loop()
     case 'Z':                                                     // Reset position to zero
       wrapper->setPosition(0);
       return;
+    case 'z':                                                     // Reset position to zero
+      wrapper->setEncoderPosition(0);
+      return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
       p.a = wrapper->a();
@@ -203,6 +206,9 @@ void loop()
       switch (opCode) {
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
+          break;
+        case 'p':                                                 //   Return encoder position
+          COM->writeInt32(wrapper->encoderPosition());
           break;
         case 'A':                                                 //   Return acceleration
           COM->writeUint16(round(wrapper->a()));

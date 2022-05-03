@@ -18,11 +18,13 @@ _______________________________________________________________________________
 */
 
 #include <TMCStepper.h>
-#include "EEstore.h"                        // Import EEstore library
-#include "StepperWrapper.h"
+#include <Encoder.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "EEstore.h"                        // Import EEstore library
+#include "StepperWrapper.h"
 #include "SerialDebug.h"
+
 
 
 extern ArCOM Serial1COM;
@@ -685,10 +687,15 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 'L':
       pinMode(pin.IO[idx], _ioResistor[idx]);
       break;
+    case 'a':
+    case 'b':
+    case 'z':
+      break;
     default:
       _ioMode[idx] = 0;
       pinMode(pin.IO[idx], INPUT);
   }
+  initEncoder();
 }
 
 void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
@@ -783,4 +790,38 @@ void StepperWrapper::go2target(uint8_t id) {
   this->a((p.aTarget[id]>0) ? p.aTarget[id] : p.a);
   this->vMax((p.vMaxTarget[id]>0) ? p.vMaxTarget[id] : p.vMax);
   this->position(p.target[id]);
+}
+
+void StepperWrapper::initEncoder() {
+  // check if all encoder lines are assigned
+  bool useABZ = true;
+  const char cABZ[] = {'a', 'b', 'z'};
+  for (uint8_t iABZ = 0; iABZ < 3; iABZ++) {
+    for (uint8_t iIO = 0; iIO < _nIO; iIO++) {
+      if (_ioMode[iIO] == cABZ[iABZ]) {
+        _pinABZ[iABZ] = pin.IO[iIO];
+        break;
+      }
+      else if (iIO == _nIO-1) {
+        _pinABZ[iABZ] = -1;
+        useABZ = false;
+      }
+    }
+  }
+
+  // take a shortcut if possible
+  if (useABZ == _useABZ)
+    return;
+  
+  _useABZ = useABZ;
+  _enc = (_useABZ) ? new Encoder(_pinABZ[0], _pinABZ[1]) : nullptr;
+}
+
+int32_t StepperWrapper::encoderPosition() {
+  return (_useABZ) ? _enc->read() : 0;
+}
+
+void StepperWrapper::setEncoderPosition(int32_t position) {
+  if (_useABZ)
+    _enc->write(position);
 }

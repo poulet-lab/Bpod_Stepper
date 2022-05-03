@@ -34,6 +34,7 @@ classdef BpodStepperModule < handle
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
         Position                    % absolute position
+        EncoderPosition
     end
 
     properties (Dependent, Access = {?BpodStepperLive})
@@ -157,6 +158,16 @@ classdef BpodStepperModule < handle
         function resetPosition(obj)
             % Reset value of absolute position to zero.
             obj.Port.write('Z', 'uint8');
+        end
+
+        function out = get.EncoderPosition(obj)
+            obj.pauseStreaming(true);
+            obj.Port.write('Gp', 'uint8');
+            out = obj.Port.read(1, 'int32');
+            obj.pauseStreaming(false);
+        end
+        function resetEncoderPosition(obj)
+            obj.Port.write('z', 'uint8');
         end
 
         function step(obj, nSteps)
@@ -337,7 +348,17 @@ classdef BpodStepperModule < handle
                     elseif out(ii) < 10
                         fprintf('(go to predefined target #%d)\n',out(ii));
                     else
-                        fprintf('(''%c'')\n',out(ii));
+                        switch out(ii)
+                            case 'a'
+                                detail = ' - incremental encoder signal A';
+                            case 'b'
+                                detail = ' - incremental encoder signal B';
+                            case 'z'
+                                detail = ' - incremental encoder signal Z';
+                            otherwise
+                                detail = '';
+                        end
+                        fprintf('(''%c''%s)\n',out(ii),detail);
                     end
                 end
             end

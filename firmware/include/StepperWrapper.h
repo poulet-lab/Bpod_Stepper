@@ -24,6 +24,7 @@ _______________________________________________________________________________
 #include <TMCStepper.h>
 #include <SdFat.h>
 #include <ArCOM.h>
+#include <Encoder.h>
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
 
@@ -95,6 +96,8 @@ class StepperWrapper
     void setStream(bool enable);                // enable/disable live streaming of motor parameters
     bool getStream();                           // get status of live stream
     int32_t readPosition();                     // read _microPosition from SD card
+    int32_t encoderPosition();
+    void setEncoderPosition(int32_t position);
 
   protected:
     volatile int32_t _microPosition;
@@ -153,6 +156,11 @@ class StepperWrapper
     static const uint32_t debounceMillis = 500; // duration for input debounce [ms]
     uint8_t _ioMode[6] {0};
     uint8_t _ioResistor[6] {0};                 // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
+    
+    void initEncoder();
+    bool _useABZ = false;
+    int8_t _pinABZ[3] = {-1, -1, -1};
+    Encoder* _enc; 
 };
 
 
