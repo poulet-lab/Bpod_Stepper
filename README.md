@@ -1,99 +1,249 @@
-# Bpod Stepper Motor Module
-<img align="right" src="images/module.png" width="350px">
+# Bpod Stepper Module
 
-Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Motor Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
+<img align="right" src="images/module.png" width="350px">Combining smooth acceleration profiles with a _SilentStepStick_ driver, the _Bpod Stepper Module_ allows for virtually noiseless operation of a stepper motor - either as a module for _Bpod state machine r2_ or as a stand-alone USB device.
 
 ## Serial Command Interface
-* **68 / ASCII 'D': move by a defined angle** (degrees)  
-  Must be followed by:
 
-  * **Int16:** angle (degrees).
+### Moving the Motor
+The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions. Some of the following commands can also be [bound to one of the IO ports](#bind-movement-trigger-to-IO-port).
 
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
-  Returned events: 1 = movement start, 2 = movement end.
+* #### Move forwards
+  Start continuous movement forwards.
 
-* **83 / ASCII 'S': move to relative position** (steps)  
-  Must be followed by:
+      PUT 1 uInt8: 70 ('F')
 
-  * **Int16:** number of steps.
+* #### Move backwards
+  Start continuous movement backwards.
 
-  Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.  
-  Returned events: 1 = movement start, 2 = movement end.
+      PUT 1 uInt8: 66 ('B')
 
-* **80 / ASCII 'P': move to absolute position** (steps)  
-  Must be followed by:
+* #### Move to a relative position
+  Move a defined number of steps relative to the current position. Positive numbers will result in clockwise, negative numbers in counter-clockwise rotation.
 
-  * **Int16:** absolute position (steps).
+      PUT 1 uInt8: 83 ('S')
+      PUT 1 Int16: relative position [steps]
 
-  Returned events: 1 = movement start, 2 = movement end.
+* #### Move to an absolute position
 
-* **90 / ASCII 'Z': reset absolute position to zero**
+      PUT 1 uInt8: 80 ('P')
+      PUT 1 Int16: absolut position [steps]
 
-* **76 / ASCII 'L': search limit switch**  
-  Must be followed by:
 
-  * **uInt8:** specifies the movement direction (0 = CCW, 1 = CW).
+* #### Move to a predefined target
+  See also: [*predefined targets*](#predefined-targets).
 
-  This will advance the motor until one of the limit switches has been reached.  
-  Returned events: 3 = limit switch reached.
+      PUT 1 uInt8: 1 … 9 [target ID]
 
-* **65 / ASCII 'A': set acceleration** (steps / s<sup>2</sup>)  
-  Must be followed by:
+* #### Get current position
+  This will return the current position of the motor. The command can also be used to monitor ongoing movements.
 
-  * **Int16:** acceleration (steps / s<sup>2</sup>).
+      PUT 2 uInt8: 71, 80 ('GP')
+      GET 1 Int16: absolute position [steps]
 
-* **86 / ASCII 'V': set maximum velocity** (steps / s)  
-  Must be followed by:
+* #### Reset absolute position
+  This command will reset the current position to zero (without moving the motor).
 
-  * **Int16:** velocity (steps / s).
+      PUT 1 uInt8: 90 ('Z')
 
-* **71 / ASCII 'G': get parameter**  
-  Must be followed by one of the following bytes:
 
-  * **65 / ASCII 'A':** get absolute position (steps)  
-    Returns one Int16.  
-  * **65 / ASCII 'A':** get acceleration (steps / s<sup>2</sup>)  
-    Returns one Int16.
-  * **86 / ASCII 'V':** get maximum velocity (steps / s)  
-    Returns one Int16.
-  * **82 / ASCII 'R':** get steps per revolution  
-    Returns one uInt32.
-    
-* **Byte 212: USB Handshake** (reserved)
+### Stopping the motor
+In addition to using end-switches, the motor can also be stopped by means of serial commands. Either of the two stop commands can be [bound to one of the module's IO ports](#bind-movement-trigger-to-IO-port).
 
-* **Byte 255: return module info** (reserved)
+* #### Soft stop
+  Decelerate the motor to a complete standstill.
+
+      PUT 1 uInt8: 120 ('x')
+
+* #### Emergency stop
+  Stop the motor abruptly. Depending on motor speed this will lead to a loss of steps.
+
+      PUT 1 uInt8: 88 ('X')
+
+
+### Predefined targets
+The stepper module can store up to 9 target definitions, along with individual peak velocities and accelerations.
+Movement to one of these targets can be triggered by a single byte serial command (see [*Moving the Motor*](#move-to-a-predefined-target)).
+Alternatively, you can [bind a trigger to one of the IO ports](#bind-movement-trigger-to-IO-port).
+
+
+* #### Define a target
+
+      PUT 1 uInt8:  84 ('T')
+      PUT 1 uInt8:  1 … 9 [target ID]
+      PUT 1 Int32:  target position [steps]
+      PUT 1 uInt16: peak velocity [steps / s, 0 = use global peak velocity]
+      PUT 1 uInt16: acceleration [steps / s^2, 0 = use global acceleration]
+
+* #### Get the definition of a target
+
+      PUT 1 uInt8: 71 ('G')
+      PUT 1 uInt8: 1 … 9 [target ID]
+      GET 1 Int32: target position [steps]
+      GET 1 uInt16: peak velocity [steps / s, 0 = use global peak velocity]
+      GET 1 uInt16: acceleration [steps / s^2, 0 = use global acceleration]
+
+
+### Configuration of movement parameters
+All of the motors movements are defined by an acceleration phase, a peak velocity and a deceleration phase (the sole exception being the [emergency stop](#emergency-stop)).
+
+* #### Set Acceleration
+  This parameter is valid for, both, the acceleration and the deceleration phase.
+
+      PUT 1 uInt8:  65 ('A')
+      PUT 1 uInt16: acceleration [steps / s^2]
+
+* #### Get Acceleration
+
+      PUT 2 uInt8:  71, 65 ('GA')
+      GET 1 uInt16: acceleration [steps / s^2]
+
+* #### Set peak velocity
+
+      PUT 1 uInt8:  86 ('V')
+      PUT 1 uInt16: peak velocity [steps / s]
+
+* #### Get peak velocity
+
+      PUT 2 uInt8:  71, 86 ('GV')
+      GET 1 uInt16: peak velocity [steps / s]
+
+
+### Configuration of motor parameters
+
+* #### Set RMS current
+  Set the driver's RMS current output to the motor (up to 850mA for TMC2130, up to 2000mA for TMC5160).
+
+      PUT 1 uInt8:  73 ('I')
+      PUT 1 uInt16: RMS current [mA]
+
+* #### Get RMS current
+
+      PUT 2 uInt8:  71, 73 ('GI')
+      GET 1 uInt16: RMS current [mA]
+
+* #### Set chopper mode
+  You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. Depending on the use case, the PWM chopper can perform better at higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
+
+      PUT 1 uInt8:  67 ('C')
+      PUT 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
+
+* #### Get chopper mode
+
+      PUT 2 uInt8:  71, 67 ('GC')
+      GET 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
+
+
+### Configuration of IO ports
+
+
+* #### Bind function to IO port
+  Each of the 6 IO ports can be configured to trigger specific movement commands. Available trigger configurations are: None (```0```), Move to predefined target position (```1 … 9```), start forward rotation (```70 / 'F'```), start backward rotation (```66 / 'B'```), soft stop (```120 / x```), emergency stop (```88 / 'X'```), forward limit (```76 / 'L'```), backward limit (```74 / 'J'```).
+
+      PUT 1 uInt8: 77 ('M')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      PUT 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X'; 'L'; 'J']
+
+* #### Get function of IO port
+
+      PUT 2 uInt8: 71, 77 ('GM')
+      PUT 1 uInt8: 1 … 6 [IO port]
+      GET 1 uInt8: function [0; 1 … 9; 'F'; 'B'; 'x'; 'X'; 'L'; 'J']
+
+* #### Set input configuration of IO port
+  When used as inputs the IO ports can be configured with different input modes: floating, pull-up or pull-down.
+
+      PUT 1 uInt8: 82 ('R')
+      PUT 1 uInt8: 1 … 6 [number of IO port]
+      PUT 1 uInt8: input configuration [0 = floating; 1 = pull-up; 2 = pull-down]
+
+* #### Get input configuration of IO port
+
+      PUT 2 uInt8: 71, 82 ('GR')
+      PUT 1 uInt8: 1 … 6 [number of IO port]
+      GET 1 uInt8: input configuration [0 = floating; 1 = pull-up; 2 = pull-down]
+
+
+### EEPROM storage
+The Stepper Module can store its configuration to non-volatile memory.
+This way you can define default values for your specific setup.
+Stored values will automatically be loaded during start-up of the module.
+This enables the use of the Stepper Module as a headless unit (i.e., without connection to Bpod or USB host).
+
+* #### Store settings to EEPROM
+  To store the current configuration to EEPROM:
+
+      PUT 1 uInt8: 69 ('E')
+
+  The following values will be stored:
+  * maximum velocity,
+  * acceleration,
+  * RMS current,
+  * chopper mode,
+  * predefined targets,
+  * input resistance of IO ports, and
+  * function of IO ports.
+
+
+### System Information
+
+* #### Get Hardware version
+  Identify the Stepper Module's hardware revision
+
+      PUT 2 uInt8: 71, 72 ('GH')
+      GET 1 uInt8: hardware revision [multiplied by 10]
+
+* #### Get driver version
+  Identify the installed stepper driver.
+
+      PUT 2 uInt8: 71, 84 ('GT')
+      GET 1 uInt8: driver version [0 = unknown, 17 = TMC2130, 48 = TMC5360]
+
+* #### Get firmware version / USB handshake
+
+      PUT 1 uInt8:  212
+      GET 1 uInt32: firmware version
+
+* #### Get Module info (reserved)
+
+      PUT 1 uInt8:  255
 
 
 ## Bill of Materials
-| Item     | Vendor   | Qty | Part Number                                                                                     | Description                 |
-| :------- | :------  | :-: | :---------------------------------------------------------------------------------------------- | :-------------------------  |
-| IC1      | Digi-Key |  1  | [LM3480IM3-5.0/NOPBCT-ND](https://www.digikey.com/products/en?keywords=LM3480IM3-5.0/NOPBCT-ND) | 5V regulator                |
-| IC2      | Digi-Key |  1  | [ADM3077EARZ-ND](https://www.digikey.com/products/en?keywords=ADM3077EARZ-ND)                   | RS-485 IC                   |
-| C1, C5   | Digi-Key |  2  | [PCE3203TR-ND](https://www.digikey.com/products/en?keywords=PCE3203TR-ND)                       | Aluminium capacitor, 100 µF |
-| C2 - C4  | Digi-Key |  3  | [311-1179-1-ND](https://www.digikey.com/products/en?keywords=311-1179-1-ND)                     | Ceramic capacitor, 0.1 µf   |
-| D1       | Digi-Key |  1  | [MBR0520LCT-ND](https://www.digikey.com/products/en?keywords=MBR0520LCT-ND)                     | Schottky diode, 20V 500mA   |
-| D2       | Digi-Key |  1  | [1KSMB75CACT-ND](https://www.digikey.com/products/en?keywords=1KSMB75CACT-ND)                   | TVS diode                   |
-| D3 - D11 | Digi-Key |  9  | [S310FACT-ND](https://www.digikey.com/products/en?keywords=S310FACT-ND)                         | Schottky diode, 100V 3A     |
-|          | Digi-Key |  1  | [A31442-ND](https://www.digikey.com/products/en?keywords=A31442-ND)                             | Ethernet jack               |
-|          | Digi-Key |  1  | [839-1512-ND](https://www.digikey.com/products/en?keywords=839-1512-ND)                         | DC barrel jack              |
-|          | Digi-Key |  1  | [S9001-ND](https://www.digikey.com/products/en?keywords=S9001-ND)                               | Jumper                      |
-|          | Digi-Key |  1  | [S1011EC-02-ND](https://www.digikey.com/products/en?keywords=S1011EC-02-ND)                     | Male header, 1x2            |
-|          | Digi-Key |  2  | [PPPC081LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC081LFBN-RC)                   | Female header, 1x8          |
-|          | Digi-Key |  2  | [PPPC241LFBN-RC](https://www.digikey.com/products/en?keywords=PPPC241LFBN-RC)                   | Female header, 1x24         |
-|          | Digi-Key |  1  | [1568-1465-ND](https://www.digikey.com/products/en?keywords=1568-1465-ND)                       | Teensy 3.6                  |
-|          | Digi-Key |  1  | [2100-20150007-002-ND](https://www.digikey.com/products/en?keywords=2100-20150007-002-ND)       | Stepper motor driver        |
-|          | Digi-Key |  1  | [2100-201835-ND](https://www.digikey.com/products/en?keywords=2100-201835-ND)                   | Heat sink                   |
-|          | Digi-Key |  2  | [A98334-ND](https://www.digikey.com/products/en?keywords=A98334-ND)                             | Terminal block, 1x3         |
-|          | Digi-Key |  1  | [A98081-ND](https://www.digikey.com/products/en?keywords=A98081-ND)                             | Terminal block, 1x4         |
+| Item     | Vendor    | Qty | Part Number                                                                                      | Description                 |
+| :------- | :-------- | :-: | :----------------------------------------------------------------------------------------------- | :-------------------------- |
+| C1, C2   | Digi-Key  |  2  | [1189-3780-1-ND](https://www.digikey.com/en/products?keywords=1189-3780-1-ND)                    | Aluminium capacitor, 100 µF |
+| C3, C4   | Digi-Key  |  2  | [PCE4362CT-ND](https://www.digikey.com/en/products?keywords=PCE4362CT-ND)                        | Aluminium capacitor, 2.2 µF |
+| C5 - C8  | Digi-Key  |  4  | [311-1179-1-ND](https://www.digikey.com/en/products?keywords=311-1179-1-ND)                      | Ceramic capacitor, 0.1 µf   |
+| D1       | Digi-Key  |  1  | [1KSMB75CACT-ND](https://www.digikey.com/en/products?keywords=1KSMB75CACT-ND)                    | TVS diode                   |
+| D2 - D3  | Digi-Key  |  2  | [SBR80520LT1G](https://www.digikey.com/en/products?keywords=SBR80520LT1G)                        | Schottky diode, 20V 500mA   |
+| D4 - D12 | Digi-Key  |  9  | [SS310LWHRVGCT-ND](https://www.digikey.com/en/products?keywords=SS310LWHRVGCT-ND)                | Schottky diode, 100V 3A     |
+| IC1      | Digi-Key  |  1  | [LM3480IM3-5.0/NOPBCT-ND](https://octopart.com/lm3480im3-5.0%2Fnopb-texas+instruments-24813903)  | 5V regulator                |
+| IC2      | Digi-Key  |  1  | [ADM3077EARZ-ND](https://www.digikey.com/en/products?keywords=ADM3077EARZ-ND)                    | RS-485 IC                   |
+| IC3      | Digi-Key  |  1  | [MCP1792T-5002H/CB](https://www.digikey.com/en/products?keywords=MCP1792T-5002H/CB)              | 5V regulator                |
+| IC4      | Digi-Key  |  1  | [MCP1793T-3302H/DC](https://www.digikey.com/en/products?keywords=MCP1793T-3302H/DC)              | 3.3V regulator              |
+|          | Digi-Key  |  1  | [A31442-ND](https://www.digikey.com/en/products?keywords=A31442-ND)                              | Ethernet jack               |
+|          | Digi-Key  |  1  | [839-1512-ND](https://www.digikey.com/en/products?keywords=839-1512-ND)                          | DC barrel jack              |
+|          | Digi-Key  |  1  | [PPTC021LFBN-RC](https://www.digikey.com/en/products?keywords=PPTC021LFBN-RC)                    | Female header, 1x2          |
+|          | Digi-Key  |  2  | [PPPC081LFBN-RC](https://www.digikey.com/en/products?keywords=PPPC081LFBN-RC)                    | Female header, 1x8          |
+|          | Digi-Key  |  2  | [PPPC241LFBN-RC](https://www.digikey.com/en/products?keywords=PPPC241LFBN-RC)                    | Female header, 1x24         |
+|          | Digi-Key  |  1  | [1568-1464-ND](https://www.digikey.com/en/products?keywords=1568-1464-ND)                        | Teensy 3.5                  |
+|          | Digi-Key  |  1  | [WM21887-ND](https://www.digikey.com/en/products?keywords=WM21887-ND)                            | Terminal Block Header, 1x4  |
+|          | Digi-Key  |  1  | [WM7780-ND](https://www.digikey.com/en/products?keywords=WM7780-ND)                              | Terminal Block Header, 1x12 |
+|          | Digi-Key  |  1  | [WM7791-ND](https://www.digikey.com/en/products?keywords=WM7791-ND)                              | Terminal Block Plug, 1x4    |
+|          | Digi-Key  |  1  | [WM7742-ND](https://www.digikey.com/en/products?keywords=WM7742-ND)                              | Terminal Block Plug, 1x12   |
+|          | Watterott |  1  | [201899-001](https://shop.watterott.com/SilentStepStick-TMC5160-Stepper-motor-driver-10-35V-V15) | Stepper motor driver        |
+
+
 
 ## Credits ##
-<img align="right" src="images/board.png" width="350px">
 
-* Concept & firmware by Florian Rau
-* PCB layout by Christopher Schultz and Florian Rau
+* Concept & firmware by Florian Rau and Josh Sanders
+* PCB layout by Christopher Schultz, Josh Sanders and Florian Rau
 * PCB layout partially based on:
   * [Bpod Teensy Shield](https://github.com/sanworks/Bpod-CAD/tree/master/PCB/Modules/Gen2/Bpod%20Teensy%20Shield) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
   * [SilentStepStick Protector](https://github.com/watterott/SilentStepStick) by Watterott ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
 * Firmare uses the following libraries:
   * [ArCOM](https://github.com/sanworks/ArCOM) by Sanworks ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [TeensyStep](https://github.com/luni64/TeensyStep) by luni64 ([MIT](https://opensource.org/licenses/MIT))
   * [SmoothStepper](https://github.com/bimac/SmoothStepper) by Florian Rau ([GPL v3](https://www.gnu.org/licenses/gpl-3.0.en.html))
+  * [TMCStepper](https://github.com/teemuatlut/TMCStepper) by teemuatlut ([MIT](https://opensource.org/licenses/MIT))
