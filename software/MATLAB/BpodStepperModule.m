@@ -3,7 +3,7 @@
 
 This file is part of the Sanworks fork of the Poulet Lab Bpod_Stepper
 repository: https://github.com/poulet-lab/Bpod_Stepper
-Copyright (C) 2020 Sanworks LLC, Rochester, New York, USA
+Copyright (C) 2022 Sanworks LLC, Rochester, New York, USA
 
 ----------------------------------------------------------------------------
 
