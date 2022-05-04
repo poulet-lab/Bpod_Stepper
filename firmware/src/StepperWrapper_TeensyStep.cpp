@@ -75,9 +75,10 @@ void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
     return;
   toggleISRlimit(dir);                              // attach ISRs for limit switches
 
-  DEBUG_PRINTF("Moving %d 1/%d-steps ...\n",steps,_microsteps);
   _motor->setAcceleration(_aMu);                    // set acceleration
   _motor->setMaxSpeed(_vMaxMu);                     // set speed
+  steps = _microsteps * steps / _msRes;
+  DEBUG_PRINTF("Moving %d 1/%d-steps ...\n",steps,_microsteps);
   _motor->setTargetRel(steps);                      // set relative target
   _stepControl->moveAsync(*_motor);                 // start moving
 
