@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-classdef BpodStepperModule < handle
+classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
     properties (SetAccess = protected)
         Port                        % ArCOM Serial port
@@ -42,6 +42,7 @@ classdef BpodStepperModule < handle
     end
 
     properties (Access = private)
+        privUseEncoder = false
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
@@ -95,6 +96,7 @@ classdef BpodStepperModule < handle
             obj.RMScurrent = obj.Port.read(1, 'uint16');
             obj.Port.write('GC', 'uint8');
             obj.privChopper = obj.Port.read(1, 'uint8');
+            obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
         end
 
         function out = get.MaxSpeed(obj)
@@ -373,6 +375,7 @@ classdef BpodStepperModule < handle
             for ii = 1:numel(id)
                 obj.Port.write(['M' id(ii) M(ii)], 'uint8');
             end
+            obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
         end
 
         function storeDefaults(obj)
@@ -432,6 +435,28 @@ classdef BpodStepperModule < handle
                 obj.StreamingMode = true;
                 isPaused = false;
             end
+        end
+    end
+
+    methods (Access = protected)
+        function propgrp = getPropertyGroups(obj)
+            gTitle1 = '<strong>Module Information</strong>';
+            propList1 = {'HardwareVersion','DriverVersion','FirmwareVersion'};
+            gTitle2 = '<strong>Motor Configuration</strong>';
+            propList2 = {'RMScurrent','ChopperMode','MaxSpeed','Acceleration'};
+            gTitle3 = '<strong>Movement Parameters</strong>';
+            if obj.privUseEncoder
+                propList3 = {'Position','EncoderPosition'};
+            else
+                propList3 = {'MaxSpeed','Acceleration','Position'};
+            end
+            propgrp(1) = matlab.mixin.util.PropertyGroup(propList1,gTitle1);
+            propgrp(2) = matlab.mixin.util.PropertyGroup(propList2,gTitle2);
+            propgrp(3) = matlab.mixin.util.PropertyGroup(propList3,gTitle3);
+        end
+
+        function s = getFooter(obj)
+            s = matlab.mixin.CustomDisplay.getDetailedFooter(obj);
         end
     end
 end
