@@ -1,12 +1,4 @@
 %{
-----------------------------------------------------------------------------
-
-This file is part of the Sanworks fork of the Poulet Lab Bpod_Stepper
-repository: https://github.com/poulet-lab/Bpod_Stepper
-Copyright (C) 2022 Sanworks LLC, Rochester, New York, USA
-
-----------------------------------------------------------------------------
-
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3.

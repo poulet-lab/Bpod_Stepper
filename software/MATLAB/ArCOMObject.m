@@ -126,11 +126,10 @@ classdef ArCOMObject < handle
                     tmp = [];
                 end
                 assert(~isempty(tmp),'No serial port available.')
-                if length(tmp) == 1
-                    portString = tmp{1};
-                else
-                    error(['Error: Multiple USB serial ports are available.' char(10) 'Please provide a serial port argument to initialize ArCOM. Available ports are: ' strjoin(tmp.cellstr, ', ')]);
-                end
+                assert(numel(tmp)==1,['Multiple serial ports are available. ' ...
+                    'Please provide a serial port argument to initialize ArCOM.\n' ...
+                    'Available ports are: %s'],strjoin(tmp.cellstr, ', '))
+                portString = tmp{1};
             else
                 validateattributes(portString,{'char','string'},...
                     {'row'},'','PORTSTRING')
