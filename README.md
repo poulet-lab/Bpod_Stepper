@@ -5,7 +5,7 @@
 ## Serial Command Interface
 
 ### Moving the Motor
-The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to keep track of the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions. Some of the following commands can also be [bound to one of the IO ports](#bind-movement-trigger-to-IO-port).
+The following serial commands control the movement of the motor. All movements can be interrupted by activation of an end-switch or issuance of a stop command. The Stepper Module will try to track the position at all times (it should be able to do so unless there is a loss of steps). This way, you can target absolute positions. Some of the following commands can also be [bound to one of the IO ports](#bind-movement-trigger-to-IO-port).
 
 * #### Move forwards
   Start continuous movement forwards.
