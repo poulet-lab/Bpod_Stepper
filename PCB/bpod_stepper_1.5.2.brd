@@ -296,7 +296,7 @@ Machine</text>
 <wire x1="18.415" y1="9.8425" x2="18.415" y2="13.0175" width="0.127" layer="25"/>
 <wire x1="20.955" y1="9.8425" x2="20.955" y2="13.0175" width="0.127" layer="25"/>
 <wire x1="23.495" y1="9.8425" x2="23.495" y2="13.0175" width="0.127" layer="25"/>
-<text x="21.2725" y="55.5625" size="1.778" layer="21" font="vector" rot="R90" align="top-left">Pos. Ctr</text>
+<text x="21.2725" y="56.1" size="1.778" layer="21" font="vector" rot="R90" align="top-left">Pos. Ctr</text>
 <wire x1="47.9425" y1="51.435" x2="47.3075" y2="51.435" width="0.127" layer="25"/>
 <wire x1="48.895" y1="52.3875" x2="47.9425" y2="51.435" width="0.127" layer="25"/>
 </plain>
