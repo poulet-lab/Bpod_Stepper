@@ -390,6 +390,8 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.Diag1 = 25;
     pin.VIO   = 28;
     pin.VM    = 4 ;
+  }
+  if (PCBrev >= 1.5) {
     pin.IO[0] = 30;     // IO1 - watch out, zero indexing!
     pin.IO[1] = 29;     // IO2
   }
