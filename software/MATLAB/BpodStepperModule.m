@@ -446,9 +446,9 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             propList2 = {'RMScurrent','ChopperMode','MaxSpeed','Acceleration'};
             gTitle3 = '<strong>Movement Parameters</strong>';
             if obj.privUseEncoder
-                propList3 = {'MaxSpeed','Acceleration','Position','EncoderPosition'};
+                propList3 = {'Position','EncoderPosition'};
             else
-                propList3 = {'MaxSpeed','Acceleration','Position'};
+                propList3 = {'Position'};
             end
             propgrp(1) = matlab.mixin.util.PropertyGroup(propList1,gTitle1);
             propgrp(2) = matlab.mixin.util.PropertyGroup(propList2,gTitle2);
