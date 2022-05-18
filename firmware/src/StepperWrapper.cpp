@@ -596,6 +596,7 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
       }
       _microsteps = ms;
   }
+  _microstepDiv = (_msRes/_microsteps);
   DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
 
@@ -824,4 +825,16 @@ int32_t StepperWrapper::encoderPosition() {
 void StepperWrapper::resetEncoderPosition() {
   if (_enc != nullptr)
     _enc->zeroFTM();
+}
+
+void StepperWrapper::moveSteps(int32_t steps) {
+  moveMicroSteps(steps * _msRes);
+}
+
+int32_t StepperWrapper::position() {
+  return microPosition() / _msRes;
+}
+
+void StepperWrapper::position(int32_t target) {
+  microPosition(target * _msRes);
 }

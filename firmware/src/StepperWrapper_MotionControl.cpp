@@ -54,20 +54,20 @@ void StepperWrapper_MotionControl::hardStop() {
   // TODO
 }
 
-void StepperWrapper_MotionControl::moveSteps(int32_t steps) {
+void StepperWrapper_MotionControl::moveMicroSteps(int32_t steps) {
   DEBUG_PRINTFUN(steps);
-  _driver->XTARGET(_driver->XACTUAL() + steps * (int32_t) _microsteps);
+  _driver->XTARGET(_driver->XACTUAL() + steps);
 }
 
-int32_t StepperWrapper_MotionControl::position() {
+int32_t StepperWrapper_MotionControl::microPosition() {
   DEBUG_PRINTFUN();
-  return _driver->XACTUAL() / (int32_t) _microsteps;
+  return _driver->XACTUAL();
 }
 
-void StepperWrapper_MotionControl::position(int32_t target) {
+void StepperWrapper_MotionControl::microPosition(int32_t target) {
   DEBUG_PRINTFUN(target);
   _driver->RAMPMODE(0);
-  _driver->XTARGET(target * _microsteps);
+  _driver->XTARGET(target);
 }
 
 void StepperWrapper_MotionControl::setPosition(int32_t pos) {

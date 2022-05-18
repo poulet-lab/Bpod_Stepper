@@ -70,21 +70,25 @@ class StepperWrapper
     virtual void setMicrosteps(uint16_t ms);    // set microstepping resolution
     uint16_t getMicrosteps();                   // get microstepping resolution
 
-    virtual float a() = 0;                      // get acceleration (full steps / s^2)
-    virtual void a(float a) = 0;                // set acceleration (full steps / s^2)
-    virtual void hardStop() = 0;                // stop without slowing down
-    virtual void moveSteps(int32_t steps) = 0;  // move to relative position (full steps)
-    virtual bool isRunning() = 0;               // is the motor currently running?
-    virtual int32_t position() = 0;             // get current position (full steps)
-    virtual void position(int32_t target) = 0;  // go to absolute position (full steps)
-    virtual void setPosition(int32_t pos) = 0;  // set position without moving (microsteps)
-    virtual void rotate(int8_t direction) = 0;  // initiate rotation
-    virtual void softStop() = 0;                // stop after slowing down
-    virtual float vMax() = 0;                   // get peak velocity (full steps / s)
-    virtual void vMax(float v) = 0;             // set peak velocity (full steps / s)
+    virtual float a() = 0;                          // get acceleration (full steps / s^2)
+    virtual void a(float a) = 0;                    // set acceleration (full steps / s^2)
+    virtual void softStop() = 0;                    // stop after defined slow-down
+    virtual void hardStop() = 0;                    // stop as fast as possible (risk of step-loss)
+    virtual void moveMicroSteps(int32_t steps) = 0; // move to relative position (micro-steps)
+    virtual bool isRunning() = 0;                   // is the motor currently running?
+    virtual int32_t microPosition() = 0;            // get current position (micro-steps)
+    virtual void microPosition(int32_t target) = 0; // go to absolute position (micro-steps)
+    virtual void setPosition(int32_t pos) = 0;      // set position without moving (microsteps)
+    virtual void rotate(int8_t direction) = 0;      // initiate rotation
+    virtual float vMax() = 0;                       // get peak velocity (full steps / s)
+    virtual void vMax(float v) = 0;                 // set peak velocity (full steps / s)
 
-    void go2target(uint8_t id);
-    void rotate();
+    void rotate();                              // start rotation
+    void moveSteps(int32_t steps);              // move to relative position (full-steps)
+    void go2target(uint8_t id);                 // move to predefined target
+    void position(int32_t target);              // move to absolute position (full-steps)
+    int32_t position();                         // get absolute position (full-steps)
+
     void setChopper(bool chopper);
     bool getChopper();
     void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
@@ -111,6 +115,7 @@ class StepperWrapper
     bool atLimit(int8_t direction);
     static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
     uint16_t _microsteps = 1;
+    uint16_t _microstepDiv = (vDriver>0)?256:16;
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     ArCOM *_COM;
@@ -156,9 +161,9 @@ class StepperWrapper
     static const uint32_t debounceMillis = 500; // duration for input debounce [ms]
     uint8_t _ioMode[6] {0};
     uint8_t _ioResistor[6] {0};                 // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
-    
+
     void initEncoder();
-    QuadDecode<2>* _enc = nullptr; 
+    QuadDecode<2>* _enc = nullptr;
 };
 
 
@@ -175,9 +180,9 @@ class StepperWrapper_SmoothStepper : public StepperWrapper
     void a(float a);
     void hardStop();
     bool isRunning();
-    void moveSteps(int32_t steps);
-    int32_t position();
-    void position(int32_t target);
+    void moveMicroSteps(int32_t steps);
+    int32_t microPosition();
+    void microPosition(int32_t target);
     void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();
@@ -200,11 +205,10 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     float a();
     void a(float a);
     void hardStop();
-    void moveSteps(int32_t steps);
     void moveMicroSteps(int32_t steps);
     bool isRunning();
-    int32_t position();
-    void position(int32_t target);
+    int32_t microPosition();
+    void microPosition(int32_t target);
     void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();
@@ -237,9 +241,9 @@ class StepperWrapper_MotionControl : public StepperWrapper
     void a(float a);
     void hardStop();
     bool isRunning();
-    void moveSteps(int32_t steps);
-    int32_t position();
-    void position(int32_t target);
+    void moveMicroSteps(int32_t steps);
+    int32_t microPosition();
+    void microPosition(int32_t target);
     void setPosition(int32_t pos);
     void rotate(int8_t direction);
     void softStop();

@@ -33,6 +33,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         ChopperMode                 % 0 = PWM chopper, 1 = voltage chopper
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
+        MicroPosition
         Position                    % absolute position
         EncoderPosition
     end
@@ -147,6 +148,16 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.pauseStreaming(false);
         end
 
+        function out = get.MicroPosition(obj)
+            obj.pauseStreaming(true);
+            obj.Port.write('Gp', 'uint8');
+            out = obj.Port.read(1, 'int32');
+            obj.pauseStreaming(false);
+        end
+        function set.MicroPosition(obj,position)
+            validateattributes(position,{'numeric'},{'scalar','integer'})
+            obj.Port.write('p', 'int8', position, 'int32');
+        end
         function out = get.Position(obj)
             obj.pauseStreaming(true);
             obj.Port.write('GP', 'uint8');
@@ -164,7 +175,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
         function out = get.EncoderPosition(obj)
             obj.pauseStreaming(true);
-            obj.Port.write('Gp', 'uint8');
+            obj.Port.write('GN', 'uint8');
             out = obj.Port.read(1, 'int32');
             obj.pauseStreaming(false);
         end
@@ -177,6 +188,13 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             % for clockwise steps, negative for counterclockwise
             validateattributes(nSteps,{'numeric'},{'scalar','integer'})
             obj.Port.write('S', 'uint8', nSteps, 'int16');
+        end
+        
+        function microStep(obj, nSteps)
+            % Move stepper motor a set number of micro-steps. nSteps = positive
+            % for clockwise steps, negative for counterclockwise
+            validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            obj.Port.write('s', 'uint8', nSteps, 'int32');
         end
 
         function setTarget(obj, varargin)

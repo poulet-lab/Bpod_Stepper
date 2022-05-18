@@ -109,15 +109,25 @@ void loop()
     case 'x':                                                     // Stop after slowing down
       wrapper->softStop();
       return;
-    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+    case 'S':                                                     // Move to relative position, full steps (pos = CW, neg = CCW)
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->moveSteps(COM->readInt16());
       return;
-    case 'P':                                                     // Move to absolute position
+    case 's':                                                     // Move to relative position, micro-steps (pos = CW, neg = CCW)
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
+      wrapper->moveMicroSteps(COM->readInt32());
+      return;
+    case 'P':                                                     // Move to absolute position, full steps
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->position(COM->readInt16());
+      return;
+    case 'p':                                                     // Move to absolute position, micro-steps
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
+      wrapper->microPosition(COM->readInt32());
       return;
     case 'F':                                                     // Start moving forwards
       wrapper->vMax(p.vMax);
@@ -207,7 +217,10 @@ void loop()
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
           break;
-        case 'p':                                                 //   Return encoder position
+        case 'p':                                                 //   Return micro-position
+          COM->writeInt32(wrapper->microPosition());
+          break;
+        case 'N':                                                 //   Return encoder position
           COM->writeInt32(wrapper->encoderPosition());
           break;
         case 'A':                                                 //   Return acceleration
