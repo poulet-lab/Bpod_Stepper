@@ -55,22 +55,21 @@ void StepperWrapper_SmoothStepper::hardStop() {
   // TODO
 }
 
-void StepperWrapper_SmoothStepper::moveSteps(int32_t steps) {
-  DEBUG_PRINTFUN(steps);
+void StepperWrapper_SmoothStepper::moveMicroSteps(int32_t steps) {
   digitalWriteFast(LED_BUILTIN, HIGH);
-  _stepper->moveSteps(steps * _microsteps);
+  _stepper->moveSteps(steps);
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
-int32_t StepperWrapper_SmoothStepper::position() {
+int32_t StepperWrapper_SmoothStepper::microPosition() {
   DEBUG_PRINTFUN();
-  return round(_stepper->getPosition() / (int32_t) _microsteps);
+  return round(_stepper->getPosition());
 }
 
-void StepperWrapper_SmoothStepper::position(int32_t target) {
+void StepperWrapper_SmoothStepper::microPosition(int32_t target) {
   DEBUG_PRINTFUN(target);
   digitalWriteFast(LED_BUILTIN, HIGH);
-  _stepper->movePosition(target * _microsteps);
+  _stepper->movePosition(target);
   digitalWriteFast(LED_BUILTIN, LOW);
 }
 
