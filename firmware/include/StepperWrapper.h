@@ -159,7 +159,6 @@ class StepperWrapper
     FsFile filePos;                             // File for storing current position
 
     void attachInput(uint8_t idx, void (*userFunc)(void));
-    void init2100();
     void init2130(uint16_t rms_current);
     void init5160(uint16_t rms_current);
     bool _hardwareSPI = false;

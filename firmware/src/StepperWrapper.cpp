@@ -49,9 +49,14 @@ StepperWrapper::StepperWrapper() {
     //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, RISING);
     //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, RISING);
 
+    // Detect presence of motor power supply
     pinMode(pin.VM, INPUT);
     attachInterrupt(digitalPinToInterrupt(pin.VM), ISRchangeVM, CHANGE);
     if (!digitalRead(pin.VM))
+      throwError(1);
+
+    // Throw error if no supported driver found
+    if (vDriver == 0)
       throwError(1);
   }
 
@@ -140,14 +145,6 @@ void StepperWrapper::init(uint16_t rms_current) {
     init2130(rms_current);                  // initialize TMC2130
   else if (vDriver == 0x30)
     init5160(rms_current);                  // initialize TMC5160
-  else
-    init2100();                             // initialize TMC2100
-}
-
-void StepperWrapper::init2100() {
-  DEBUG_PRINTLN("Initializing driver: TMC2100");
-  enableDriver(true);                       // activate motor outputs
-  StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
 
 void StepperWrapper::init2130(uint16_t rms_current) {
@@ -564,38 +561,13 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
     case 0x11:  // TMC2130
       get2130()->microsteps(ms);
       _microsteps = get2130()->microsteps();
-      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
     case 0x30:  // TMC5160
       get5160()->microsteps(ms);
       _microsteps = get5160()->microsteps();
-      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
-    default:    // TMC2100 (assumed)
-      switch (ms) {
-        case 16:
-          pinMode(pin.CFG1, INPUT);
-          pinMode(pin.CFG2, INPUT);
-          break;
-        case 4:
-          pinMode(pin.CFG1, OUTPUT);
-          digitalWrite(pin.CFG1, HIGH);
-          pinMode(pin.CFG2, INPUT);
-          break;
-        case 2:
-          pinMode(pin.CFG1, INPUT);
-          pinMode(pin.CFG2, OUTPUT);
-          digitalWrite(pin.CFG2, LOW);
-          break;
-        default:
-          ms = 1;
-          pinMode(pin.CFG1, OUTPUT);
-          digitalWrite(pin.CFG1, LOW);
-          pinMode(pin.CFG2, OUTPUT);
-          digitalWrite(pin.CFG2, LOW);
-      }
-      _microsteps = ms;
   }
+  _microsteps = (_microsteps==0) ? 1 : _microsteps;
   _microstepDiv = (_msRes/_microsteps);
   DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
