@@ -10,4 +10,6 @@ typedef struct{
   float vMaxTarget[9] {0};
   uint8_t IOmode[6] {0};
   uint8_t IOresistor[6] {0};
+  uint16_t stepsPerRevolution = 200;
+  uint16_t countsPerRevolution = 32768;
 }storageVars;

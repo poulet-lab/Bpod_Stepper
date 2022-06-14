@@ -63,10 +63,6 @@ void StepperWrapper_TeensyStep::hardStop() {
   writePosition(_microPosition);
 }
 
-void StepperWrapper_TeensyStep::moveSteps(int32_t steps) {
-  moveMicroSteps(steps * _msRes);
-}
-
 void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
   if (isRunning() || steps==0)                      // return if moving or at target already
     return;
@@ -75,6 +71,10 @@ void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
     return;
   toggleISRlimit(dir);                              // attach ISRs for limit switches
 
+  if (_msRes != _microsteps)                        // if we're not at max micro-stepping res
+    steps = steps / _microstepDiv;                  // correct the number of steps to take
+
+  DEBUG_PRINTF("Moving %d 1/%d-steps ...\n",steps,_microsteps);
   _motor->setAcceleration(_aMu);                    // set acceleration
   _motor->setMaxSpeed(_vMaxMu);                     // set speed
   steps = _microsteps * steps / _msRes;
@@ -86,14 +86,13 @@ void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
   digitalWriteFast(LED_BUILTIN, HIGH);              // enable built-in LED
 }
 
-int32_t StepperWrapper_TeensyStep::position() {
-  return _microPosition/_msRes + _motor->getPosition()/_microsteps;
+int32_t StepperWrapper_TeensyStep::microPosition() {
+  return _microPosition + _motor->getPosition() * _microstepDiv;
 }
 
-void StepperWrapper_TeensyStep::position(int32_t target) {
-  DEBUG_PRINTF("Target position: %d micro-steps\n",target*_msRes);
-  target = (target*_msRes - _microPosition) / (_msRes/_microsteps);
-  moveMicroSteps(target);   // convert to relative target
+void StepperWrapper_TeensyStep::microPosition(int32_t target) {
+  DEBUG_PRINTF("Target position: %d micro-steps\n",target);
+  moveMicroSteps(target - _microPosition);
 }
 
 void StepperWrapper_TeensyStep::setPosition(int32_t pos) {
