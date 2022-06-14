@@ -37,11 +37,11 @@ volatile uint8_t ISRcode  = 0;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
-  _nIO = (PCBrev<1.2) ? 2 : 6;              // set number of IO pins
+  _nIO = (PCBrev<12) ? 2 : 6;              // set number of IO pins
 
   pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  if (PCBrev>=1.4) {
+  if (PCBrev>=14) {
     pinMode(pin.VIO, OUTPUT);
 
     pinMode(pin.Diag0, INPUT_PULLUP);
@@ -284,7 +284,7 @@ void StepperWrapper::blinkenlights() {
 void StepperWrapper::powerDriver(bool power) {
   DEBUG_PRINTF("Powering %s driver.\n",(power) ? "up" : "down");
   pinMode(pin.VIO, OUTPUT);
-  if (PCBrev>=1.4) {
+  if (PCBrev>=14) {
     digitalWrite(pin.VIO, power);
     delay(200);
   }
@@ -297,7 +297,7 @@ void StepperWrapper::enableDriver(bool enable) {
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
 
-float StepperWrapper::idPCB() {
+uint8_t StepperWrapper::idPCB() {
   // r1.4 onwards has the revision number coded in hardware.
   // It can be read by checking if pins 20-23 are connected
   // to GND. The connection status forms a binary code:
@@ -316,7 +316,7 @@ float StepperWrapper::idPCB() {
     pinMode(i, INPUT_DISABLE);
   }
   if (x)
-    return 1.3 + x / 10.0;
+    return 13 + x;
   else {                          // revisions older than 1.4:
     pinMode(29, INPUT);
     if (digitalRead(29)) {        // with r1.2 and r1.3 pin 29 reads HIGH
@@ -329,11 +329,11 @@ float StepperWrapper::idPCB() {
       pinMode(9, INPUT_DISABLE);
       pinMode(14, INPUT_DISABLE);
       if (tmp)                    // r1.3 connects pin 9 and 14 ...
-        return 1.3;
+        return 13;
       else                        // ... while r1.2 does not
-        return 1.2;
+        return 12;
     } else                        // otherwise its r1.1
-      return 1.1;
+      return 11;
   }
 }
 
@@ -347,7 +347,7 @@ uint8_t StepperWrapper::idDriver() {
 teensyPins StepperWrapper::getPins(float PCBrev) {
   teensyPins pin;
   pin.Error = 33;
-  if (PCBrev <= 1.1) {  // the original layout
+  if (PCBrev <= 11) {   // the original layout
     pin.Dir   =  2;
     pin.Step  =  3;
     pin.Sleep =  4;
@@ -375,7 +375,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.IO[4] = 18;     // IO5
     pin.IO[5] = 19;     // IO6
   }
-  if (PCBrev >= 1.3) {  // corrected layout for hardware SPI with r1.3
+  if (PCBrev >= 13) {   // corrected layout for hardware SPI with r1.3
     pin.Dir   =  5;
     pin.Step  =  6;
     pin.Sleep =  7;
@@ -385,13 +385,13 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.En    = 12;
     pin.IO[3] = 15;     // IO4
   }
-  if (PCBrev >= 1.4) {  // r1.4: support for DIAG pins, VIO control and VM monitoring
+  if (PCBrev >= 14) {   // r1.4: support for DIAG pins, VIO control and VM monitoring
     pin.Diag0 = 24;
     pin.Diag1 = 25;
     pin.VIO   = 28;
     pin.VM    = 4 ;
   }
-  if (PCBrev >= 1.5) {
+  if (PCBrev >= 15) {
     pin.IO[0] = 30;     // IO1 - watch out, zero indexing!
     pin.IO[1] = 29;     // IO2
   }
@@ -404,7 +404,7 @@ TMC2130Stepper* StepperWrapper::get2130() {
 
   if (!initialized) {
     powerDriver(true);
-    if (PCBrev<1.3)
+    if (PCBrev<13)
       driver = new TMC2130Stepper(pin.CFG3, 0.110, pin.CFG1, pin.Reset, pin.CFG2);
     else {
       driver = new TMC2130Stepper(pin.CFG3, 0.110);
@@ -427,7 +427,7 @@ TMC5160Stepper* StepperWrapper::get5160() {
 
   if (!initialized) {
     powerDriver(true);
-    if (PCBrev<1.3)
+    if (PCBrev<13)
       driver = new TMC5160Stepper(pin.CFG3, 0.075, pin.CFG1, pin.Reset, pin.CFG2);
     else {
       driver = new TMC5160Stepper(pin.CFG3, 0.075);
@@ -692,10 +692,10 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
       pinMode(pin.IO[idx], _ioResistor[idx]);
       break;
     case 'a':
-      _ioMode[idx] = (idx==0 && PCBrev >= 1.4) ? mode : 0;
+      _ioMode[idx] = (idx==0 && PCBrev >= 14) ? mode : 0;
       break;
     case 'b':
-      _ioMode[idx] = (idx==1 && PCBrev >= 1.4) ? mode : 0;
+      _ioMode[idx] = (idx==1 && PCBrev >= 14) ? mode : 0;
       break;
     default:
       _ioMode[idx] = 0;

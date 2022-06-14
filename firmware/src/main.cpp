@@ -50,7 +50,7 @@ void setup()
 {
   DEBUG_DELAY(1000);
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
-  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev);
+  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
   DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
 
   Serial1.begin(1312500);                                         // Initialize serial communication
@@ -230,7 +230,7 @@ void loop()
           COM->writeUint16(round(wrapper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
-          COM->writeUint8(PCBrev * 10);
+          COM->writeUint8(PCBrev);
           break;
         case 'M':
           COM->writeUint8(wrapper->getIOmode(COM->readByte()));

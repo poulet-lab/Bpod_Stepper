@@ -58,7 +58,7 @@ class StepperWrapper
     StepperWrapper();                           // constructor
 
     static void blinkenlights();                // extra fancy LED sequence to say hi
-    static float idPCB();                       // identify PCB revision
+    static uint8_t idPCB();                     // identify PCB revision (divide by 10!)
     static uint8_t idDriver();                  // identify TMC stepper driver
     static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
