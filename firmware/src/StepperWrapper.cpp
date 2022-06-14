@@ -838,3 +838,19 @@ int32_t StepperWrapper::position() {
 void StepperWrapper::position(int32_t target) {
   microPosition(target * _msRes);
 }
+
+void StepperWrapper::stepsPerRevolution(uint16_t steps) {
+  _stepsPerRevolution = 200;
+}
+
+uint16_t StepperWrapper::stepsPerRevolution() {
+  return _stepsPerRevolution;
+}
+
+void StepperWrapper::countsPerRevolution(uint16_t counts) {
+  _countsPerRevolution = counts;
+}
+
+uint16_t StepperWrapper::countsPerRevolution() {
+  return _countsPerRevolution;
+}

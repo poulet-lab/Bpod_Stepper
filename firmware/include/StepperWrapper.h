@@ -100,8 +100,12 @@ class StepperWrapper
     void setStream(bool enable);                // enable/disable live streaming of motor parameters
     bool getStream();                           // get status of live stream
     int32_t readPosition();                     // read _microPosition from SD card
-    int32_t encoderPosition();
-    void resetEncoderPosition();
+    int32_t encoderPosition();                  // get encoder position
+    void resetEncoderPosition();                // reset encoder position to zero
+    void stepsPerRevolution(uint16_t steps);    // set steps per revolution
+    uint16_t stepsPerRevolution();              // get steps per revolution
+    void countsPerRevolution(uint16_t steps);   // set encoder counts per revolution
+    uint16_t countsPerRevolution();             // get encoder counts per revolution
 
   protected:
     volatile int32_t _microPosition;
@@ -116,6 +120,8 @@ class StepperWrapper
     static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
     uint16_t _microsteps = 1;
     uint16_t _microstepDiv = (vDriver>0)?256:16;
+    uint16_t _stepsPerRevolution = 200;
+    uint16_t _countsPerRevolution = 32768;
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     ArCOM *_COM;

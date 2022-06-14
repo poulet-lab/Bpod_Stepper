@@ -179,6 +179,18 @@ void loop()
         p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
       return;
     }
+    case 'Y':                                                     // Set steps per revolution
+    {
+      wrapper->stepsPerRevolution(COM->readUint16());
+      p.stepsPerRevolution = wrapper->stepsPerRevolution();
+      return;
+    }
+    case 'y':                                                     // Set encoder steps per revolution
+    {
+      wrapper->countsPerRevolution(COM->readUint16());
+      p.countsPerRevolution = wrapper->countsPerRevolution();
+      return;
+    }
     case 'T':                                                     // Set predefined target
     {
       uint8_t idx = COM->readUint8() - 1;
@@ -247,6 +259,13 @@ void loop()
         case 'T':
           COM->writeUint8(vDriver);
           break;
+        case 'Y':                                                 //   Return steps per revolution
+          COM->writeUint16(wrapper->stepsPerRevolution());
+          break;
+        case 'y':                                                 //   Return encoder counts per revolution
+          COM->writeUint16(wrapper->countsPerRevolution());
+          break;
+
       }
       break;
     case 212:                                                     // USB Handshake
