@@ -50,7 +50,7 @@ void setup()
 {
   DEBUG_DELAY(1000);
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
-  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
+  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev);
   DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
 
   Serial1.begin(1312500);                                         // Initialize serial communication
@@ -109,25 +109,15 @@ void loop()
     case 'x':                                                     // Stop after slowing down
       wrapper->softStop();
       return;
-    case 'S':                                                     // Move to relative position, full steps (pos = CW, neg = CCW)
+    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->moveSteps(COM->readInt16());
       return;
-    case 's':                                                     // Move to relative position, micro-steps (pos = CW, neg = CCW)
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->moveMicroSteps(COM->readInt32());
-      return;
-    case 'P':                                                     // Move to absolute position, full steps
+    case 'P':                                                     // Move to absolute position
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->position(COM->readInt16());
-      return;
-    case 'p':                                                     // Move to absolute position, micro-steps
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->microPosition(COM->readInt32());
       return;
     case 'F':                                                     // Start moving forwards
       wrapper->vMax(p.vMax);
@@ -141,9 +131,6 @@ void loop()
       return;
     case 'Z':                                                     // Reset position to zero
       wrapper->setPosition(0);
-      return;
-    case 'z':                                                     // Reset encoder position to zero
-      wrapper->resetEncoderPosition();
       return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
@@ -177,18 +164,6 @@ void loop()
       wrapper->setIOresistor(idx,res);
       if (idx>0 && idx <= 6)
         p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
-      return;
-    }
-    case 'Y':                                                     // Set steps per revolution
-    {
-      wrapper->stepsPerRevolution(COM->readUint16());
-      p.stepsPerRevolution = wrapper->stepsPerRevolution();
-      return;
-    }
-    case 'y':                                                     // Set encoder steps per revolution
-    {
-      wrapper->countsPerRevolution(COM->readUint16());
-      p.countsPerRevolution = wrapper->countsPerRevolution();
       return;
     }
     case 'T':                                                     // Set predefined target
@@ -229,12 +204,6 @@ void loop()
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
           break;
-        case 'p':                                                 //   Return micro-position
-          COM->writeInt32(wrapper->microPosition());
-          break;
-        case 'N':                                                 //   Return encoder position
-          COM->writeInt32(wrapper->encoderPosition());
-          break;
         case 'A':                                                 //   Return acceleration
           COM->writeUint16(round(wrapper->a()));
           break;
@@ -242,7 +211,7 @@ void loop()
           COM->writeUint16(round(wrapper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
-          COM->writeUint8(PCBrev);
+          COM->writeUint8(PCBrev * 10);
           break;
         case 'M':
           COM->writeUint8(wrapper->getIOmode(COM->readByte()));
@@ -259,13 +228,6 @@ void loop()
         case 'T':
           COM->writeUint8(vDriver);
           break;
-        case 'Y':                                                 //   Return steps per revolution
-          COM->writeUint16(wrapper->stepsPerRevolution());
-          break;
-        case 'y':                                                 //   Return encoder counts per revolution
-          COM->writeUint16(wrapper->countsPerRevolution());
-          break;
-
       }
       break;
     case 212:                                                     // USB Handshake
