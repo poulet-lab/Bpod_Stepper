@@ -786,6 +786,7 @@ void StepperWrapper::initEncoder() {
   }
   else {
     DEBUG_PRINTLN("Disabling hardware quadrature encoder");
+    _enc->reset();
     _enc = nullptr;
   }
 }
