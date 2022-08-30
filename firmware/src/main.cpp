@@ -48,7 +48,7 @@ StepperWrapper* wrapper;
 
 void setup()
 {
-  DEBUG_DELAY(1000);
+  DEBUG_WAIT();
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
   DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
   DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
