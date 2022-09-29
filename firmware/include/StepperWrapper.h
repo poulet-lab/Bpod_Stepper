@@ -45,7 +45,7 @@ struct teensyPins {
   uint8_t IO[6] {0};
 };
 
-extern const float PCBrev;                      // PCB revision
+extern const uint8_t PCBrev;                    // PCB revision
 extern const uint8_t vDriver;                   // version number of TMC stepper driver
 extern const teensyPins pin;                    // pin numbers
 extern volatile uint8_t errorID;                // error ID (set through interrupt sub-routine)

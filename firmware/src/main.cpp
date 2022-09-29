@@ -37,7 +37,7 @@ const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
 // Variables
 uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
 uint8_t opCode       = 0;
-extern const float PCBrev;        // PCB revision
+extern const uint8_t PCBrev;      // PCB revision
 extern const uint8_t vDriver;     // version number of TMC stepper driver
 extern const teensyPins pin;      // pin numbers
 extern volatile uint8_t errorID;  // error ID
@@ -288,6 +288,12 @@ void throwError() {
 }
 
 void returnModuleInfo() {
+  // FSM firmware v23 or newer sends a second info request byte to indicate that
+  // it supports additional ops
+  delayMicroseconds(100);
+  boolean fsmSupportsHwInfo =
+    (Serial1COM.available() && Serial1COM.readByte() == 255) ? true : false;
+
   Serial1COM.writeByte(65);                                       // Acknowledge
   Serial1COM.writeUint32(FirmwareVersion);                        // 4-byte firmware version
   Serial1COM.writeByte(sizeof(moduleName) - 1);
@@ -303,6 +309,14 @@ void returnModuleInfo() {
     for (unsigned int j = 0; j < strlen(eventNames[i]); j++) {    // Once for each character in this event name
       Serial1COM.writeByte(*(eventNames[i] + j));                 // Send the character
     }
+  }
+  if (fsmSupportsHwInfo) {
+    Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
+    Serial1COM.writeByte('V');                                    // Op code for: Hardware major version
+    Serial1COM.writeByte(PCBrev/10);
+    Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
+    Serial1COM.writeByte('v');                                    // Op code for: Hardware minor version
+    Serial1COM.writeByte(PCBrev%10);
   }
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
 }

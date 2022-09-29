@@ -29,7 +29,7 @@ _______________________________________________________________________________
 extern ArCOM Serial1COM;
 extern ArCOM usbCOM;
 
-const float PCBrev        = StepperWrapper::idPCB();
+const uint8_t PCBrev      = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
