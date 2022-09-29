@@ -3,6 +3,7 @@ global BpodSystem
 
 % First, lets connect to the Bpod Stepper Module via USB.
 % Use the Bpod GUI to define the module's USB port.
+BpodSystem.assertModule({'Stepper'}, 1);
 m = BpodStepperModule(BpodSystem.ModuleUSB.Stepper1);
 
 % setting up the motor ... try the different chopper modes
@@ -79,8 +80,10 @@ for ii = 1:length(melody)
     
     HandlePauseCondition;
     if BpodSystem.Status.BeingUsed == 0
+        m.hardStop;
+        delete(m)
         return
     end
 end
-
+RunProtocol('Stop')
 delete(m)
