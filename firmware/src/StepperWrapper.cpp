@@ -18,17 +18,18 @@ _______________________________________________________________________________
 */
 
 #include <TMCStepper.h>
-#include "EEstore.h"                        // Import EEstore library
-#include "StepperWrapper.h"
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include "EEstore.h"                        // Import EEstore library
+#include "StepperWrapper.h"
 #include "SerialDebug.h"
+
 
 
 extern ArCOM Serial1COM;
 extern ArCOM usbCOM;
 
-const float PCBrev        = StepperWrapper::idPCB();
+const uint8_t PCBrev      = StepperWrapper::idPCB();
 const teensyPins pin      = StepperWrapper::getPins(PCBrev);
 const uint8_t vDriver     = StepperWrapper::idDriver();
 volatile uint8_t errorID  = 0;
@@ -36,11 +37,11 @@ volatile uint8_t ISRcode  = 0;
 IntervalTimer timerErrorBlink;
 
 StepperWrapper::StepperWrapper() {
-  _nIO = (PCBrev<1.2) ? 2 : 6;              // set number of IO pins
+  _nIO = (PCBrev<12) ? 2 : 6;              // set number of IO pins
 
   pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  if (PCBrev>=1.4) {
+  if (PCBrev>=14) {
     pinMode(pin.VIO, OUTPUT);
 
     pinMode(pin.Diag0, INPUT_PULLUP);
@@ -48,9 +49,14 @@ StepperWrapper::StepperWrapper() {
     //attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, RISING);
     //attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, RISING);
 
+    // Detect presence of motor power supply
     pinMode(pin.VM, INPUT);
     attachInterrupt(digitalPinToInterrupt(pin.VM), ISRchangeVM, CHANGE);
     if (!digitalRead(pin.VM))
+      throwError(1);
+
+    // Throw error if no supported driver found
+    if (vDriver == 0)
       throwError(1);
   }
 
@@ -139,14 +145,6 @@ void StepperWrapper::init(uint16_t rms_current) {
     init2130(rms_current);                  // initialize TMC2130
   else if (vDriver == 0x30)
     init5160(rms_current);                  // initialize TMC5160
-  else
-    init2100();                             // initialize TMC2100
-}
-
-void StepperWrapper::init2100() {
-  DEBUG_PRINTLN("Initializing driver: TMC2100");
-  enableDriver(true);                       // activate motor outputs
-  StepperWrapper::setMicrosteps(16);        // set microstep resolution
 }
 
 void StepperWrapper::init2130(uint16_t rms_current) {
@@ -196,7 +194,7 @@ void StepperWrapper::init2130(uint16_t rms_current) {
   driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
   driver->TPOWERDOWN(0);
   driver->iholddelay(0);                    // instant IHOLD
-  driver->freewheel(0x01);                  // 0x00 = normal operation, 0x01 = freewheeling
+  driver->freewheel(0x00);                  // 0x00 = normal operation, 0x01 = freewheeling
 }
 
 void StepperWrapper::init5160(uint16_t rms_current) {
@@ -283,7 +281,7 @@ void StepperWrapper::blinkenlights() {
 void StepperWrapper::powerDriver(bool power) {
   DEBUG_PRINTF("Powering %s driver.\n",(power) ? "up" : "down");
   pinMode(pin.VIO, OUTPUT);
-  if (PCBrev>=1.4) {
+  if (PCBrev>=14) {
     digitalWrite(pin.VIO, power);
     delay(200);
   }
@@ -296,7 +294,7 @@ void StepperWrapper::enableDriver(bool enable) {
   digitalWrite(pin.En, enable ^ _invertPinEn);
 }
 
-float StepperWrapper::idPCB() {
+uint8_t StepperWrapper::idPCB() {
   // r1.4 onwards has the revision number coded in hardware.
   // It can be read by checking if pins 20-23 are connected
   // to GND. The connection status forms a binary code:
@@ -315,7 +313,7 @@ float StepperWrapper::idPCB() {
     pinMode(i, INPUT_DISABLE);
   }
   if (x)
-    return 1.3 + x / 10.0;
+    return 13 + x;
   else {                          // revisions older than 1.4:
     pinMode(29, INPUT);
     if (digitalRead(29)) {        // with r1.2 and r1.3 pin 29 reads HIGH
@@ -328,11 +326,11 @@ float StepperWrapper::idPCB() {
       pinMode(9, INPUT_DISABLE);
       pinMode(14, INPUT_DISABLE);
       if (tmp)                    // r1.3 connects pin 9 and 14 ...
-        return 1.3;
+        return 13;
       else                        // ... while r1.2 does not
-        return 1.2;
+        return 12;
     } else                        // otherwise its r1.1
-      return 1.1;
+      return 11;
   }
 }
 
@@ -346,7 +344,7 @@ uint8_t StepperWrapper::idDriver() {
 teensyPins StepperWrapper::getPins(float PCBrev) {
   teensyPins pin;
   pin.Error = 33;
-  if (PCBrev <= 1.1) {  // the original layout
+  if (PCBrev <= 11) {   // the original layout
     pin.Dir   =  2;
     pin.Step  =  3;
     pin.Sleep =  4;
@@ -374,7 +372,7 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.IO[4] = 18;     // IO5
     pin.IO[5] = 19;     // IO6
   }
-  if (PCBrev >= 1.3) {  // corrected layout for hardware SPI with r1.3
+  if (PCBrev >= 13) {   // corrected layout for hardware SPI with r1.3
     pin.Dir   =  5;
     pin.Step  =  6;
     pin.Sleep =  7;
@@ -384,11 +382,15 @@ teensyPins StepperWrapper::getPins(float PCBrev) {
     pin.En    = 12;
     pin.IO[3] = 15;     // IO4
   }
-  if (PCBrev >= 1.4) {  // r1.4: support for DIAG pins, VIO control and VM monitoring
+  if (PCBrev >= 14) {   // r1.4: support for DIAG pins, VIO control and VM monitoring
     pin.Diag0 = 24;
     pin.Diag1 = 25;
     pin.VIO   = 28;
     pin.VM    = 4 ;
+  }
+  if (PCBrev >= 15) {
+    pin.IO[0] = 30;     // IO1 - watch out, zero indexing!
+    pin.IO[1] = 29;     // IO2
   }
   return pin;
 }
@@ -399,7 +401,7 @@ TMC2130Stepper* StepperWrapper::get2130() {
 
   if (!initialized) {
     powerDriver(true);
-    if (PCBrev<1.3)
+    if (PCBrev<13)
       driver = new TMC2130Stepper(pin.CFG3, 0.110, pin.CFG1, pin.Reset, pin.CFG2);
     else {
       driver = new TMC2130Stepper(pin.CFG3, 0.110);
@@ -422,7 +424,7 @@ TMC5160Stepper* StepperWrapper::get5160() {
 
   if (!initialized) {
     powerDriver(true);
-    if (PCBrev<1.3)
+    if (PCBrev<13)
       driver = new TMC5160Stepper(pin.CFG3, 0.075, pin.CFG1, pin.Reset, pin.CFG2);
     else {
       driver = new TMC5160Stepper(pin.CFG3, 0.075);
@@ -559,38 +561,14 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
     case 0x11:  // TMC2130
       get2130()->microsteps(ms);
       _microsteps = get2130()->microsteps();
-      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
     case 0x30:  // TMC5160
       get5160()->microsteps(ms);
       _microsteps = get5160()->microsteps();
-      _microsteps = (_microsteps==0) ? 1 : _microsteps;
       break;
-    default:    // TMC2100 (assumed)
-      switch (ms) {
-        case 16:
-          pinMode(pin.CFG1, INPUT);
-          pinMode(pin.CFG2, INPUT);
-          break;
-        case 4:
-          pinMode(pin.CFG1, OUTPUT);
-          digitalWrite(pin.CFG1, HIGH);
-          pinMode(pin.CFG2, INPUT);
-          break;
-        case 2:
-          pinMode(pin.CFG1, INPUT);
-          pinMode(pin.CFG2, OUTPUT);
-          digitalWrite(pin.CFG2, LOW);
-          break;
-        default:
-          ms = 1;
-          pinMode(pin.CFG1, OUTPUT);
-          digitalWrite(pin.CFG1, LOW);
-          pinMode(pin.CFG2, OUTPUT);
-          digitalWrite(pin.CFG2, LOW);
-      }
-      _microsteps = ms;
   }
+  _microsteps = (_microsteps==0) ? 1 : _microsteps;
+  _microstepDiv = (_msRes/_microsteps);
   DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
 
@@ -685,10 +663,17 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
     case 'L':
       pinMode(pin.IO[idx], _ioResistor[idx]);
       break;
+    case 'a':
+      _ioMode[idx] = (idx==0 && PCBrev >= 14) ? mode : 0;
+      break;
+    case 'b':
+      _ioMode[idx] = (idx==1 && PCBrev >= 14) ? mode : 0;
+      break;
     default:
       _ioMode[idx] = 0;
       pinMode(pin.IO[idx], INPUT);
   }
+  initEncoder();
 }
 
 void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
@@ -783,4 +768,62 @@ void StepperWrapper::go2target(uint8_t id) {
   this->a((p.aTarget[id]>0) ? p.aTarget[id] : p.a);
   this->vMax((p.vMaxTarget[id]>0) ? p.vMaxTarget[id] : p.vMax);
   this->position(p.target[id]);
+}
+
+void StepperWrapper::initEncoder() {
+  // check if all encoder lines are assigned
+  bool useEncoder = _ioMode[0]=='a' && _ioMode[1]=='b';
+
+  // decide what to do
+  if (useEncoder == (_enc != nullptr))
+    return;
+  else if (useEncoder) {
+    DEBUG_PRINTLN("Enabling hardware quadrature encoder");
+    _enc = new QuadDecode<2>;
+    _enc->setup();
+    _enc->start();
+    _enc->zeroFTM();
+  }
+  else {
+    DEBUG_PRINTLN("Disabling hardware quadrature encoder");
+    _enc->reset();
+    _enc = nullptr;
+  }
+}
+
+int32_t StepperWrapper::encoderPosition() {
+  return (_enc == nullptr) ? 0 : _enc->calcPosn();
+}
+
+void StepperWrapper::resetEncoderPosition() {
+  if (_enc != nullptr)
+    _enc->zeroFTM();
+}
+
+void StepperWrapper::moveSteps(int32_t steps) {
+  moveMicroSteps(steps * _msRes);
+}
+
+int32_t StepperWrapper::position() {
+  return microPosition() / _msRes;
+}
+
+void StepperWrapper::position(int32_t target) {
+  microPosition(target * _msRes);
+}
+
+void StepperWrapper::stepsPerRevolution(uint16_t steps) {
+  _stepsPerRevolution = 200;
+}
+
+uint16_t StepperWrapper::stepsPerRevolution() {
+  return _stepsPerRevolution;
+}
+
+void StepperWrapper::countsPerRevolution(uint16_t counts) {
+  _countsPerRevolution = counts;
+}
+
+uint16_t StepperWrapper::countsPerRevolution() {
+  return _countsPerRevolution;
 }

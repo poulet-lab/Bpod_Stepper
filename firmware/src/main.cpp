@@ -37,7 +37,7 @@ const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
 // Variables
 uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
 uint8_t opCode       = 0;
-extern const float PCBrev;        // PCB revision
+extern const uint8_t PCBrev;      // PCB revision
 extern const uint8_t vDriver;     // version number of TMC stepper driver
 extern const teensyPins pin;      // pin numbers
 extern volatile uint8_t errorID;  // error ID
@@ -48,9 +48,9 @@ StepperWrapper* wrapper;
 
 void setup()
 {
-  DEBUG_DELAY(1000);
+  DEBUG_WAIT();
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
-  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev);
+  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
   DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
 
   Serial1.begin(1312500);                                         // Initialize serial communication
@@ -109,15 +109,25 @@ void loop()
     case 'x':                                                     // Stop after slowing down
       wrapper->softStop();
       return;
-    case 'S':                                                     // Move to relative position (pos = CW, neg = CCW)
+    case 'S':                                                     // Move to relative position, full steps (pos = CW, neg = CCW)
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->moveSteps(COM->readInt16());
       return;
-    case 'P':                                                     // Move to absolute position
+    case 's':                                                     // Move to relative position, micro-steps (pos = CW, neg = CCW)
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
+      wrapper->moveMicroSteps(COM->readInt32());
+      return;
+    case 'P':                                                     // Move to absolute position, full steps
       wrapper->vMax(p.vMax);
       wrapper->a(p.a);
       wrapper->position(COM->readInt16());
+      return;
+    case 'p':                                                     // Move to absolute position, micro-steps
+      wrapper->vMax(p.vMax);
+      wrapper->a(p.a);
+      wrapper->microPosition(COM->readInt32());
       return;
     case 'F':                                                     // Start moving forwards
       wrapper->vMax(p.vMax);
@@ -131,6 +141,9 @@ void loop()
       return;
     case 'Z':                                                     // Reset position to zero
       wrapper->setPosition(0);
+      return;
+    case 'z':                                                     // Reset encoder position to zero
+      wrapper->resetEncoderPosition();
       return;
     case 'A':                                                     // Set acceleration (steps / s^2)
       wrapper->a(COM->readUint16());
@@ -164,6 +177,18 @@ void loop()
       wrapper->setIOresistor(idx,res);
       if (idx>0 && idx <= 6)
         p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
+      return;
+    }
+    case 'Y':                                                     // Set steps per revolution
+    {
+      wrapper->stepsPerRevolution(COM->readUint16());
+      p.stepsPerRevolution = wrapper->stepsPerRevolution();
+      return;
+    }
+    case 'y':                                                     // Set encoder steps per revolution
+    {
+      wrapper->countsPerRevolution(COM->readUint16());
+      p.countsPerRevolution = wrapper->countsPerRevolution();
       return;
     }
     case 'T':                                                     // Set predefined target
@@ -204,6 +229,12 @@ void loop()
         case 'P':                                                 //   Return position
           COM->writeInt16(wrapper->position());
           break;
+        case 'p':                                                 //   Return micro-position
+          COM->writeInt32(wrapper->microPosition());
+          break;
+        case 'N':                                                 //   Return encoder position
+          COM->writeInt32(wrapper->encoderPosition());
+          break;
         case 'A':                                                 //   Return acceleration
           COM->writeUint16(round(wrapper->a()));
           break;
@@ -211,7 +242,7 @@ void loop()
           COM->writeUint16(round(wrapper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
-          COM->writeUint8(PCBrev * 10);
+          COM->writeUint8(PCBrev);
           break;
         case 'M':
           COM->writeUint8(wrapper->getIOmode(COM->readByte()));
@@ -228,6 +259,13 @@ void loop()
         case 'T':
           COM->writeUint8(vDriver);
           break;
+        case 'Y':                                                 //   Return steps per revolution
+          COM->writeUint16(wrapper->stepsPerRevolution());
+          break;
+        case 'y':                                                 //   Return encoder counts per revolution
+          COM->writeUint16(wrapper->countsPerRevolution());
+          break;
+
       }
       break;
     case 212:                                                     // USB Handshake
@@ -250,6 +288,12 @@ void throwError() {
 }
 
 void returnModuleInfo() {
+  // FSM firmware v23 or newer sends a second info request byte to indicate that
+  // it supports additional ops
+  delayMicroseconds(100);
+  boolean fsmSupportsHwInfo =
+    (Serial1COM.available() && Serial1COM.readByte() == 255) ? true : false;
+
   Serial1COM.writeByte(65);                                       // Acknowledge
   Serial1COM.writeUint32(FirmwareVersion);                        // 4-byte firmware version
   Serial1COM.writeByte(sizeof(moduleName) - 1);
@@ -265,6 +309,14 @@ void returnModuleInfo() {
     for (unsigned int j = 0; j < strlen(eventNames[i]); j++) {    // Once for each character in this event name
       Serial1COM.writeByte(*(eventNames[i] + j));                 // Send the character
     }
+  }
+  if (fsmSupportsHwInfo) {
+    Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
+    Serial1COM.writeByte('V');                                    // Op code for: Hardware major version
+    Serial1COM.writeByte(PCBrev/10);
+    Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
+    Serial1COM.writeByte('v');                                    // Op code for: Hardware minor version
+    Serial1COM.writeByte(PCBrev%10);
   }
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
 }

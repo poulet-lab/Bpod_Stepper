@@ -11,7 +11,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %}
 
-classdef BpodStepperModule < handle
+classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
     properties (SetAccess = protected)
         Port                        % ArCOM Serial port
@@ -25,7 +25,9 @@ classdef BpodStepperModule < handle
         ChopperMode                 % 0 = PWM chopper, 1 = voltage chopper
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
+        MicroPosition
         Position                    % absolute position
+        EncoderPosition
     end
 
     properties (Dependent, Access = {?BpodStepperLive})
@@ -33,6 +35,7 @@ classdef BpodStepperModule < handle
     end
 
     properties (Access = private)
+        privUseEncoder = false
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
@@ -86,6 +89,7 @@ classdef BpodStepperModule < handle
             obj.RMScurrent = obj.Port.read(1, 'uint16');
             obj.Port.write('GC', 'uint8');
             obj.privChopper = obj.Port.read(1, 'uint8');
+            obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
         end
 
         function out = get.MaxSpeed(obj)
@@ -136,6 +140,16 @@ classdef BpodStepperModule < handle
             obj.pauseStreaming(false);
         end
 
+        function out = get.MicroPosition(obj)
+            obj.pauseStreaming(true);
+            obj.Port.write('Gp', 'uint8');
+            out = obj.Port.read(1, 'int32');
+            obj.pauseStreaming(false);
+        end
+        function set.MicroPosition(obj,position)
+            validateattributes(position,{'numeric'},{'scalar','integer'})
+            obj.Port.write('p', 'int8', position, 'int32');
+        end
         function out = get.Position(obj)
             obj.pauseStreaming(true);
             obj.Port.write('GP', 'uint8');
@@ -151,11 +165,28 @@ classdef BpodStepperModule < handle
             obj.Port.write('Z', 'uint8');
         end
 
+        function out = get.EncoderPosition(obj)
+            obj.pauseStreaming(true);
+            obj.Port.write('GN', 'uint8');
+            out = obj.Port.read(1, 'int32');
+            obj.pauseStreaming(false);
+        end
+        function resetEncoderPosition(obj)
+            obj.Port.write('z', 'uint8');
+        end
+
         function step(obj, nSteps)
             % Move stepper motor a set number of steps. nSteps = positive
             % for clockwise steps, negative for counterclockwise
             validateattributes(nSteps,{'numeric'},{'scalar','integer'})
             obj.Port.write('S', 'uint8', nSteps, 'int16');
+        end
+        
+        function microStep(obj, nSteps)
+            % Move stepper motor a set number of micro-steps. nSteps = positive
+            % for clockwise steps, negative for counterclockwise
+            validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            obj.Port.write('s', 'uint8', nSteps, 'int32');
         end
 
         function setTarget(obj, varargin)
@@ -188,9 +219,9 @@ classdef BpodStepperModule < handle
             validateattributes(p,{'numeric'},{'integer','size',s,...
                 '>=',intmin('int32'),'<=',intmax('int32')},'','Position')
             validateattributes(a,{'numeric'},{'integer','size',s,...
-                'nonnegative','<=',intmax('int16')},'','Acceleration')
+                'nonnegative','<=',intmax('uint16')},'','Acceleration')
             validateattributes(v,{'numeric'},{'integer','size',s,...
-                'nonnegative','<=',intmax('int16')},'','Peak Acceleration')
+                'nonnegative','<=',intmax('uint16')},'','Peak Acceleration')
 
             for ii = 1:numel(id)
                 obj.Port.write(['T' id(ii)],'uint8',p(ii),'int32',...
@@ -329,7 +360,15 @@ classdef BpodStepperModule < handle
                     elseif out(ii) < 10
                         fprintf('(go to predefined target #%d)\n',out(ii));
                     else
-                        fprintf('(''%c'')\n',out(ii));
+                        switch out(ii)
+                            case 'a'
+                                detail = ' - incremental encoder signal A';
+                            case 'b'
+                                detail = ' - incremental encoder signal B';
+                            otherwise
+                                detail = '';
+                        end
+                        fprintf('(''%c''%s)\n',out(ii),detail);
                     end
                 end
             end
@@ -346,6 +385,7 @@ classdef BpodStepperModule < handle
             for ii = 1:numel(id)
                 obj.Port.write(['M' id(ii) M(ii)], 'uint8');
             end
+            obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
         end
 
         function storeDefaults(obj)
@@ -405,6 +445,28 @@ classdef BpodStepperModule < handle
                 obj.StreamingMode = true;
                 isPaused = false;
             end
+        end
+    end
+
+    methods (Access = protected)
+        function propgrp = getPropertyGroups(obj)
+            gTitle1 = '<strong>Module Information</strong>';
+            propList1 = {'HardwareVersion','DriverVersion','FirmwareVersion'};
+            gTitle2 = '<strong>Motor Configuration</strong>';
+            propList2 = {'RMScurrent','ChopperMode','MaxSpeed','Acceleration'};
+            gTitle3 = '<strong>Movement Parameters</strong>';
+            if obj.privUseEncoder
+                propList3 = {'Position','EncoderPosition'};
+            else
+                propList3 = {'Position'};
+            end
+            propgrp(1) = matlab.mixin.util.PropertyGroup(propList1,gTitle1);
+            propgrp(2) = matlab.mixin.util.PropertyGroup(propList2,gTitle2);
+            propgrp(3) = matlab.mixin.util.PropertyGroup(propList3,gTitle3);
+        end
+
+        function s = getFooter(obj)
+            s = matlab.mixin.CustomDisplay.getDetailedFooter(obj);
         end
     end
 end
