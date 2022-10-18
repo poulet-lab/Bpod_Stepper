@@ -14785,11 +14785,6 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <wire x1="162.56" y1="110.49" x2="147.32" y2="110.49" width="0.1524" layer="91"/>
 <label x="147.32" y="110.49" size="1.778" layer="95"/>
 </segment>
-<segment>
-<pinref part="TEENSY" gate="G$1" pin="23/A9/T/PWM"/>
-<wire x1="162.56" y1="107.95" x2="147.32" y2="107.95" width="0.1524" layer="91"/>
-<label x="147.32" y="108.204" size="1.778" layer="95"/>
-</segment>
 </net>
 <net name="TX1" class="0">
 <segment>
