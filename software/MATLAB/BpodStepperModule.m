@@ -178,14 +178,22 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         function step(obj, nSteps)
             % Move stepper motor a set number of steps. nSteps = positive
             % for clockwise steps, negative for counterclockwise
-            validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            if ~exist("nSteps","var")
+                nSteps = 1;
+            else
+                validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            end
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
         
         function microStep(obj, nSteps)
             % Move stepper motor a set number of micro-steps. nSteps = positive
             % for clockwise steps, negative for counterclockwise
-            validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            if ~exist("nSteps","var")
+                nSteps = 1;
+            else
+                validateattributes(nSteps,{'numeric'},{'scalar','integer'})
+            end
             obj.Port.write('s', 'uint8', nSteps, 'int32');
         end
 
