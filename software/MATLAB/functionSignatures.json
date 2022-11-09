@@ -1,0 +1,58 @@
+{
+"_schemaVersion": "1.0.0",
+"BpodStepperModule":
+{
+    "inputs": [
+        {
+            "name": "Port",
+            "kind": "ordered",
+            "type": "choices = ArCOMObject.seriallist()"
+        }
+    ]
+},
+"ArCOMObject":
+{
+    "inputs": [
+        {
+            "name": "Port",
+            "kind": "positional",
+            "type": "choices = ArCOMObject.seriallist()"
+        },
+        {
+            "name": "BaudRate",
+            "kind": "positional",
+            "type": [ "double", ">=0" ]
+        },
+        {
+            "name": "ForceOption",
+            "kind": "positional",
+            "type": "choices = {'java', 'psychtoolbox'}"
+        },
+        {
+            "name": "outputbuffersize",
+            "kind": "namevalue",
+            "type": "double"
+        },
+        {
+            "name": "inputbuffersize",
+            "kind": "namevalue",
+            "type": "double"
+        },
+        {
+            "name": "timeout",
+            "kind": "namevalue",
+            "type": "double"
+        },
+        {
+            "name": "bytesavailablefcn",
+            "kind": [ "function_handle", "scalar" ],
+            "type": "char"
+        },
+        {
+            "name": "bytesavailablefcncount",
+            "kind": "namevalue",
+            "type": [ "integer", "scalar", ">0" ]
+        }
+    ]
+}
+}
