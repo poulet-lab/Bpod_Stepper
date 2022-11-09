@@ -526,10 +526,12 @@ void StepperWrapper::clearError() {
 void StepperWrapper::RMS(uint16_t rms_current) {
   switch (vDriver) {
     case 0x11:
-      get2130()->rms_current(min(rms_current, 850));
+      rms_current = constrain(rms_current, 30, 850);
+      get2130()->rms_current(rms_current);
       break;
     case 0x30:
-      get5160()->rms_current(min(rms_current,2000));
+      rms_current = constrain(rms_current, 48, 2000);
+      get5160()->rms_current(rms_current);
       break;
     default:
       return;
