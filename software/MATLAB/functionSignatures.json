@@ -15,17 +15,17 @@
     "inputs": [
         {
             "name": "Port",
-            "kind": "positional",
+            "kind": "required",
             "type": "choices = ArCOMObject.seriallist()"
         },
         {
             "name": "BaudRate",
-            "kind": "positional",
+            "kind": "required",
             "type": [ "double", ">=0" ]
         },
         {
             "name": "ForceOption",
-            "kind": "positional",
+            "kind": "required",
             "type": "choices = {'java', 'psychtoolbox'}"
         },
         {
@@ -45,8 +45,8 @@
         },
         {
             "name": "bytesavailablefcn",
-            "kind": [ "function_handle", "scalar" ],
-            "type": "char"
+            "kind": "namevalue",
+            "type": [ "function_handle", "scalar" ]
         },
         {
             "name": "bytesavailablefcncount",
