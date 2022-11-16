@@ -121,6 +121,17 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
       PUT 2 uInt8:  71, 73 ('GI')
       GET 1 uInt16: RMS current [mA]
 
+* #### Set hold current
+  Set the current for standstill (up to 850mA for TMC2130, up to 2000mA for TMC5160; 0mA corresponds to free-wheeling mode).
+
+      PUT 1 uInt8:  73 ('i')
+      PUT 1 uInt16: hold current [mA]
+
+* #### Get RMS current
+
+      PUT 2 uInt8:  71, 73 ('Gi')
+      GET 1 uInt16: hold current [mA]
+
 * #### Set chopper mode
   You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. Depending on the use case, the PWM chopper can perform better at higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
 
