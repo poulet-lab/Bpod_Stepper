@@ -77,6 +77,7 @@ void setup()
   wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
   wrapper->setChopper(p.chopper);
   wrapper->RMS(p.rms_current);
+  wrapper->holdRMS(p.hold_rms_current);
 
   StepperWrapper::blinkenlights();                                // Indicate successful start-up
 }
@@ -156,6 +157,10 @@ void loop()
     case 'I':                                                     // Set RMS current (mA)
       wrapper->RMS(COM->readUint16());
       p.rms_current = wrapper->RMS();
+      return;
+    case 'i':                                                     // Set hold RMS current (mA)
+      wrapper->holdRMS(COM->readUint16());
+      p.hold_rms_current = wrapper->holdRMS();
       return;
     case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper)
       wrapper->setChopper(COM->readUint8());
@@ -252,6 +257,9 @@ void loop()
           break;
         case 'I':
           COM->writeUint16(wrapper->RMS());
+          break;
+        case 'i':
+          COM->writeUint16(wrapper->holdRMS());
           break;
         case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper)
           COM->writeUint8(wrapper->getChopper());

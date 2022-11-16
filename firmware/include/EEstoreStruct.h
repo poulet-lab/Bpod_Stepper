@@ -1,7 +1,8 @@
 #pragma once
 
 typedef struct{
-  uint16_t rms_current = 800;     // motor RMS current (mA)
+  uint16_t rms_current = 800;
+  uint16_t hold_rms_current = 100;
   float vMax = 200;
   float a = 800;
   uint8_t chopper = 1;

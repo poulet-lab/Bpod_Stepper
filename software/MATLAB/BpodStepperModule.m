@@ -22,6 +22,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
     properties (Dependent)
         RMScurrent                  % RMS current (mA)
+        holdRMScurrent              % hold RMS current (mA)
         ChopperMode                 % 0 = PWM chopper, 1 = voltage chopper
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
@@ -39,6 +40,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         privMaxSpeed                % private: peak velocity
         privAcceleration            % private: acceleration
         privRMScurrent              % private: RMS current
+        privHoldRMScurrent          % private: hold RMS current
         privChopper                 % private: Chopper mode
         privStreamingMode = false   % private: streaming mode
         CurrentFirmwareVersion = 2  % most recent firmware version
@@ -86,7 +88,9 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.Port.write('GV', 'uint8');
             obj.privMaxSpeed = obj.Port.read(1, 'uint16');
             obj.Port.write('GI', 'uint8');
-            obj.RMScurrent = obj.Port.read(1, 'uint16');
+            obj.privRMScurrent = obj.Port.read(1, 'uint16');
+            obj.Port.write('Gi', 'uint8');
+            obj.privHoldRMScurrent = obj.Port.read(1, 'uint16');
             obj.Port.write('GC', 'uint8');
             obj.privChopper = obj.Port.read(1, 'uint8');
             obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
@@ -124,6 +128,19 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.pauseStreaming(true);
             obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
+            obj.pauseStreaming(false);
+        end
+        
+        function out = get.holdRMScurrent(obj)
+            out = obj.privHoldRMScurrent;
+        end
+        function set.holdRMScurrent(obj, newCurrent)
+            validateattributes(newCurrent,{'numeric'},...
+                {'scalar','integer','nonnegative'})
+            obj.Port.write('i', 'uint8', newCurrent, 'uint16');
+            obj.pauseStreaming(true);
+            obj.Port.write('Gi', 'uint8');
+            obj.privHoldRMScurrent = obj.Port.read(1, 'uint16');
             obj.pauseStreaming(false);
         end
 
@@ -461,7 +478,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             gTitle1 = '<strong>Module Information</strong>';
             propList1 = {'HardwareVersion','DriverVersion','FirmwareVersion'};
             gTitle2 = '<strong>Motor Configuration</strong>';
-            propList2 = {'RMScurrent','ChopperMode','MaxSpeed','Acceleration'};
+            propList2 = {'RMScurrent','holdRMScurrent','ChopperMode','MaxSpeed','Acceleration'};
             gTitle3 = '<strong>Movement Parameters</strong>';
             if obj.privUseEncoder
                 propList3 = {'Position','EncoderPosition'};

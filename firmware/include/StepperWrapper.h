@@ -89,8 +89,10 @@ class StepperWrapper
     void position(int32_t target);              // move to absolute position (full-steps)
     int32_t position();                         // get absolute position (full-steps)
 
-    void setChopper(bool chopper);
-    bool getChopper();
+    void holdRMS(uint16_t val);                 // set hold current
+    uint16_t holdRMS();                         // get hold current
+    void setChopper(bool chopper);              // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
+    bool getChopper();                          // get chopper mode (0 = PWM chopper, 1 = voltage chopper)
     void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
     void setIOmode(uint8_t idx, uint8_t role);  // set IO mode (specific IO port)
     uint8_t getIOmode(uint8_t idx);             // get IO mode (specific IO port)

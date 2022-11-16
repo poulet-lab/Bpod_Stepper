@@ -435,7 +435,8 @@ classdef ArCOMObject < handle
                 out = [];
             end
             if strcmp(computer,'GLNXA64')
-                out = out(~cellfun(@isempty,regexp(out,"^/dev/ttyACM")));
+                rxp = regexp(out,"^/dev/ttyACM",'forceCellOutput');
+                out = out(~cellfun(@isempty,rxp));
             end
         end
     end

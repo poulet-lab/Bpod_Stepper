@@ -190,11 +190,9 @@ void StepperWrapper::init2130(uint16_t rms_current) {
 
   driver->TPWMTHRS(0);                      // Disable SpreadCycle chopper (use StealthChop only)
 
-  // Power savings
-  driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
+  driver->rms_current(rms_current);         // Set motor current
   driver->TPOWERDOWN(0);
   driver->iholddelay(0);                    // instant IHOLD
-  driver->freewheel(0x00);                  // 0x00 = normal operation, 0x01 = freewheeling
 }
 
 void StepperWrapper::init5160(uint16_t rms_current) {
@@ -245,11 +243,9 @@ void StepperWrapper::init5160(uint16_t rms_current) {
   // driver->hend(0);
   driver->TPWMTHRS(0);                      // Disable SpreadCycle chopper (use StealthChop only)
 
-  // Power savings
-  driver->rms_current(rms_current,0);       // Set motor current, standstill reduction enabled
+  driver->rms_current(rms_current);         // Set motor current
   driver->TPOWERDOWN(0);
-  driver->iholddelay(7);                    // Delayed motor power down after standstill
-  driver->freewheel(0x00);                  // 0x00 = normal operation, 0x01 = freewheeling
+  driver->iholddelay(0);                    // instant IHOLD
 
   // TODO: StallGuard / CoolStep
   // driver->TCOOLTHRS(* 256);
@@ -524,14 +520,17 @@ void StepperWrapper::clearError() {
 }
 
 void StepperWrapper::RMS(uint16_t rms_current) {
+  uint16_t hold_rms = holdRMS();
   switch (vDriver) {
     case 0x11:
       rms_current = constrain(rms_current, 30, 850);
       get2130()->rms_current(rms_current);
+      holdRMS(hold_rms);
       break;
     case 0x30:
       rms_current = constrain(rms_current, 48, 2000);
       get5160()->rms_current(rms_current);
+      holdRMS(hold_rms);
       break;
     default:
       return;
@@ -548,6 +547,64 @@ uint16_t StepperWrapper::RMS() {
     default:
       return 0;
   }
+}
+
+void StepperWrapper::holdRMS(uint16_t rms) {
+  uint8_t CS = 31;
+
+  switch (vDriver) {
+    case 0x11:
+      if (rms==0) {
+        get2130()->ihold(0);
+        get2130()->freewheel(0x01);
+        return;
+      } else {
+        get2130()->freewheel(0x00);
+        while (rms < get2130()->cs2rms(CS) && CS > 0)
+          CS--;
+        get2130()->ihold(CS);
+        break;
+      }
+    case 0x30:
+      if (rms==0) {
+        get5160()->ihold(0);
+        get5160()->freewheel(0x01);
+        return;
+      } else {
+        get5160()->freewheel(0x00);
+        while (rms < get5160()->cs2rms(CS) && CS > 0)
+          CS--;
+        get5160()->ihold(CS);
+        break;
+      }
+    default:
+      return;
+  }
+
+}
+
+uint16_t StepperWrapper::holdRMS() {
+  uint8_t cs;
+  uint16_t rms;
+  bool freewheel;
+  switch (vDriver) {
+    case 0x11:
+      cs = get2130()->ihold();
+      rms = get2130()->cs2rms(cs);
+      freewheel = get2130()->freewheel() == 0x01;
+      break;
+    case 0x30:
+      cs = get5160()->ihold();
+      rms = get5160()->cs2rms(cs);
+      freewheel = get5160()->freewheel() == 0x01;
+      break;
+    default:
+      return 0;
+  }
+  if (freewheel && cs == 0)
+    return 0;
+  else
+    return rms;
 }
 
 uint16_t StepperWrapper::getMicrosteps() {
