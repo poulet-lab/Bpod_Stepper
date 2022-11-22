@@ -3,13 +3,13 @@
 #ifdef DEBUG
   #include <string.h>
   #include <time.h>
-  #define DEBUG_WAIT()      for (uint8_t i = 0; i < 20; i++) { if (Serial) break; delay(100); }
+  #define DEBUG_WAIT()      for (uint8_t i = 0; i < 20; i++) { if (SerialUSB1) break; delay(100); }
   #define DEBUG_DELAY(x)    delay(x)
-  #define DEBUG_PRINT(x)    Serial.print(x)
-  #define DEBUG_PRINTF(...) Serial.printf("%010d   ", micros()); Serial.printf(__VA_ARGS__)
-  #define DEBUG_PRINTLN(x)  Serial.printf("%010d   ", micros()); Serial.println(x)
-  #define DEBUG_PRINTFUN(x) Serial.printf("%010d   ", micros()); Serial.print(strrchr("/" __FILE__, '/') + 1); Serial.print(":"); Serial.print(__LINE__); Serial.print(":"); Serial.print(__func__); Serial.print(" "); Serial.println(x)
-  #define DEBUG_MICROS()    Serial.printf("%010d   ", micros());
+  #define DEBUG_PRINT(x)    SerialUSB1.print(x)
+  #define DEBUG_PRINTF(...) SerialUSB1.printf("%010d   ", micros()); SerialUSB1.printf(__VA_ARGS__)
+  #define DEBUG_PRINTLN(x)  SerialUSB1.printf("%010d   ", micros()); SerialUSB1.println(x)
+  #define DEBUG_PRINTFUN(x) SerialUSB1.printf("%010d   ", micros()); SerialUSB1.print(strrchr("/" __FILE__, '/') + 1); SerialUSB1.print(":"); SerialUSB1.print(__LINE__); SerialUSB1.print(":"); SerialUSB1.print(__func__); SerialUSB1.print(" "); SerialUSB1.println(x)
+  #define DEBUG_MICROS()    SerialUSB1.printf("%010d   ", micros());
 #else
   #define DEBUG_WAIT()
   #define DEBUG_DELAY(x)
