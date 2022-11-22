@@ -44,7 +44,7 @@ float StepperWrapper_TeensyStep::a() {
 }
 
 void StepperWrapper_TeensyStep::a(float aHzs) {
-  if (isRunning() || _a == aHzs)
+  if (isRunning())
     return;
   _aMu = round(aHzs * _microsteps);
   _a   = (float) _aMu / _microsteps;
@@ -132,7 +132,7 @@ float StepperWrapper_TeensyStep::vMax() {
 }
 
 void StepperWrapper_TeensyStep::vMax(float vMax) {
-  if (isRunning() || vMax == _vMax)
+  if (isRunning())
     return;
 
   // constrain speed
