@@ -17,14 +17,14 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 _______________________________________________________________________________
 */
 
+#include <Arduino.h>
 #include <TMCStepper.h>
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <functional>
 #include "EEstore.h"                        // Import EEstore library
 #include "StepperWrapper.h"
 #include "SerialDebug.h"
-
-
 
 extern ArCOM Serial1COM;
 extern ArCOM usbCOM;
@@ -73,25 +73,27 @@ StepperWrapper::StepperWrapper() {
 }
 
 void StepperWrapper::ISRstream() {
+  static bool initialized = false;
   static uint32_t data[3];
+  static std::function<uint32_t()> DRV_STATUS;
+  static std::function<uint32_t()> TSTEP;
 
-  data[0] = millis();
-  switch (vDriver) {
-    case 0x11:
-      {
-        TMC2130Stepper* driver = get2130();
-        data[1] = driver->DRV_STATUS();
-        data[2] = driver->TSTEP();
-        break;
-      }
-    case 0x30:
-      {
-        TMC5160Stepper* driver = get5160();
-        data[1] = driver->DRV_STATUS();
-        data[2] = driver->TSTEP();
-      }
+  if (!initialized) {
+    if (vDriver == 0x11) {
+      TMC2130Stepper* d = get2130();
+      DRV_STATUS        = [d]() { return d->DRV_STATUS(); };
+      TSTEP             = [d]() { return d->TSTEP(); };
+    } else if (vDriver == 0x30) {
+      TMC5160Stepper* d = get5160();
+      DRV_STATUS        = [d]() { return d->DRV_STATUS(); };
+      TSTEP             = [d]() { return d->TSTEP(); };
+    }
+    initialized = true;
   }
 
+  data[0] = millis();
+  data[1] = DRV_STATUS();
+  data[2] = TSTEP();
   usbCOM.writeUint32Array(data,3);
 }
 
@@ -134,17 +136,53 @@ void StepperWrapper::ISRdiag1() {
 }
 
 void StepperWrapper::ISRchangeVM() {
-  if (digitalRead(pin.VM))
+  if (digitalRead(pin.VM)) {
+    cli();
     SCB_AIRCR = 0x05FA0004;                 // reset teensy
-  else
+    asm volatile ("dsb");
+    while (1) {;}
+  } else
     throwError(1);
 }
 
 void StepperWrapper::init(uint16_t rms_current) {
-  if (vDriver == 0x11)
-    init2130(rms_current);                  // initialize TMC2130
-  else if (vDriver == 0x30)
-    init5160(rms_current);                  // initialize TMC5160
+  if (vDriver == 0x11) {
+
+    // set lambda functions
+    TMC2130Stepper* d = get2130();
+    get_rms_current   = [d]()            { return d->rms_current(); };
+    set_rms_current   = [d](uint16_t I)  { d->rms_current(I); };
+    get_ihold         = [d]()            { return d->ihold(); };
+    set_ihold         = [d](uint8_t CS)  { d->ihold(CS); };
+    cs2rms            = [d](uint8_t CS)  { return d->cs2rms(CS); };
+    get_freewheel     = [d]()            { return d->freewheel() == 0x01; };
+    set_freewheel     = [d](bool fw)     { d->freewheel((fw) ? 0x01 : 0x00); };
+    get_microsteps    = [d]()            { return d->microsteps(); };
+    set_microsteps    = [d](uint16_t ms) { d->microsteps(ms); };
+    get_en_pwm_mode   = [d]()            { return d->en_pwm_mode(); };
+    set_en_pwm_mode   = [d](bool val)    { d->en_pwm_mode(val); };
+
+    // initialize TMC2130
+    init2130(rms_current);
+
+  } else if (vDriver == 0x30) {
+
+    // set lambda functions
+    TMC5160Stepper* d = get5160();
+    get_rms_current   = [d]()            { return d->rms_current(); };
+    set_rms_current   = [d](uint16_t I)  { d->rms_current(I); };
+    get_ihold         = [d]()            { return d->ihold(); };
+    set_ihold         = [d](uint8_t CS)  { d->ihold(CS); };
+    cs2rms            = [d](uint8_t CS)  { return d->cs2rms(CS); };
+    get_freewheel     = [d]()            { return d->freewheel() == 0x01; };
+    get_microsteps    = [d]()            { return d->microsteps(); };
+    set_microsteps    = [d](uint8_t ms)  { d->microsteps(ms); };
+    get_en_pwm_mode   = [d]()            { return d->en_pwm_mode(); };
+    set_en_pwm_mode   = [d](bool val)    { d->en_pwm_mode(val); };
+
+    // initialize
+    init5160(rms_current);
+  }
 }
 
 void StepperWrapper::init2130(uint16_t rms_current) {
@@ -520,91 +558,40 @@ void StepperWrapper::clearError() {
 }
 
 void StepperWrapper::RMS(uint16_t rms_current) {
-  uint16_t hold_rms = holdRMS();
-  switch (vDriver) {
-    case 0x11:
-      rms_current = constrain(rms_current, 30, 850);
-      get2130()->rms_current(rms_current);
-      holdRMS(hold_rms);
-      break;
-    case 0x30:
-      rms_current = constrain(rms_current, 48, 2000);
-      get5160()->rms_current(rms_current);
-      holdRMS(hold_rms);
-      break;
-    default:
-      return;
-  }
+  if (vDriver == 0x11)
+    rms_current = constrain(rms_current, 30, 850);
+  else if (vDriver == 0x30)
+    rms_current = constrain(rms_current, 48, 2000);
+
+  uint8_t iHold = get_ihold();
+  set_rms_current(rms_current);
+  set_ihold(iHold);
   DEBUG_PRINTF("RMS current set to %d mA\n",RMS());
 }
 
 uint16_t StepperWrapper::RMS() {
-  switch (vDriver) {
-    case 0x11:
-      return get2130()->rms_current();
-    case 0x30:
-      return get5160()->rms_current();
-    default:
-      return 0;
-  }
+  return get_rms_current();
 }
 
 void StepperWrapper::holdRMS(uint16_t rms) {
   uint8_t CS = 31;
-
-  switch (vDriver) {
-    case 0x11:
-      if (rms==0) {
-        get2130()->ihold(0);
-        get2130()->freewheel(0x01);
-        return;
-      } else {
-        get2130()->freewheel(0x00);
-        while (rms < get2130()->cs2rms(CS) && CS > 0)
-          CS--;
-        get2130()->ihold(CS);
-        break;
-      }
-    case 0x30:
-      if (rms==0) {
-        get5160()->ihold(0);
-        get5160()->freewheel(0x01);
-        return;
-      } else {
-        get5160()->freewheel(0x00);
-        while (rms < get5160()->cs2rms(CS) && CS > 0)
-          CS--;
-        get5160()->ihold(CS);
-        break;
-      }
-    default:
-      return;
+  if (rms==0) {
+    set_ihold(0);
+    set_freewheel(true);
+  } else {
+    set_freewheel(false);
+    while (cs2rms(CS) > rms && CS > 0)
+      CS--;
+    set_ihold(CS);
   }
-
 }
 
 uint16_t StepperWrapper::holdRMS() {
-  uint8_t cs;
-  uint16_t rms;
-  bool freewheel;
-  switch (vDriver) {
-    case 0x11:
-      cs = get2130()->ihold();
-      rms = get2130()->cs2rms(cs);
-      freewheel = get2130()->freewheel() == 0x01;
-      break;
-    case 0x30:
-      cs = get5160()->ihold();
-      rms = get5160()->cs2rms(cs);
-      freewheel = get5160()->freewheel() == 0x01;
-      break;
-    default:
-      return 0;
-  }
-  if (freewheel && cs == 0)
+  uint8_t cs = get_ihold();
+  if (get_freewheel() && cs == 0)
     return 0;
   else
-    return rms;
+    return cs2rms(cs);
 }
 
 uint16_t StepperWrapper::getMicrosteps() {
@@ -616,42 +603,21 @@ void StepperWrapper::setMicrosteps(uint16_t ms) {
   ms = pow(2,ceil(log(ms)/log(2)));
   ms = (ms==1) ? 0 : ms;
 
-  switch (vDriver) {
-    case 0x11:  // TMC2130
-      get2130()->microsteps(ms);
-      _microsteps = get2130()->microsteps();
-      break;
-    case 0x30:  // TMC5160
-      get5160()->microsteps(ms);
-      _microsteps = get5160()->microsteps();
-      break;
-  }
+  set_microsteps(ms);
+  _microsteps = get_microsteps();
   _microsteps = (_microsteps==0) ? 1 : _microsteps;
+
   _microstepDiv = (_msRes/_microsteps);
   DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
 }
 
 void StepperWrapper::setChopper(bool chopper) {
   DEBUG_PRINTF("Switching to %s chopper\n",(chopper) ? "voltage" : "PWM");
-  switch (vDriver) {
-    case 0x11:
-      get2130()->en_pwm_mode(chopper);
-      return;
-    case 0x30:
-      get5160()->en_pwm_mode(chopper);
-      return;
-  }
+  set_en_pwm_mode(chopper);
 }
 
 bool StepperWrapper::getChopper() {
-  switch (vDriver) {
-    case 0x11:
-      return get2130()->en_pwm_mode();
-    case 0x30:
-      return get5160()->en_pwm_mode();
-    default:
-      return 0;
-  }
+  return get_en_pwm_mode();
 }
 
 uint8_t StepperWrapper::getIOmode(uint8_t idx) {
@@ -872,7 +838,7 @@ void StepperWrapper::position(int32_t target) {
 }
 
 void StepperWrapper::stepsPerRevolution(uint16_t steps) {
-  _stepsPerRevolution = 200;
+  _stepsPerRevolution = steps;
 }
 
 uint16_t StepperWrapper::stepsPerRevolution() {

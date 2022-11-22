@@ -116,7 +116,7 @@ class StepperWrapper
     static void powerDriver(bool power);        // supply VIO to driver board?
     static void enableDriver(bool enable);      // enable driver board via EN pin?
     static void throwError(uint8_t errorID);    // throw error with specified numeric ID
-    static void clearError();                   // clear error conditition
+    static void clearError();                   // clear error condition
     void toggleISRlimit(int8_t direction);
     bool atLimit(int8_t direction);
     static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
@@ -128,7 +128,7 @@ class StepperWrapper
     bool _invertPinDir = false;
     ArCOM *_COM;
     bool writePosition(int32_t pos);            // Write _microPosition to SD card
-    const uint16_t _msRes = (vDriver>0)?256:16; // highest microstepping resolution available
+    const uint16_t _msRes = (vDriver>0)?256:16; // highest micro-stepping resolution available
 
   private:
     static void ISRchangeVM();                  // called when VM was (dis)connected
@@ -136,11 +136,11 @@ class StepperWrapper
     static void ISRdiag1();                     // called when diag1 changes
     static void ISRblinkError();                // blink lights ad infinitum
     static void ISRstream();
-    static uint32_t ISRgeneric(uint32_t t0, uint8_t opCode); // IO: ISR debouncer
+    static uint32_t ISRgeneric(uint32_t t0, uint8_t opCode); // IO: ISR debounce
     static void ISRsoftStop();                  // IO: soft stop
     static void ISRhardStop();                  // IO: emergency stop
     static void ISRforwards();                  // IO: start rotating forwards
-    static void ISRbackwards();                 // IO: start totating backwards
+    static void ISRbackwards();                 // IO: start rotating backwards
     static void ISRzero();                      // IO: reset position to zero
     static void ISRpos1();                      // IO: go to predefined position 1
     static void ISRpos2();                      // IO: go to predefined position 2
@@ -171,6 +171,18 @@ class StepperWrapper
 
     void initEncoder();
     QuadDecode<2>* _enc = nullptr;
+
+    std::function<uint16_t()> get_rms_current;
+    std::function<void(uint16_t)> set_rms_current;
+    std::function<uint8_t()> get_ihold;
+    std::function<void(uint8_t)> set_ihold;
+    std::function<uint16_t(uint8_t)> cs2rms;
+    std::function<bool()> get_freewheel;
+    std::function<void(bool)> set_freewheel;
+    std::function<uint16_t()> get_microsteps;
+    std::function<void(uint16_t)> set_microsteps;
+    std::function<bool()> get_en_pwm_mode;
+    std::function<void(bool)> set_en_pwm_mode;
 };
 
 
