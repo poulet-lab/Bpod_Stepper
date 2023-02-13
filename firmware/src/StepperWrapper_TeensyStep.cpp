@@ -23,12 +23,10 @@ _______________________________________________________________________________
 #include "SerialDebug.h"
 
 extern ArCOM Serial1COM;
-extern StepperWrapper* wrapper;
+extern StepperWrapper* stepper;
 
 StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
-  _motor->setInverseRotation(_invertPinDir);
-  _motor->setPosition(0);
   _stepControl = new StepControl;
   _stepControl->setCallback(CBstop);
   _rotateControl = new RotateControl;
@@ -37,6 +35,8 @@ StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
 
 void StepperWrapper_TeensyStep::init(uint16_t rms_current) {
   StepperWrapper::init(rms_current);
+  _motor->setInverseRotation(_invertPinDir);
+  _motor->setPosition(0);
 }
 
 float StepperWrapper_TeensyStep::a() {
@@ -110,7 +110,7 @@ void StepperWrapper_TeensyStep::rotate(int8_t dir) {
   dir = (dir>=0) ? 1 : -1;                            // sanitize input argument
   toggleISRlimit(dir);                                // attach ISRs for limit switches
 
-  DEBUG_PRINTF("Starting rotation in %s direction ...\n",(dir>0) ? "positive" : "negative");
+  DEBUG_PRINTF("Starting rotation in %s direction ...\n", (dir>0) ? "positive" : "negative");
   _motor->setAcceleration(_aMu);                      // set acceleration
   _motor->setMaxSpeed(dir * _vMaxMu);                 // set speed & direction of movement
   _rotateControl->rotateAsync(*_motor);               // start moving
@@ -147,7 +147,7 @@ void StepperWrapper_TeensyStep::vMax(float vMax) {
 }
 
 void StepperWrapper_TeensyStep::CBstop() {
-  StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) wrapper;
+  StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) stepper;
   Serial1COM.writeByte(3);
   digitalWriteFast(LED_BUILTIN, LOW);
 
@@ -156,7 +156,7 @@ void StepperWrapper_TeensyStep::CBstop() {
 }
 
 void StepperWrapper_TeensyStep::PostStop() {
-  StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) wrapper;
+  StepperWrapper_TeensyStep* w = (StepperWrapper_TeensyStep*) stepper;
   w->postStopTimer.end();
   w->updateMicroPosition();
   DEBUG_PRINTF("Motor stopped at position %d\n",w->_microPosition);

@@ -38,22 +38,23 @@ const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
 uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
 uint8_t opCode       = 0;
 extern const uint8_t PCBrev;      // PCB revision
-extern const uint8_t vDriver;     // version number of TMC stepper driver
 extern const teensyPins pin;      // pin numbers
 extern volatile uint8_t errorID;  // error ID
 storageVars p;                    // struct for EEPROM storage (see EEstoreStruct.h)
 
 // Pointer to StepperWrapper
-StepperWrapper* wrapper;
+StepperWrapper* stepper;
 
 void setup()
 {
+  Serial1.begin(1312500);                                         // Initialize serial communication
   DEBUG_WAIT();
+
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
   DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
-  DEBUG_PRINTF("Firmware version:  %d\n\n",FirmwareVersion);
+  DEBUG_PRINTF("Firmware version:  %d\n",FirmwareVersion);
+  DEBUG_PRINTF("Driver version:    %s\n\n",stepper->name);
 
-  Serial1.begin(1312500);                                         // Initialize serial communication
   EEstore<storageVars>::getOrDefault(p);                          // Load parameters from EEPROM
 
   // Manage error interrupt
@@ -61,25 +62,17 @@ void setup()
   digitalWrite(pin.Error, LOW);
   attachInterrupt(digitalPinToInterrupt(pin.Error), throwError, RISING);
 
-  // Decide which implementation of StepperWrapper to load
-  if (StepperWrapper::SDmode()) {
-    wrapper = new StepperWrapper_TeensyStep();
-  } else {
-    wrapper = new StepperWrapper_MotionControl();
-  }
-  wrapper->init(p.rms_current);
+  // Decide which implementation of StepperWrapper to use
+  if (StepperWrapper::is5160 && !StepperWrapper::SDmode())
+    stepper = new StepperWrapper_MotionControl();
+  else
+    stepper = new StepperWrapper_TeensyStep();
 
-  // Load parameters/defaults
-  wrapper->setPosition(wrapper->readPosition());                  // read last known position from SD-card
-  wrapper->vMax(p.vMax);
-  wrapper->a(p.a);
-  wrapper->setIOresistor(p.IOresistor,sizeof(p.IOresistor));
-  wrapper->setIOmode(p.IOmode,sizeof(p.IOmode));
-  wrapper->setChopper(p.chopper);
-  wrapper->RMS(p.rms_current);
-  wrapper->holdRMS(p.hold_rms_current);
+  // Initialize StepperWrapper
+  stepper->init(p.rms_current);
 
-  StepperWrapper::blinkenlights();                                // Indicate successful start-up
+  // Indicate successful start-up
+  StepperWrapper::blinkenlights();
 }
 
 
@@ -100,100 +93,100 @@ void loop()
   }
 
   if (opCode <= 9 && opCode >= 1)  {                              // Move to predefined target (0-9)
-    wrapper->go2target(opCode-1);
+    stepper->go2target(opCode-1);
     return;
   }
   switch(opCode) {
     case 'X':                                                     // Stop without slowing down
-      wrapper->hardStop();
+      stepper->hardStop();
       return;
     case 'x':                                                     // Stop after slowing down
-      wrapper->softStop();
+      stepper->softStop();
       return;
     case 'S':                                                     // Move to relative position, full steps (pos = CW, neg = CCW)
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->moveSteps(COM->readInt16());
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->moveSteps(COM->readInt16());
       return;
     case 's':                                                     // Move to relative position, micro-steps (pos = CW, neg = CCW)
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->moveMicroSteps(COM->readInt32());
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->moveMicroSteps(COM->readInt32());
       return;
     case 'P':                                                     // Move to absolute position, full steps
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->position(COM->readInt16());
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->position(COM->readInt16());
       return;
     case 'p':                                                     // Move to absolute position, micro-steps
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->microPosition(COM->readInt32());
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->microPosition(COM->readInt32());
       return;
     case 'F':                                                     // Start moving forwards
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->rotate(1);
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->rotate(1);
       return;
     case 'B':                                                     // Start moving backwards
-      wrapper->vMax(p.vMax);
-      wrapper->a(p.a);
-      wrapper->rotate(-1);
+      stepper->vMax(p.vMax);
+      stepper->a(p.a);
+      stepper->rotate(-1);
       return;
     case 'Z':                                                     // Reset position to zero
-      wrapper->setPosition(0);
+      stepper->setPosition(0);
       return;
     case 'z':                                                     // Reset encoder position to zero
-      wrapper->resetEncoderPosition();
+      stepper->resetEncoderPosition();
       return;
     case 'A':                                                     // Set acceleration (steps / s^2)
-      wrapper->a(COM->readUint16());
-      p.a = wrapper->a();
+      stepper->a(COM->readUint16());
+      p.a = stepper->a();
       return;
     case 'V':                                                     // Set peak velocity (steps / s)
-      wrapper->vMax(COM->readUint16());
-      p.vMax = wrapper->vMax();
+      stepper->vMax(COM->readUint16());
+      p.vMax = stepper->vMax();
       return;
     case 'I':                                                     // Set RMS current (mA)
-      wrapper->RMS(COM->readUint16());
-      p.rms_current = wrapper->RMS();
+      stepper->RMS(COM->readUint16());
+      p.rms_current = stepper->RMS();
       return;
     case 'i':                                                     // Set hold RMS current (mA)
-      wrapper->holdRMS(COM->readUint16());
-      p.hold_rms_current = wrapper->holdRMS();
+      stepper->holdRMS(COM->readUint16());
+      p.hold_rms_current = stepper->holdRMS();
       return;
     case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper)
-      wrapper->setChopper(COM->readUint8());
-      p.chopper = wrapper->getChopper();
+      stepper->setChopper(COM->readUint8());
+      p.chopper = stepper->getChopper();
       return;
     case 'M':                                                     // Set mode for IO port
     {
       uint8_t idx  = COM->readUint8();
       uint8_t mode = COM->readUint8();
-      wrapper->setIOmode(idx,mode);
+      stepper->setIOmode(idx,mode);
       if (idx>0 && idx <= 6)
-        p.IOmode[idx-1] = wrapper->getIOmode(idx);
+        p.IOmode[idx-1] = stepper->getIOmode(idx);
       return;
     }
     case 'R':                                                     // Set input resistor for IO port (0 = no resistor, 1 = pullup, 2 = pulldown)
     {
       uint8_t idx = COM->readUint8();
       uint8_t res = COM->readUint8();
-      wrapper->setIOresistor(idx,res);
+      stepper->setIOresistor(idx,res);
       if (idx>0 && idx <= 6)
-        p.IOresistor[idx-1] = wrapper->getIOresistor(idx);
+        p.IOresistor[idx-1] = stepper->getIOresistor(idx);
       return;
     }
     case 'Y':                                                     // Set steps per revolution
     {
-      wrapper->stepsPerRevolution(COM->readUint16());
-      p.stepsPerRevolution = wrapper->stepsPerRevolution();
+      stepper->stepsPerRevolution(COM->readUint16());
+      p.stepsPerRevolution = stepper->stepsPerRevolution();
       return;
     }
     case 'y':                                                     // Set encoder steps per revolution
     {
-      wrapper->countsPerRevolution(COM->readUint16());
-      p.countsPerRevolution = wrapper->countsPerRevolution();
+      stepper->countsPerRevolution(COM->readUint16());
+      p.countsPerRevolution = stepper->countsPerRevolution();
       return;
     }
     case 'T':                                                     // Set predefined target
@@ -212,13 +205,13 @@ void loop()
     case 'L':                                                     // Toggle live streaming of motor status
     {
       bool enable = COM->readUint8();
-      wrapper->setStream(enable);
+      stepper->setStream(enable);
       return;
     }
   }
 
   // The following commands will also RETURN data via serial - they cannot be used during stream mode
-  if (COM == &usbCOM && wrapper->getStream())
+  if (COM == &usbCOM && stepper->getStream())
     return;
   switch(opCode) {
     case 'G':                                                     // Get parameters
@@ -232,46 +225,46 @@ void loop()
       }
       switch (opCode) {
         case 'P':                                                 //   Return position
-          COM->writeInt16(wrapper->position());
+          COM->writeInt16(stepper->position());
           break;
         case 'p':                                                 //   Return micro-position
-          COM->writeInt32(wrapper->microPosition());
+          COM->writeInt32(stepper->microPosition());
           break;
         case 'N':                                                 //   Return encoder position
-          COM->writeInt32(wrapper->encoderPosition());
+          COM->writeInt32(stepper->encoderPosition());
           break;
         case 'A':                                                 //   Return acceleration
-          COM->writeUint16(round(wrapper->a()));
+          COM->writeUint16(round(stepper->a()));
           break;
         case 'V':                                                 //   Return speed
-          COM->writeUint16(round(wrapper->vMax()));
+          COM->writeUint16(round(stepper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
           COM->writeUint8(PCBrev);
           break;
         case 'M':
-          COM->writeUint8(wrapper->getIOmode(COM->readByte()));
+          COM->writeUint8(stepper->getIOmode(COM->readByte()));
           break;
         case 'R':
-          COM->writeUint8(wrapper->getIOresistor(COM->readByte()));
+          COM->writeUint8(stepper->getIOresistor(COM->readByte()));
           break;
         case 'I':
-          COM->writeUint16(wrapper->RMS());
+          COM->writeUint16(stepper->RMS());
           break;
         case 'i':
-          COM->writeUint16(wrapper->holdRMS());
+          COM->writeUint16(stepper->holdRMS());
           break;
         case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper)
-          COM->writeUint8(wrapper->getChopper());
+          COM->writeUint8(stepper->getChopper());
           break;
         case 'T':
-          COM->writeUint8(vDriver);
+          COM->writeUint8(stepper->vDriver);
           break;
         case 'Y':                                                 //   Return steps per revolution
-          COM->writeUint16(wrapper->stepsPerRevolution());
+          COM->writeUint16(stepper->stepsPerRevolution());
           break;
         case 'y':                                                 //   Return encoder counts per revolution
-          COM->writeUint16(wrapper->countsPerRevolution());
+          COM->writeUint16(stepper->countsPerRevolution());
           break;
 
       }
