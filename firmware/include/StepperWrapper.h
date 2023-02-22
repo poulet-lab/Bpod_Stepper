@@ -45,32 +45,30 @@ struct teensyPins {
   uint8_t IO[6] {0};
 };
 
-extern const uint8_t PCBrev;                        // PCB revision
-extern const uint8_t vDriver;                       // version number of TMC stepper driver
-extern const teensyPins pin;                        // pin numbers
-extern volatile uint8_t errorID;                    // error ID (set through interrupt sub-routine)
-extern volatile uint8_t ISRcode;                    // opCode (set through interrupt sub-routine)
+extern const uint8_t PCBrev;                    // PCB revision
+extern const uint8_t vDriver;                   // version number of TMC stepper driver
+extern const teensyPins pin;                    // pin numbers
+extern volatile uint8_t errorID;                // error ID (set through interrupt sub-routine)
+extern volatile uint8_t ISRcode;                // opCode (set through interrupt sub-routine)
 extern storageVars p;
 
 class StepperWrapper
 {
   public:
-    StepperWrapper();                               // constructor
+    StepperWrapper();                           // constructor
 
-    static const uint8_t vDriver;                   // version number of the driver
-    static const bool is2130;                       // bool: is TMC2130
-    static const bool is5160;                       // bool: is TMC5160
-    static const char * name;                       // name of driver
-    static void blinkenlights();                    // extra fancy LED sequence to say hi
-    static uint8_t idPCB();                         // identify PCB revision (divide by 10!)
-    static uint8_t idDriver();                      // identify TMC stepper driver
-    static bool SDmode();                           // are we using STEP/DIR mode?
+    static void blinkenlights();                // extra fancy LED sequence to say hi
+    static uint8_t idPCB();                     // identify PCB revision (divide by 10!)
+    static uint8_t idDriver();                  // identify TMC stepper driver
+    static bool SDmode();                       // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
 
-    virtual void init(uint16_t rms_current);        // initialize stepper class
-    virtual void setMicrosteps(uint16_t ms);        // set microstepping resolution
-    uint16_t getMicrosteps();                       // get microstepping resolution
-    void SGautoTune();
+    uint16_t RMS();                             // get RMS current
+    void RMS(uint16_t rms_current);             // set RMS current
+
+    virtual void init(uint16_t rms_current);    // initialize stepper class
+    virtual void setMicrosteps(uint16_t ms);    // set microstepping resolution
+    uint16_t getMicrosteps();                   // get microstepping resolution
 
     virtual float a() = 0;                          // get acceleration (full steps / s^2)
     virtual void a(float a) = 0;                    // set acceleration (full steps / s^2)
@@ -85,153 +83,156 @@ class StepperWrapper
     virtual float vMax() = 0;                       // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;                 // set peak velocity (full steps / s)
 
+    void rotate();                              // start rotation
+    void moveSteps(int32_t steps);              // move to relative position (full-steps)
+    void go2target(uint8_t id);                 // move to predefined target
+    void position(int32_t target);              // move to absolute position (full-steps)
+    int32_t position();                         // get absolute position (full-steps)
 
-
-    void rotate();                                  // start rotation
-    void moveSteps(int32_t steps);                  // move to relative position (full-steps)
-    void go2target(uint8_t id);                     // move to predefined target
-    void position(int32_t target);                  // move to absolute position (full-steps)
-    int32_t position();                             // get absolute position (full-steps)
-    uint16_t RMS();                                 // get RMS current
-    void RMS(uint16_t rms_current);                 // set RMS current
-    void holdRMS(uint16_t val);                     // set hold current
-    uint16_t holdRMS();                             // get hold current
-    void setChopper(bool chopper);                  // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
-    bool getChopper();                              // get chopper mode (0 = PWM chopper, 1 = voltage chopper)
-    void setIOmode(uint8_t mode[6], uint8_t l);     // set IO mode (all IO ports)
-    void setIOmode(uint8_t idx, uint8_t role);      // set IO mode (specific IO port)
-    uint8_t getIOmode(uint8_t idx);                 // get IO mode (specific IO port)
-    void setIOresistor(uint8_t r[6], uint8_t l);    // set input resistor (all IO ports)
-    void setIOresistor(uint8_t idx, uint8_t r);     // set input resistor (specific IO port)
-    uint8_t getIOresistor(uint8_t idx);             // get input resistor (specific IO port)
-    void setStream(bool enable);                    // enable/disable live streaming of motor parameters
-    bool getStream();                               // get status of live stream
-    int32_t readPosition();                         // read _microPosition from SD card
-    int32_t encoderPosition();                      // get encoder position
-    void resetEncoderPosition();                    // reset encoder position to zero
-    void stepsPerRevolution(uint16_t steps);        // set steps per revolution
-    uint16_t stepsPerRevolution();                  // get steps per revolution
-    void countsPerRevolution(uint16_t steps);       // set encoder counts per revolution
-    uint16_t countsPerRevolution();                 // get encoder counts per revolution
+    void holdRMS(uint16_t val);                 // set hold current
+    uint16_t holdRMS();                         // get hold current
+    void setChopper(bool chopper);              // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
+    bool getChopper();                          // get chopper mode (0 = PWM chopper, 1 = voltage chopper)
+    void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
+    void setIOmode(uint8_t idx, uint8_t role);  // set IO mode (specific IO port)
+    uint8_t getIOmode(uint8_t idx);             // get IO mode (specific IO port)
+    void setIOresistor(uint8_t r[6], uint8_t l);// set input resistor (all IO ports)
+    void setIOresistor(uint8_t idx, uint8_t r); // set input resistor (specific IO port)
+    uint8_t getIOresistor(uint8_t idx);         // get input resistor (specific IO port)
+    void setStream(bool enable);                // enable/disable live streaming of motor parameters
+    bool getStream();                           // get status of live stream
+    int32_t readPosition();                     // read _microPosition from SD card
+    int32_t encoderPosition();                  // get encoder position
+    void resetEncoderPosition();                // reset encoder position to zero
+    void stepsPerRevolution(uint16_t steps);    // set steps per revolution
+    uint16_t stepsPerRevolution();              // get steps per revolution
+    void countsPerRevolution(uint16_t steps);   // set encoder counts per revolution
+    uint16_t countsPerRevolution();             // get encoder counts per revolution
 
   protected:
-    static TMC2130Stepper* get2130();               // return pointer to TMC2130 (or nullptr)
-    static TMC5160Stepper* get5160();               // return pointer to TMC5160 (or nullptr)
-    static TMC2130Stepper* const TMC2130;           // const pointer to valid TMC2130 (or nullptr)
-    static TMC5160Stepper* const TMC5160;           // const pointer to valid TMC5160 (or nullptr)
-    static const char *  getName();                 // get driver name
-    static const uint32_t fCLK;                     // internal clock frequency
-    static const float RSense;                      // sense resistor
-    static void powerDriver(bool power);            // supply VIO to driver board?
-    static void enableDriver(bool enable);          // enable driver board via EN pin?
-    static void throwError(uint8_t errorID);        // throw error with specified numeric ID
-    static void clearError();                       // clear error condition
-
     volatile int32_t _microPosition;
-
-    ArCOM *_COM;
+    static TMC2130Stepper* get2130();
+    static TMC5160Stepper* get5160();
+    static void powerDriver(bool power);        // supply VIO to driver board?
+    static void enableDriver(bool enable);      // enable driver board via EN pin?
+    static void throwError(uint8_t errorID);    // throw error with specified numeric ID
+    static void clearError();                   // clear error condition
     void toggleISRlimit(int8_t direction);
     bool atLimit(int8_t direction);
+    static constexpr float fCLK = 12E6;         // internal clock frequency of TMC5160
     uint16_t _microsteps = 1;
     uint16_t _microstepDiv = (vDriver>0)?256:16;
     uint16_t _stepsPerRevolution = 200;
     uint16_t _countsPerRevolution = 32768;
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
-    bool writePosition(int32_t pos);                // Write _microPosition to SD card
-    const uint16_t _msRes = (vDriver>0)?256:16;     // highest micro-stepping resolution available
-    uint32_t speed2ticks(float stepsPerSec);
-    float ticks2speed(uint32_t ticks);
+    ArCOM *_COM;
+    bool writePosition(int32_t pos);            // Write _microPosition to SD card
+    const uint16_t _msRes = (vDriver>0)?256:16; // highest micro-stepping resolution available
 
   private:
-    storageVars p;                                  // EEPROM store
-
-    // interrupt service routines
-    static void ISRchangeVM();                      // called when VM was (dis)connected
-    static void ISRdiag0();                         // called when diag0 changes
-    static void ISRdiag1();                         // called when diag1 changes
-    static void ISRblinkError();                    // blink lights ad infinitum
+    static void ISRchangeVM();                  // called when VM was (dis)connected
+    static void ISRdiag0();                     // called when diag0 changes
+    static void ISRdiag1();                     // called when diag1 changes
+    static void ISRblinkError();                // blink lights ad infinitum
     static void ISRstream();
-    static uint32_t ISRgeneric(uint32_t, uint8_t);  // IO: ISR debounce
-    static void ISRsoftStop();                      // IO: soft stop
-    static void ISRhardStop();                      // IO: emergency stop
-    static void ISRforwards();                      // IO: start rotating forwards
-    static void ISRbackwards();                     // IO: start rotating backwards
-    static void ISRzero();                          // IO: reset position to zero
-    static void ISRpos1();                          // IO: go to predefined position 1
-    static void ISRpos2();                          // IO: go to predefined position 2
-    static void ISRpos3();                          // IO: go to predefined position 3
-    static void ISRpos4();                          // IO: go to predefined position 4
-    static void ISRpos5();                          // IO: go to predefined position 5
-    static void ISRpos6();                          // IO: go to predefined position 6
-    static void ISRpos7();                          // IO: go to predefined position 7
-    static void ISRpos8();                          // IO: go to predefined position 8
-    static void ISRpos9();                          // IO: go to predefined position 9
-    static void ISRposN(uint8_t n);                 // IO: go to predefined position N
+    static uint32_t ISRgeneric(uint32_t t0, uint8_t opCode); // IO: ISR debounce
+    static void ISRsoftStop();                  // IO: soft stop
+    static void ISRhardStop();                  // IO: emergency stop
+    static void ISRforwards();                  // IO: start rotating forwards
+    static void ISRbackwards();                 // IO: start rotating backwards
+    static void ISRzero();                      // IO: reset position to zero
+    static void ISRpos1();                      // IO: go to predefined position 1
+    static void ISRpos2();                      // IO: go to predefined position 2
+    static void ISRpos3();                      // IO: go to predefined position 3
+    static void ISRpos4();                      // IO: go to predefined position 4
+    static void ISRpos5();                      // IO: go to predefined position 5
+    static void ISRpos6();                      // IO: go to predefined position 6
+    static void ISRpos7();                      // IO: go to predefined position 7
+    static void ISRpos8();                      // IO: go to predefined position 8
+    static void ISRpos9();                      // IO: go to predefined position 9
+    static void ISRposN(uint8_t n);             // IO: go to predefined position N
 
-    // stream timer
     IntervalTimer TimerStream;
     bool StatusTimerStream = false;
 
-    // related to SD card
-    bool useSD = false;                             // Bool: SD available?
-    SdFs SD;                                        // SD file system class
-    FsFile filePos;                                 // File for storing current position
+    bool useSD = false;                         // Bool: SD available?
+    SdFs SD;                                    // SD file system class
+    FsFile filePos;                             // File for storing current position
 
-    void init(auto*, uint16_t);
-    void attachInput(uint8_t, void (*)(void));
-    void init5160(uint16_t);
-    uint8_t _nIO;                                   // number of IO pins
-    static const uint32_t debounceMillis = 50;      // duration for input debounce [ms]
+    void attachInput(uint8_t idx, void (*userFunc)(void));
+    void init2130(uint16_t rms_current);
+    void init5160(uint16_t rms_current);
+    bool _hardwareSPI = false;
+    uint8_t _nIO;                               // number of IO pins
+    static const uint32_t debounceMillis = 500; // duration for input debounce [ms]
     uint8_t _ioMode[6] {0};
-    uint8_t _ioResistor[6] {0};                     // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
+    uint8_t _ioResistor[6] {0};                 // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
 
-    // quadrature encoder
     void initEncoder();
     QuadDecode<2>* _enc = nullptr;
 
-    // lambda functions
-    std::function<uint16_t(uint8_t)>  cs2rms;
-    std::function<uint16_t()>         sg_result;
-    std::function<bool()>             get_en_pwm_mode;
-    std::function<void(bool)>         set_en_pwm_mode;
-    std::function<uint8_t()>          get_ihold;
-    std::function<void(uint8_t)>      set_ihold;
-    std::function<bool()>             get_freewheel;
-    std::function<void(bool)>         set_freewheel;
-    std::function<uint16_t()>         get_microsteps;
-    std::function<void(uint16_t)>     set_microsteps;
-    std::function<uint16_t()>         get_rms_current;
-    std::function<void(uint16_t)>     set_rms_current;
-    std::function<bool()>             get_sfilt;
-    std::function<void(bool)>         set_sfilt;
-    std::function<uint8_t()>          get_sgt;
-    std::function<void(uint8_t)>      set_sgt;
-    std::function<uint32_t()>         get_TPWMTHRS;
-    std::function<void(uint32_t)>     set_TPWMTHRS;
+    std::function<uint16_t()> get_rms_current;
+    std::function<void(uint16_t)> set_rms_current;
+    std::function<uint8_t()> get_ihold;
+    std::function<void(uint8_t)> set_ihold;
+    std::function<uint16_t(uint8_t)> cs2rms;
+    std::function<bool()> get_freewheel;
+    std::function<void(bool)> set_freewheel;
+    std::function<uint16_t()> get_microsteps;
+    std::function<void(uint16_t)> set_microsteps;
+    std::function<bool()> get_en_pwm_mode;
+    std::function<void(bool)> set_en_pwm_mode;
+};
+
+
+
+class StepperWrapper_SmoothStepper : public StepperWrapper
+{
+  public:
+    StepperWrapper_SmoothStepper();             // constructor
+
+    void init(uint16_t rms_current);
+    void setMicrosteps(uint16_t ms);
+
+    float a();
+    void a(float a);
+    void hardStop();
+    bool isRunning();
+    void moveMicroSteps(int32_t steps);
+    int32_t microPosition();
+    void microPosition(int32_t target);
+    void setPosition(int32_t pos);
+    void rotate(int8_t direction);
+    void softStop();
+    float vMax();
+    void vMax(float v);
+
+  private:
+    SmoothStepper* _stepper;
 };
 
 
 class StepperWrapper_TeensyStep : public StepperWrapper
 {
   public:
-    StepperWrapper_TeensyStep();
+    StepperWrapper_TeensyStep();                // constructor
 
-    void init(uint16_t);
-    void setMicrosteps(uint16_t);
+    void init(uint16_t rms_current);
+    void setMicrosteps(uint16_t ms);
 
     float a();
-    void a(float);
+    void a(float a);
     void hardStop();
-    void moveMicroSteps(int32_t);
+    void moveMicroSteps(int32_t steps);
     bool isRunning();
     int32_t microPosition();
-    void microPosition(int32_t);
-    void setPosition(int32_t);
-    void rotate(int8_t);
+    void microPosition(int32_t target);
+    void setPosition(int32_t pos);
+    void rotate(int8_t direction);
     void softStop();
     float vMax();
-    void vMax(float);
+    void vMax(float v);
 
   private:
     uint32_t _aMu;
@@ -251,25 +252,25 @@ class StepperWrapper_TeensyStep : public StepperWrapper
 class StepperWrapper_MotionControl : public StepperWrapper
 {
   public:
-    StepperWrapper_MotionControl();
+    StepperWrapper_MotionControl();             // constructor
 
-    void init(uint16_t);
+    void init(uint16_t rms_current);
 
     float a();
-    void a(float);
+    void a(float a);
     void hardStop();
     bool isRunning();
-    void moveMicroSteps(int32_t);
+    void moveMicroSteps(int32_t steps);
     int32_t microPosition();
-    void microPosition(int32_t);
-    void setPosition(int32_t);
-    void rotate(int8_t);
+    void microPosition(int32_t target);
+    void setPosition(int32_t pos);
+    void rotate(int8_t direction);
     void softStop();
     float vMax();
-    void vMax(float);
+    void vMax(float v);
 
   private:
     TMC5160Stepper* _driver;
-    static constexpr float factA = (float)(1ul<<24) / (12E6 * 12E6 / (512.0 * 256.0));
-    static constexpr float factV = (float)(1ul<<24) / (12E6);
+    static constexpr float factA = (float)(1ul<<24) / (fCLK * fCLK / (512.0 * 256.0));
+    static constexpr float factV = (float)(1ul<<24) / (fCLK);
 };
