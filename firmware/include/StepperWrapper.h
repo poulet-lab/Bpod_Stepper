@@ -17,16 +17,16 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 _______________________________________________________________________________
 */
 
-
 #pragma once
 
-#include <TeensyStep.h>
-#include <TMCStepper.h>
-#include <SdFat.h>
-#include <ArCOM.h>
-#include <QuadDecode_def.h>
+#include <TeensyStep.h>     // https://github.com/luni64/TeensyStep
+#include <TMCStepper.h>     // https://github.com/teemuatlut/TMCStepper
+#include <SD.h>             // https://github.com/PaulStoffregen/SD
+#include <ArCOM.h>          // https://github.com/bimac/ArCOM
+#include <QuadDecode_def.h> // https://github.com/bimac/Teensy3x_QuadDecode
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
+
 
 struct teensyPins {
   uint8_t Dir;
@@ -52,8 +52,7 @@ extern volatile uint8_t errorID;                    // error ID (set through int
 extern volatile uint8_t ISRcode;                    // opCode (set through interrupt sub-routine)
 extern storageVars p;
 
-class StepperWrapper
-{
+class StepperWrapper {
   public:
     StepperWrapper();                               // constructor
 
@@ -67,7 +66,7 @@ class StepperWrapper
     static bool SDmode();                           // are we using STEP/DIR mode?
     static teensyPins getPins(float PCBrev);
 
-    virtual void init(uint16_t rms_current);        // initialize stepper class
+  virtual void init();                     // initialize stepper class
     virtual void setMicrosteps(uint16_t ms);        // set microstepping resolution
     uint16_t getMicrosteps();                       // get microstepping resolution
     void SGautoTune();
@@ -76,16 +75,17 @@ class StepperWrapper
     virtual void a(float a) = 0;                    // set acceleration (full steps / s^2)
     virtual void softStop() = 0;                    // stop after defined slow-down
     virtual void hardStop() = 0;                    // stop as fast as possible (risk of step-loss)
-    virtual void moveMicroSteps(int32_t steps) = 0; // move to relative position (micro-steps)
+  virtual void
+  moveMicroSteps(int32_t steps) = 0; // move to relative position (micro-steps)
     virtual bool isRunning() = 0;                   // is the motor currently running?
     virtual int32_t microPosition() = 0;            // get current position (micro-steps)
-    virtual void microPosition(int32_t target) = 0; // go to absolute position (micro-steps)
-    virtual void setPosition(int32_t pos) = 0;      // set position without moving (microsteps)
+  virtual void
+  microPosition(int32_t target) = 0; // go to absolute position (micro-steps)
+  virtual void
+  setPosition(int32_t pos) = 0; // set position without moving (microsteps)
     virtual void rotate(int8_t direction) = 0;      // initiate rotation
     virtual float vMax() = 0;                       // get peak velocity (full steps / s)
     virtual void vMax(float v) = 0;                 // set peak velocity (full steps / s)
-
-
 
     void rotate();                                  // start rotation
     void moveSteps(int32_t steps);                  // move to relative position (full-steps)
@@ -96,15 +96,19 @@ class StepperWrapper
     void RMS(uint16_t rms_current);                 // set RMS current
     void holdRMS(uint16_t val);                     // set hold current
     uint16_t holdRMS();                             // get hold current
-    void setChopper(bool chopper);                  // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
+  void setChopper(
+      bool chopper); // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
     bool getChopper();                              // get chopper mode (0 = PWM chopper, 1 = voltage chopper)
     void setIOmode(uint8_t mode[6], uint8_t l);     // set IO mode (all IO ports)
     void setIOmode(uint8_t idx, uint8_t role);      // set IO mode (specific IO port)
     uint8_t getIOmode(uint8_t idx);                 // get IO mode (specific IO port)
-    void setIOresistor(uint8_t r[6], uint8_t l);    // set input resistor (all IO ports)
-    void setIOresistor(uint8_t idx, uint8_t r);     // set input resistor (specific IO port)
+  void setIOresistor(uint8_t r[6],
+                     uint8_t l); // set input resistor (all IO ports)
+  void setIOresistor(uint8_t idx,
+                     uint8_t r);      // set input resistor (specific IO port)
     uint8_t getIOresistor(uint8_t idx);             // get input resistor (specific IO port)
-    void setStream(bool enable);                    // enable/disable live streaming of motor parameters
+  void
+  setStream(bool enable); // enable/disable live streaming of motor parameters
     bool getStream();                               // get status of live stream
     int32_t readPosition();                         // read _microPosition from SD card
     int32_t encoderPosition();                      // get encoder position
@@ -117,14 +121,17 @@ class StepperWrapper
   protected:
     static TMC2130Stepper* get2130();               // return pointer to TMC2130 (or nullptr)
     static TMC5160Stepper* get5160();               // return pointer to TMC5160 (or nullptr)
-    static TMC2130Stepper* const TMC2130;           // const pointer to valid TMC2130 (or nullptr)
-    static TMC5160Stepper* const TMC5160;           // const pointer to valid TMC5160 (or nullptr)
+  static TMC2130Stepper
+      *const TMC2130; // const pointer to valid TMC2130 (or nullptr)
+  static TMC5160Stepper
+      *const TMC5160;           // const pointer to valid TMC5160 (or nullptr)
     static const char *  getName();                 // get driver name
     static const uint32_t fCLK;                     // internal clock frequency
     static const float RSense;                      // sense resistor
     static void powerDriver(bool power);            // supply VIO to driver board?
     static void enableDriver(bool enable);          // enable driver board via EN pin?
-    static void throwError(uint8_t errorID);        // throw error with specified numeric ID
+  static void
+  throwError(uint8_t errorID); // throw error with specified numeric ID
     static void clearError();                       // clear error condition
 
     volatile int32_t _microPosition;
@@ -139,7 +146,8 @@ class StepperWrapper
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     bool writePosition(int32_t pos);                // Write _microPosition to SD card
-    const uint16_t _msRes = (vDriver>0)?256:16;     // highest micro-stepping resolution available
+  const uint16_t _msRes =
+      (vDriver > 0) ? 256 : 16; // highest micro-stepping resolution available
     uint32_t speed2ticks(float stepsPerSec);
     float ticks2speed(uint32_t ticks);
 
@@ -178,13 +186,14 @@ class StepperWrapper
     SdFs SD;                                        // SD file system class
     FsFile filePos;                                 // File for storing current position
 
-    void init(auto*, uint16_t);
+  void init(auto *);
     void attachInput(uint8_t, void (*)(void));
     void init5160(uint16_t);
     uint8_t _nIO;                                   // number of IO pins
     static const uint32_t debounceMillis = 50;      // duration for input debounce [ms]
     uint8_t _ioMode[6] {0};
-    uint8_t _ioResistor[6] {0};                     // input resistor for IO pins (0 = no resistor, 1 = pullup, 2 = pulldown)
+  uint8_t _ioResistor[6]{0}; // input resistor for IO pins (0 = no resistor, 1 =
+                             // pullup, 2 = pulldown)
 
     // quadrature encoder
     void initEncoder();
@@ -211,13 +220,11 @@ class StepperWrapper
     std::function<void(uint32_t)>     set_TPWMTHRS;
 };
 
-
-class StepperWrapper_TeensyStep : public StepperWrapper
-{
+class StepperWrapper_TeensyStep : public StepperWrapper {
   public:
     StepperWrapper_TeensyStep();
 
-    void init(uint16_t);
+  void init();
     void setMicrosteps(uint16_t);
 
     float a();
@@ -247,13 +254,11 @@ class StepperWrapper_TeensyStep : public StepperWrapper
     static void PostStop();
 };
 
-
-class StepperWrapper_MotionControl : public StepperWrapper
-{
+class StepperWrapper_MotionControl : public StepperWrapper {
   public:
     StepperWrapper_MotionControl();
 
-    void init(uint16_t);
+  void init();
 
     float a();
     void a(float);
@@ -270,6 +275,7 @@ class StepperWrapper_MotionControl : public StepperWrapper
 
   private:
     TMC5160Stepper* _driver;
-    static constexpr float factA = (float)(1ul<<24) / (12E6 * 12E6 / (512.0 * 256.0));
+  static constexpr float factA =
+      (float)(1ul << 24) / (12E6 * 12E6 / (512.0 * 256.0));
     static constexpr float factV = (float)(1ul<<24) / (12E6);
 };

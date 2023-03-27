@@ -33,8 +33,8 @@ StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _rotateControl->setCallback(CBstop);
 }
 
-void StepperWrapper_TeensyStep::init(uint16_t rms_current) {
-  StepperWrapper::init(rms_current);
+void StepperWrapper_TeensyStep::init() {
+  StepperWrapper::init();
   _motor->setInverseRotation(_invertPinDir);
   _motor->setPosition(0);
 }

@@ -25,9 +25,8 @@ _______________________________________________________________________________
 
 StepperWrapper_MotionControl::StepperWrapper_MotionControl() : StepperWrapper() {}
 
-void StepperWrapper_MotionControl::init(uint16_t rms_current) {
-  DEBUG_PRINTFUN(rms_current);
-  StepperWrapper::init(rms_current);
+void StepperWrapper_MotionControl::init() {
+  StepperWrapper::init();
   _driver = get5160();
 
   //if (PCBrev < 1.4)

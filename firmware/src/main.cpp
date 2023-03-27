@@ -49,7 +49,6 @@ void setup()
 {
   Serial1.begin(1312500);                                         // Initialize serial communication
   DEBUG_WAIT();
-
   DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
   DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
   DEBUG_PRINTF("Firmware version:  %d\n",FirmwareVersion);
@@ -68,11 +67,11 @@ void setup()
   else
     stepper = new StepperWrapper_TeensyStep();
 
-  // Initialize StepperWrapper
-  stepper->init(p.rms_current);
+  stepper->init();            // initialize StepperWrapper
+  stepper->blinkenlights();   // indicate successful start-up
 
-  // Indicate successful start-up
-  StepperWrapper::blinkenlights();
+  stepper->SGautoTune();      // tune stallGuard
+  stepper->moveSteps(200);
 }
 
 
