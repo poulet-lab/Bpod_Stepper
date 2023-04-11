@@ -1,6 +1,6 @@
 /*
 StepperWrapper
-Copyright (C) 2021 Florian Rau
+Copyright (C) 2023 Florian Rau
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -17,13 +17,11 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 _______________________________________________________________________________
 */
 
-
-#include <TMCStepper.h>
-#include "StepperWrapper.h"
 #include "SerialDebug.h"
+#include "StepperWrapper.h"
 
 extern ArCOM Serial1COM;
-extern StepperWrapper* stepper;
+extern StepperWrapper *stepper;
 
 StepperWrapper_TeensyStep::StepperWrapper_TeensyStep() : StepperWrapper() {
   _motor = new Stepper(pin.Step, pin.Dir);
@@ -39,16 +37,14 @@ void StepperWrapper_TeensyStep::init() {
   _motor->setPosition(0);
 }
 
-float StepperWrapper_TeensyStep::a() {
-  return _a;
-}
+float StepperWrapper_TeensyStep::a() { return _a; }
 
 void StepperWrapper_TeensyStep::a(float aHzs) {
   if (isRunning())
     return;
   _aMu = round(aHzs * _microsteps);
-  _a   = (float) _aMu / _microsteps;
-  DEBUG_PRINTF("Setting acceleration to %1.0f steps/s^2\n",aHzs);
+  _a = (float)_aMu / _microsteps;
+  DEBUG_PRINTF("Setting acceleration to %1.0f steps/s^2\n", aHzs);
 }
 
 void StepperWrapper_TeensyStep::hardStop() {
@@ -59,7 +55,7 @@ void StepperWrapper_TeensyStep::hardStop() {
   interrupts();
   digitalWriteFast(LED_BUILTIN, LOW);
   updateMicroPosition();
-  DEBUG_PRINTF("Emergency stop at position %d\n",_microPosition);
+  DEBUG_PRINTF("Emergency stop at position %d\n", _microPosition);
   writePosition(_microPosition);
 }
 
@@ -105,18 +101,19 @@ void StepperWrapper_TeensyStep::setPosition(int32_t pos) {
 }
 
 void StepperWrapper_TeensyStep::rotate(int8_t dir) {
-  if (isRunning() || atLimit(dir))        // return if already moving or at limit switch
+  if (isRunning() || atLimit(dir)) // return if moving / at limit switch
     return;
-  dir = (dir>=0) ? 1 : -1;                            // sanitize input argument
-  toggleISRlimit(dir);                                // attach ISRs for limit switches
+  dir = (dir >= 0) ? 1 : -1; // sanitize input argument
+  toggleISRlimit(dir);       // attach ISRs for limit switches
 
-  DEBUG_PRINTF("Starting rotation in %s direction ...\n", (dir>0) ? "positive" : "negative");
-  _motor->setAcceleration(_aMu);                      // set acceleration
-  _motor->setMaxSpeed(dir * _vMaxMu);                 // set speed & direction of movement
-  _rotateControl->rotateAsync(*_motor);               // start moving
+  DEBUG_PRINTF("Starting rotation in %s direction ...\n",
+               (dir > 0) ? "positive" : "negative");
+  _motor->setAcceleration(_aMu);        // set acceleration
+  _motor->setMaxSpeed(dir * _vMaxMu);   // set speed & direction of movement
+  _rotateControl->rotateAsync(*_motor); // start moving
 
-  Serial1COM.writeByte(2);                            // send serial message 2: "Start"
-  digitalWriteFast(LED_BUILTIN, HIGH);                // enable built-in LED
+  Serial1COM.writeByte(2);             // send serial message 2: "Start"
+  digitalWriteFast(LED_BUILTIN, HIGH); // enable built-in LED
 }
 
 void StepperWrapper_TeensyStep::softStop() {

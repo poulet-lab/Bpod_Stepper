@@ -1,6 +1,6 @@
 /*
 StepperWrapper
-Copyright (C) 2021 Florian Rau
+Copyright (C) 2023 Florian Rau
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -18,7 +18,6 @@ _______________________________________________________________________________
 */
 
 #pragma once
-
 #include <TeensyStep.h>     // https://github.com/luni64/TeensyStep
 #include <TMCStepper.h>     // https://github.com/teemuatlut/TMCStepper
 #include <SD.h>             // https://github.com/PaulStoffregen/SD
@@ -27,6 +26,13 @@ _______________________________________________________________________________
 #include "SmoothStepper.h"
 #include "EEstoreStruct.h"
 
+#define STEPPER_ERROR___NO_DRIVER_FOUND 1
+#define STEPPER_ERROR___VM_UNPLUGGED 2
+#define STEPPER_ERROR___UNDER_VOLTAGE 3
+#define STEPPER_ERROR___OVER_TEMPERATURE 4
+#define STEPPER_ERROR___OVER_TEMPERATURE_PRE 5
+#define STEPPER_ERROR___SHORT_TO_GND_PHASE_A 6
+#define STEPPER_ERROR___SHORT_TO_GND_PHASE_B 7
 
 struct teensyPins {
   uint8_t Dir;
@@ -45,30 +51,45 @@ struct teensyPins {
   uint8_t IO[6] {0};
 };
 
-extern const uint8_t PCBrev;                        // PCB revision
-extern const uint8_t vDriver;                       // version number of TMC stepper driver
-extern const teensyPins pin;                        // pin numbers
-extern volatile uint8_t errorID;                    // error ID (set through interrupt sub-routine)
-extern volatile uint8_t ISRcode;                    // opCode (set through interrupt sub-routine)
+extern volatile uint8_t errorID; // error ID (set through interrupt sub-routine)
+extern volatile uint8_t ISRcode; // opCode (set through interrupt sub-routine)
 extern storageVars p;
 
-class StepperWrapper {
-  public:
-    StepperWrapper();                               // constructor
+struct StepperWrapper {
+  StepperWrapper(); // constructor
 
-    static const uint8_t vDriver;                   // version number of the driver
-    static const bool is2130;                       // bool: is TMC2130
-    static const bool is5160;                       // bool: is TMC5160
-    static const char * name;                       // name of driver
-    static void blinkenlights();                    // extra fancy LED sequence to say hi
-    static uint8_t idPCB();                         // identify PCB revision (divide by 10!)
-    static uint8_t idDriver();                      // identify TMC stepper driver
-    static bool SDmode();                           // are we using STEP/DIR mode?
-    static teensyPins getPins(float PCBrev);
+  static TMC2130Stepper *const TMC2130;
+  static TMC5160Stepper *const TMC5160;
+
+  static const uint8_t vDriver;              // driver version
+  static const uint8_t PCBrev;               // PCB revision
+  static const teensyPins pin;               // pin numbers
+  static const bool is2130;                  // bool: is TMC2130?
+  static const bool is5160;                  // bool: is TMC5160?
+  static const uint32_t fCLK;                // internal clock frequency
+  static const char *driverName;             // name of motor driver
+  template <class T> static T *const driver; // TMCstepper object
+
+  static const uint8_t _nIO;                 // number of IO pins
+  static constexpr uint16_t _msRes = 256;    // micro-stepping resolution
+
+
+  template <class T> static T *getDriver(float, uint8_t); // return pointer to driver (or nullptr)
 
   virtual void init();                     // initialize stepper class
-    virtual void setMicrosteps(uint16_t ms);        // set microstepping resolution
-    uint16_t getMicrosteps();                       // get microstepping resolution
+
+  // templated members
+  template <class T> void init(T *);
+
+  virtual void setMicrosteps(uint16_t ms); // set microstepping resolution
+  uint16_t getMicrosteps();                // get microstepping resolution
+
+  static void blinkenlights(); // extra fancy LED sequence to say hi
+  static uint8_t idDriver();   // identify TMC stepper driver
+  static bool SDmode();        // are we using STEP/DIR mode?
+
+
+
     void SGautoTune();
 
     virtual float a() = 0;                          // get acceleration (full steps / s^2)
@@ -96,9 +117,8 @@ class StepperWrapper {
     void RMS(uint16_t rms_current);                 // set RMS current
     void holdRMS(uint16_t val);                     // set hold current
     uint16_t holdRMS();                             // get hold current
-  void setChopper(
-      bool chopper); // set chopper mode (0 = PWM chopper, 1 = voltage chopper)
-    bool getChopper();                              // get chopper mode (0 = PWM chopper, 1 = voltage chopper)
+    void setChopper(uint8_t chopper);               // set chopper mode (0 = spreadCycle, 1 = stealthChop, 2 = constOff)
+    uint8_t getChopper();                           // get chopper mode (0 = spreadCycle, 1 = stealthChop, 2 = constOff)
     void setIOmode(uint8_t mode[6], uint8_t l);     // set IO mode (all IO ports)
     void setIOmode(uint8_t idx, uint8_t role);      // set IO mode (specific IO port)
     uint8_t getIOmode(uint8_t idx);                 // get IO mode (specific IO port)
@@ -119,20 +139,10 @@ class StepperWrapper {
     uint16_t countsPerRevolution();                 // get encoder counts per revolution
 
   protected:
-    static TMC2130Stepper* get2130();               // return pointer to TMC2130 (or nullptr)
-    static TMC5160Stepper* get5160();               // return pointer to TMC5160 (or nullptr)
-  static TMC2130Stepper
-      *const TMC2130; // const pointer to valid TMC2130 (or nullptr)
-  static TMC5160Stepper
-      *const TMC5160;           // const pointer to valid TMC5160 (or nullptr)
-    static const char *  getName();                 // get driver name
-    static const uint32_t fCLK;                     // internal clock frequency
-    static const float RSense;                      // sense resistor
-    static void powerDriver(bool power);            // supply VIO to driver board?
-    static void enableDriver(bool enable);          // enable driver board via EN pin?
-  static void
-  throwError(uint8_t errorID); // throw error with specified numeric ID
-    static void clearError();                       // clear error condition
+    static void powerDriver(bool);   // supply VIO to driver board?
+    static void enableDriver(bool);  // enable driver board via EN pin?
+    static void throwError(uint8_t); // throw error with specified numeric ID
+    static void clearError();        // clear error condition
 
     volatile int32_t _microPosition;
 
@@ -140,14 +150,12 @@ class StepperWrapper {
     void toggleISRlimit(int8_t direction);
     bool atLimit(int8_t direction);
     uint16_t _microsteps = 1;
-    uint16_t _microstepDiv = (vDriver>0)?256:16;
+    uint16_t _microstepDiv = 256;
     uint16_t _stepsPerRevolution = 200;
     uint16_t _countsPerRevolution = 32768;
     static constexpr bool _invertPinEn  = true;
     bool _invertPinDir = false;
     bool writePosition(int32_t pos);                // Write _microPosition to SD card
-  const uint16_t _msRes =
-      (vDriver > 0) ? 256 : 16; // highest micro-stepping resolution available
     uint32_t speed2ticks(float stepsPerSec);
     float ticks2speed(uint32_t ticks);
 
@@ -186,10 +194,8 @@ class StepperWrapper {
     SdFs SD;                                        // SD file system class
     FsFile filePos;                                 // File for storing current position
 
-  void init(auto *);
+
     void attachInput(uint8_t, void (*)(void));
-    void init5160(uint16_t);
-    uint8_t _nIO;                                   // number of IO pins
     static const uint32_t debounceMillis = 50;      // duration for input debounce [ms]
     uint8_t _ioMode[6] {0};
   uint8_t _ioResistor[6]{0}; // input resistor for IO pins (0 = no resistor, 1 =
@@ -202,6 +208,8 @@ class StepperWrapper {
     // lambda functions
     std::function<uint16_t(uint8_t)>  cs2rms;
     std::function<uint16_t()>         sg_result;
+    std::function<bool()>             get_chm;
+    std::function<void(bool)>         set_chm;
     std::function<bool()>             get_en_pwm_mode;
     std::function<void(bool)>         set_en_pwm_mode;
     std::function<uint8_t()>          get_ihold;
@@ -215,7 +223,7 @@ class StepperWrapper {
     std::function<bool()>             get_sfilt;
     std::function<void(bool)>         set_sfilt;
     std::function<uint8_t()>          get_sgt;
-    std::function<void(uint8_t)>      set_sgt;
+    std::function<void(int8_t)>       set_sgt;
     std::function<uint32_t()>         get_TPWMTHRS;
     std::function<void(uint32_t)>     set_TPWMTHRS;
 };

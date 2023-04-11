@@ -133,15 +133,15 @@ All of the motors movements are defined by an acceleration phase, a peak velocit
       GET 1 uInt16: hold current [mA]
 
 * #### Set chopper mode
-  You can select between two different chopper modes: a voltage chopper and a PWM chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. Depending on the use case, the PWM chopper can perform better at higher speeds. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
+  You can select between three different chopper modes: a PWM chopper ("spreadCycle"), a voltage chopper ("stealthChop") and a classical constant off-time chopper. The voltage chopper offers extremely quiet operation at standstill and low to medium speeds. Depending on the use case, the PWM chopper can perform better at higher speeds. The constant off-time chopper will perform similarly to the PWM chopper but produce more noise. Refer to [the Trinamic website](https://www.trinamic.com/technology/motor-control-technology/chopper-modes/) for more details.
 
       PUT 1 uInt8:  67 ('C')
-      PUT 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
+      PUT 1 uInt8:  chopper mode [0 = PWM, 1 = voltage, 2 = constant T_OFF]
 
 * #### Get chopper mode
 
       PUT 2 uInt8:  71, 67 ('GC')
-      GET 1 uInt8:  chopper mode [0 = PWM chopper, 1 = voltage chopper]
+      GET 1 uInt8:  chopper mode [0 = PWM, 1 = voltage, 2 = constant T_OFF]
 
 
 ### Configuration of IO ports
