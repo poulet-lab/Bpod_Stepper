@@ -14,19 +14,19 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Arduino.h>
-#include <ArCOM.h>          // Import serial communication wrapper
-#include "EEstore.h"        // Import EEstore library
-#include "EEstoreStruct.h"  // Parameters to be loaded from EEPROM (and default values)
+#include "EEstore.h"       // Import EEstore library
+#include "EEstoreStruct.h" // Parameters to be loaded from EEPROM (and default values)
 #include "SerialDebug.h"    // Some debugging tools
 #include "StepperWrapper.h" // Wrap stepper motor control
+#include <ArCOM.h>          // Import serial communication wrapper
+#include <Arduino.h>
 
 void returnModuleInfo();
 
 // Serial communication
-ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
-ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
-ArCOM *COM;                       // Pointer to ArCOM object
+ArCOM usbCOM(Serial);      // Wrap Serial (USB on Teensy 3.X)
+ArCOM Serial1COM(Serial1); // Wrap Serial1 (UART on Teensy 3.X)
+ArCOM *COM;                // Pointer to ArCOM object
 
 // Variables
 uint8_t opCode = 0;      // opCode for loop()

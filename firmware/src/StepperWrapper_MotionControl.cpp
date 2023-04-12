@@ -22,13 +22,14 @@ _______________________________________________________________________________
 #include "StepperWrapper.h"
 #include "SerialDebug.h"
 
-StepperWrapper_MotionControl::StepperWrapper_MotionControl() : StepperWrapper() {}
+StepperWrapper_MotionControl::StepperWrapper_MotionControl()
+    : StepperWrapper() {}
 
 void StepperWrapper_MotionControl::init() {
   StepperWrapper::init();
 
-  //if (PCBrev < 1.4)
-  //throwError(42);
+  // if (PCBrev < 1.4)
+  // throwError(42);
 }
 
 float StepperWrapper_MotionControl::a() {
@@ -38,8 +39,9 @@ float StepperWrapper_MotionControl::a() {
 
 void StepperWrapper_MotionControl::a(float aHzs) {
   DEBUG_PRINTFUN(aHzs);
-  //a5160 = aHzs / fCLK^2 / (512*256) / 2^24
-  uint16_t a5160 = round(constrain(aHzs * factA * _microsteps, 0, uint16_t(-1)));
+  // a5160 = aHzs / fCLK^2 / (512*256) / 2^24
+  uint16_t a5160 =
+      round(constrain(aHzs * factA * _microsteps, 0, uint16_t(-1)));
   TMC5160->AMAX(a5160);
   TMC5160->DMAX(a5160);
   TMC5160->a1(a5160);
@@ -91,11 +93,10 @@ float StepperWrapper_MotionControl::vMax() {
 void StepperWrapper_MotionControl::vMax(float vHz) {
   DEBUG_PRINTFUN(vHz);
   // v5160 = vHz / ( fCLK/2 / 2^23 )
-  uint32_t v5160 = round(constrain(vHz * factV * _microsteps, 0, pow(2,23)-512));
+  uint32_t v5160 =
+      round(constrain(vHz * factV * _microsteps, 0, pow(2, 23) - 512));
   TMC5160->VMAX(v5160);
   TMC5160->v1(0); // Disables A1 and D1 phase, use AMAX, DMAX only
 }
 
-bool StepperWrapper_MotionControl::isRunning() {
-  return TMC5160->stst();
-}
+bool StepperWrapper_MotionControl::isRunning() { return TMC5160->stst(); }

@@ -14,18 +14,18 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <Arduino.h>
 #include <ArCOM.h>
+#include <Arduino.h>
 #include <TMCStepper.h>
-#include "StepperWrapper.h"
 #include "SerialDebug.h"
+#include "StepperWrapper.h"
 
 // Some macros for later use
-#define CHM_CONSTOFFTIME true   // constant off-time chopper
-#define CHM_SPREADCYCLE  false  // spreadCycle chopper
-#define CHOP_PWM         0      // spreadCycle chopper
-#define CHOP_VOLTAGE     1      // stealthChop chopper
-#define CHOP_CONSTOFF    2      // constant off-ime chopper
+#define CHM_CONSTOFFTIME true // constant off-time chopper
+#define CHM_SPREADCYCLE false // spreadCycle chopper
+#define CHOP_PWM 0            // spreadCycle chopper
+#define CHOP_VOLTAGE 1        // stealthChop chopper
+#define CHOP_CONSTOFF 2       // constant off-ime chopper
 
 // In order to use identically named methods of different child classes of
 // TMCStepper we define lambda functions that are initalized by the following
@@ -157,41 +157,44 @@ const teensyPins getPins() {
 }
 
 union vFirmware {
-    struct {
-        uint8_t  index;
-        uint8_t  month;
-        uint16_t year;
-    };
-    uint32_t val = FIRMWARE_VERSION;
+  struct {
+    uint8_t index;
+    uint8_t month;
+    uint16_t year;
+  };
+  uint32_t val = FIRMWARE_VERSION;
 };
 
 IntervalTimer timerErrorBlink;
 } // namespace
 
 extern ArCOM Serial1COM;
-volatile uint8_t errorID  = 0;
-volatile uint8_t ISRcode  = 0;
+volatile uint8_t errorID = 0;
+volatile uint8_t ISRcode = 0;
 
 // initialize static members
-const uint8_t StepperWrapper::PCBrev  = idPCB();
-const teensyPins StepperWrapper::pin  = getPins();
-TMC2130Stepper *const StepperWrapper::TMC2130(StepperWrapper::getDriver<TMC2130Stepper>(0.110, 0x11));
-TMC5160Stepper *const StepperWrapper::TMC5160(StepperWrapper::getDriver<TMC5160Stepper>(0.075, 0x30));
-const uint8_t StepperWrapper::vDriver  = StepperWrapper::idDriver();
-const bool StepperWrapper::is2130      = (StepperWrapper::vDriver == 0x11);
-const bool StepperWrapper::is5160      = (StepperWrapper::vDriver == 0x30);
+const uint8_t StepperWrapper::PCBrev = idPCB();
+const teensyPins StepperWrapper::pin = getPins();
+TMC2130Stepper *const StepperWrapper::TMC2130(
+    StepperWrapper::getDriver<TMC2130Stepper>(0.110, 0x11));
+TMC5160Stepper *const StepperWrapper::TMC5160(
+    StepperWrapper::getDriver<TMC5160Stepper>(0.075, 0x30));
+const uint8_t StepperWrapper::vDriver = StepperWrapper::idDriver();
+const bool StepperWrapper::is2130 = (StepperWrapper::vDriver == 0x11);
+const bool StepperWrapper::is5160 = (StepperWrapper::vDriver == 0x30);
 template <class T>
-T *const StepperWrapper::driver        = (StepperWrapper::is2130) ? TMC2130 : TMC5160;
-const uint32_t StepperWrapper::fCLK    = (StepperWrapper::is2130) ? 12.2E6 : 12E6;
-const char *StepperWrapper::driverName = (StepperWrapper::is2130) ? "TMC2130" : "TMC5160";
-const uint8_t StepperWrapper::_nIO     = (PCBrev < 12) ? 2 : 6;
+T *const StepperWrapper::driver = (StepperWrapper::is2130) ? TMC2130 : TMC5160;
+const uint32_t StepperWrapper::fCLK = (StepperWrapper::is2130) ? 12.2E6 : 12E6;
+const char *StepperWrapper::driverName =
+    (StepperWrapper::is2130) ? "TMC2130" : "TMC5160";
+const uint8_t StepperWrapper::_nIO = (PCBrev < 12) ? 2 : 6;
 
 StepperWrapper::StepperWrapper() {
 
   pinMode(pin.En, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  if (PCBrev>=14) {
+  if (PCBrev >= 14) {
     pinMode(pin.VIO, OUTPUT);
     pinMode(pin.Diag0, INPUT);
     pinMode(pin.Diag1, INPUT);
@@ -204,10 +207,10 @@ StepperWrapper::StepperWrapper() {
     }
   }
 
-  TimerStream.priority(255);                // lowest priority for stream
+  TimerStream.priority(255); // lowest priority for stream
 
-  enableDriver(false);                      // disable driver for now
-  powerDriver(true);                        // power the driver
+  enableDriver(false); // disable driver for now
+  powerDriver(true);   // power the driver
 }
 
 void StepperWrapper::ISRstream() {
@@ -218,17 +221,17 @@ void StepperWrapper::ISRstream() {
   if (!DRV_STATUS) {
     if (is2130) {
       DRV_STATUS = []() { return TMC2130->DRV_STATUS(); };
-      TSTEP      = []() { return TMC2130->TSTEP(); };
+      TSTEP = []() { return TMC2130->TSTEP(); };
     } else if (is5160) {
       DRV_STATUS = []() { return TMC5160->DRV_STATUS(); };
-      TSTEP      = []() { return TMC5160->TSTEP(); };
+      TSTEP = []() { return TMC5160->TSTEP(); };
     }
   }
 
   data[0] = millis();
   data[1] = DRV_STATUS();
   data[2] = TSTEP();
-  usbCOM.writeUint32Array(data,3);
+  usbCOM.writeUint32Array(data, 3);
 }
 
 bool StepperWrapper::getStream() { return StatusTimerStream; }
@@ -249,13 +252,13 @@ void StepperWrapper::ISRdiag0() {
   static std::function<uint8_t()> GSTAT;
   if (is2130) {
     DRV_STATUS = []() { return TMC2130->DRV_STATUS(); };
-    GSTAT      = []() { return TMC2130->GSTAT(); };
+    GSTAT = []() { return TMC2130->GSTAT(); };
   } else if (is5160) {
     DRV_STATUS = []() { return TMC5160->DRV_STATUS(); };
-    GSTAT      = []() { return TMC5160->GSTAT(); };
+    GSTAT = []() { return TMC5160->GSTAT(); };
   }
 
-  uint8_t  gstat  = GSTAT();
+  uint8_t gstat = GSTAT();
   uint32_t status = DRV_STATUS();
 
   if (bitRead(gstat, 2)) {
@@ -265,8 +268,7 @@ void StepperWrapper::ISRdiag0() {
     if (bitRead(status, 25)) {
       throwError(STEPPER_ERROR___OVER_TEMPERATURE);
     } else if (bitRead(status, 26)) {
-      throwError(
-          STEPPER_ERROR___OVER_TEMPERATURE_PRE);
+      throwError(STEPPER_ERROR___OVER_TEMPERATURE_PRE);
     } else if (bitRead(status, 27)) {
       throwError(STEPPER_ERROR___SHORT_TO_GND_PHASE_A);
     } else if (bitRead(status, 28)) {
@@ -288,7 +290,7 @@ void StepperWrapper::ISRchangeVM() {
     SCB_AIRCR = 0x05FA0004; // reset teensy
     asm volatile("dsb");
     while (true) {
-        ;
+      ;
     }
   } else {
     throwError(STEPPER_ERROR___VM_UNPLUGGED);
@@ -335,8 +337,8 @@ void StepperWrapper::init() {
   holdRMS(p.hold_rms_current);
   vMax(p.vMax);
   a(p.a);
-  setIOresistor(p.IOresistor,sizeof(p.IOresistor));
-  setIOmode(p.IOmode,sizeof(p.IOmode));
+  setIOresistor(p.IOresistor, sizeof(p.IOresistor));
+  setIOmode(p.IOmode, sizeof(p.IOmode));
   setChopper(p.chopper);
   setPosition(readPosition());
   DEBUG_PRINT("\n");
@@ -345,8 +347,7 @@ void StepperWrapper::init() {
   blinkenlights();
 }
 
-template <class T>
-void StepperWrapper::init(T *stepper) {
+template <class T> void StepperWrapper::init(T *stepper) {
   DEBUG_PRINT("\n");
   DEBUG_PRINTF("Initializing %s\n", driverName);
 
@@ -354,11 +355,11 @@ void StepperWrapper::init(T *stepper) {
   _invertPinDir = is2130;
 
   // error states & diagnostics
-  stepper->GSTAT();                   // reset error flags
-  stepper->diag0_error(true);         // enable DIAG0 active on driver errors
-  stepper->diag1_stall(true);         // enable DIAG1 active on driver stall
-  stepper->diag0_int_pushpull(true);  // set DIAG0 to active high;
-  stepper->diag1_pushpull(true);      // set DIAG0 to active high;
+  stepper->GSTAT();                  // reset error flags
+  stepper->diag0_error(true);        // enable DIAG0 active on driver errors
+  stepper->diag1_stall(true);        // enable DIAG1 active on driver stall
+  stepper->diag0_int_pushpull(true); // set DIAG0 to active high;
+  stepper->diag1_pushpull(true);     // set DIAG0 to active high;
   attachInterrupt(digitalPinToInterrupt(pin.Diag0), ISRdiag0, RISING);
   attachInterrupt(digitalPinToInterrupt(pin.Diag1), ISRdiag1, RISING);
 
@@ -390,16 +391,15 @@ void StepperWrapper::init(T *stepper) {
   stepper->hend(0);              // hysteresis end setting
 
   // // stallGuard2 - TO DO!
-  // stepper->TPWMTHRS(0); // disable SpreadCycle chopper (use StealthChop only)
-  // stepper->sgt(0);      // stallGuard2 threshold level
-  // stepper->TCOOLTHRS(1048575); // lower velocity thresh for coolStep
+  // stepper->TPWMTHRS(0);        // disable SpreadCycle chopper (use
+  // StealthChop only) stepper->sgt(0);             // stallGuard2 threshold
+  // level stepper->TCOOLTHRS(1048575); // lower velocity thresh for coolStep
   // stepper->semin(1);           // lower SG2 threshhold for coolStep
-  // stepper->TPOWERDOWN(0); // instant powerdown at standstill
-  // stepper->iholddelay(0); // instant IHOLD
+  // stepper->TPOWERDOWN(0);      // instant powerdown at standstill
+  // stepper->iholddelay(0);      // instant IHOLD
 }
 
-template <class T>
-T *StepperWrapper::getDriver(float RSense, uint8_t version) {
+template <class T> T *StepperWrapper::getDriver(float RSense, uint8_t version) {
   static bool initialized = false;
   static T *drv = nullptr;
 
@@ -434,7 +434,7 @@ void StepperWrapper::blinkenlights() {
     delayMicroseconds(750 - i);
     digitalWriteFast(LED_BUILTIN, LOW);
   }
-  for (int i = 1; i <= 2 ; i++) {
+  for (int i = 1; i <= 2; i++) {
     delay(75);
     digitalWriteFast(LED_BUILTIN, HIGH);
     delay(50);
@@ -467,9 +467,9 @@ uint8_t StepperWrapper::idDriver() {
   static uint8_t id = 0;
   if (id == 0) {
     if (TMC2130) {
-        id = TMC2130->version();
+      id = TMC2130->version();
     } else if (TMC5160) {
-        id = TMC5160->version();
+      id = TMC5160->version();
     }
   }
   return id;
@@ -494,19 +494,19 @@ void StepperWrapper::SGautoTune() {
 
   DEBUG_PRINTLN("Starting automatic tuning of stallGuard threshold:");
   for (int8_t sgt = 0; sgt < 64; sgt++) {
-    set_sgt(sgt);         // set StallGuard threshold
-    delay(200);           // wait 4 full-steps
-    sgRes = sg_result();  // get StallGuard reading
+    set_sgt(sgt);        // set StallGuard threshold
+    delay(200);          // wait 4 full-steps
+    sgRes = sg_result(); // get StallGuard reading
     DEBUG_PRINTF("  SGT =% 3d; SG_RESULT = % 4d\n", sgt, sgRes);
 
-    if (sgRes > 0) {      // once the SG reading starts to rise above zero
-      set_sgt(sgt-1);     // fall back to the last zero reading
+    if (sgRes > 0) {    // once the SG reading starts to rise above zero
+      set_sgt(sgt - 1); // fall back to the last zero reading
       DEBUG_PRINTF("Setting stallGuard threshold to %d\n", sgt);
       break;
     }
   }
 
-  softStop();             // decelerate the motor to a stop
+  softStop(); // decelerate the motor to a stop
   delay(200);
   vMax(vMaxOld);
   a(aOld);
@@ -543,28 +543,28 @@ uint32_t StepperWrapper::ISRgeneric(uint32_t t0, uint8_t opCode) {
 }
 
 void StepperWrapper::ISRsoftStop() {
-  static uint32_t t0  = 0;
-  t0 = StepperWrapper::ISRgeneric(t0,'x');
+  static uint32_t t0 = 0;
+  t0 = StepperWrapper::ISRgeneric(t0, 'x');
 }
 
 void StepperWrapper::ISRhardStop() {
-  static uint32_t t0  = 0;
-  t0 = StepperWrapper::ISRgeneric(t0,'X');
+  static uint32_t t0 = 0;
+  t0 = StepperWrapper::ISRgeneric(t0, 'X');
 }
 
 void StepperWrapper::ISRforwards() {
-  static uint32_t t0  = 0;
-  t0 = StepperWrapper::ISRgeneric(t0,'F');
+  static uint32_t t0 = 0;
+  t0 = StepperWrapper::ISRgeneric(t0, 'F');
 }
 
 void StepperWrapper::ISRbackwards() {
-  static uint32_t t0  = 0;
-  t0 = StepperWrapper::ISRgeneric(t0,'B');
+  static uint32_t t0 = 0;
+  t0 = StepperWrapper::ISRgeneric(t0, 'B');
 }
 
 void StepperWrapper::ISRzero() {
-  static uint32_t t0  = 0;
-  t0 = StepperWrapper::ISRgeneric(t0,'Z');
+  static uint32_t t0 = 0;
+  t0 = StepperWrapper::ISRgeneric(t0, 'Z');
 }
 
 void StepperWrapper::ISRpos1() { StepperWrapper::ISRposN(1); }
@@ -578,11 +578,11 @@ void StepperWrapper::ISRpos8() { StepperWrapper::ISRposN(8); }
 void StepperWrapper::ISRpos9() { StepperWrapper::ISRposN(9); }
 void StepperWrapper::ISRposN(uint8_t n) {
   static uint32_t t0[9]{0};
-  t0[n-1] = StepperWrapper::ISRgeneric(t0[n-1],n);
+  t0[n - 1] = StepperWrapper::ISRgeneric(t0[n - 1], n);
 }
 
 void StepperWrapper::throwError(uint8_t ID) {
-  DEBUG_PRINTF("ERROR %d\n",ID);
+  DEBUG_PRINTF("ERROR %d\n", ID);
   if (errorID) {
     return;
   }
@@ -593,7 +593,8 @@ void StepperWrapper::throwError(uint8_t ID) {
   timerErrorBlink.begin(ISRblinkError, 100000);
   Serial1COM.writeUint8(1);  // Error
   Serial1COM.writeUint8(ID); // ID
-  while (true) {}
+  while (true) {
+  }
 }
 
 void StepperWrapper::clearError() {
@@ -612,14 +613,14 @@ void StepperWrapper::RMS(uint16_t rms_current) {
   uint8_t iHold = get_ihold();
   set_rms_current(rms_current);
   set_ihold(iHold);
-  DEBUG_PRINTF("RMS current set to %d mA\n",RMS());
+  DEBUG_PRINTF("RMS current set to %d mA\n", RMS());
 }
 
 uint16_t StepperWrapper::RMS() { return get_rms_current(); }
 
 void StepperWrapper::holdRMS(uint16_t rms) {
   uint8_t CS = 31;
-  if (rms==0) {
+  if (rms == 0) {
     set_ihold(0);
     set_freewheel(true);
   } else {
@@ -645,15 +646,15 @@ uint16_t StepperWrapper::holdRMS() {
 uint16_t StepperWrapper::getMicrosteps() { return _microsteps; }
 
 void StepperWrapper::setMicrosteps(uint16_t ms) {
-  ms = constrain(ms,1,_msRes);
-  ms = pow(2,ceil(log(ms)/log(2)));
-  ms = (ms==1) ? 0 : ms;
+  ms = constrain(ms, 1, _msRes);
+  ms = pow(2, ceil(log(ms) / log(2)));
+  ms = (ms == 1) ? 0 : ms;
   set_microsteps(ms);
   _microsteps = get_microsteps();
-  _microsteps = (_microsteps==0) ? 1 : _microsteps;
+  _microsteps = (_microsteps == 0) ? 1 : _microsteps;
 
-  _microstepDiv = (_msRes/_microsteps);
-  DEBUG_PRINTF("Setting microstep resolution to 1/%d\n",_microsteps);
+  _microstepDiv = (_msRes / _microsteps);
+  DEBUG_PRINTF("Setting microstep resolution to 1/%d\n", _microsteps);
 }
 
 void StepperWrapper::setChopper(uint8_t chopper) {
@@ -774,7 +775,7 @@ void StepperWrapper::setIOmode(uint8_t idx, uint8_t mode) {
 
 void StepperWrapper::attachInput(uint8_t idx, void (*userFunc)(void)) {
   pinMode(pin.IO[idx], _ioResistor[idx]);
-  uint8_t direction = (_ioResistor[idx]==INPUT_PULLUP) ? FALLING : RISING;
+  uint8_t direction = (_ioResistor[idx] == INPUT_PULLUP) ? FALLING : RISING;
   attachInterrupt(digitalPinToInterrupt(pin.IO[idx]), userFunc, direction);
 }
 
@@ -794,7 +795,7 @@ bool StepperWrapper::atLimit(int8_t direction) {
   for (uint8_t idx = 0; idx < sizeof(_ioMode); idx++) {
     if (_ioMode[idx] - 75 == direction) {
       if (digitalRead(pin.IO[idx]) ^ (_ioResistor[idx] == INPUT_PULLUP)) {
-          return true;
+        return true;
       }
     }
   }
@@ -827,7 +828,7 @@ void StepperWrapper::setIOresistor(uint8_t idx, uint8_t r) {
     return;
   }
   if (r > 0) {
-  r++;
+    r++;
   }
   _ioResistor[idx] = r;
   if (_ioMode[idx] > 0) {

@@ -62,7 +62,7 @@ void StepperWrapper_TeensyStep::hardStop() {
 void StepperWrapper_TeensyStep::moveMicroSteps(int32_t steps) {
   if (isRunning() || steps==0)                      // return if moving or at target already
     return;
-  bool dir = (steps>0) ? 1 : -1;
+  int8_t dir = (steps>0) ? 1 : -1;
   if (atLimit(dir))                                 // return if we are at a limit switch
     return;
   toggleISRlimit(dir);                              // attach ISRs for limit switches
