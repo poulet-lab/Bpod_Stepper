@@ -36,7 +36,7 @@ class EEstore {
     this->data = dataRef;
     this->crc  = calcCRC();
   }
-  
+
   public:
     uint16_t crc;
     T data;

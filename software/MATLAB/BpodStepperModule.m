@@ -23,7 +23,9 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
     properties (Dependent)
         RMScurrent                  % RMS current (mA)
         holdRMScurrent              % hold RMS current (mA)
-        ChopperMode                 % 0 = PWM chopper, 1 = voltage chopper
+        ChopperMode                 % 0 = PWM chopper ("spreadCycle")
+                                    % 1 = voltage chopper ("stealthChop")
+                                    % 2 = constant off time
         Acceleration                % acceleration (full steps / s^2)
         MaxSpeed                    % peak velocity (full steps / s)
         MicroPosition
@@ -37,13 +39,13 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
     properties (Access = private)
         privUseEncoder = false
-        privMaxSpeed                % private: peak velocity
-        privAcceleration            % private: acceleration
-        privRMScurrent              % private: RMS current
-        privHoldRMScurrent          % private: hold RMS current
-        privChopper                 % private: Chopper mode
-        privStreamingMode = false   % private: streaming mode
-        CurrentFirmwareVersion = 2  % most recent firmware version
+        privMaxSpeed                        % private: peak velocity
+        privAcceleration                    % private: acceleration
+        privRMScurrent                      % private: RMS current
+        privHoldRMScurrent                  % private: hold RMS current
+        privChopper                         % private: Chopper mode
+        privStreamingMode = false           % private: streaming mode
+        CurrentFirmwareVersion = [2023 4 1] % most recent firmware version
     end
 
     methods
@@ -63,12 +65,13 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             end
 
             % check firmware version
-            obj.FirmwareVersion = obj.Port.read(1, 'uint32');
-            if obj.FirmwareVersion < obj.CurrentFirmwareVersion
-                error(['Error: old firmware detected - v%d. The ' ...
-                    'current version is: v%d. Please update the ' ...
-                    'Stepper Module firmware using Arduino.'], ...
-                    obj.FirmwareVersion, obj.CurrentFirmwareVersion)
+            verInt = obj.Port.read(1, 'uint32');
+            obj.FirmwareVersion = obj.verInt2Str(verInt);
+            if verInt < obj.verArr2Int(obj.CurrentFirmwareVersion)
+                error(['Error: old firmware detected: %s - the ' ...
+                    'current version is %s. Please update the ' ...
+                    'Stepper Module firmware.'], obj.FirmwareVersion, ...
+                    obj.verArr2Str(obj.CurrentFirmwareVersion))
             end
 
             % get non-dependent parameters from stepper module
@@ -149,7 +152,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         end
         function set.ChopperMode(obj, mode)
             validateattributes(mode,{'numeric'},...
-                {'scalar','integer','nonnegative','<=',1})
+                {'scalar','integer','nonnegative','<=',2})
             obj.Port.write('C', 'uint8', mode, 'uint8');
             obj.pauseStreaming(true);
             obj.Port.write('GC', 'uint8');
@@ -448,7 +451,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
     end
 
     methods (Access = private)
-        function pauseStreaming(obj,doPause)
+        function pauseStreaming(obj, doPause)
             persistent BytesAvailableFcn isPaused;
             if isempty(BytesAvailableFcn)
                 BytesAvailableFcn = '';
@@ -470,6 +473,21 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
                 obj.StreamingMode = true;
                 isPaused = false;
             end
+        end
+
+        function out = verInt2Str(obj, in)
+            tmp = typecast(uint32(in), 'uint8');
+            tmp = [typecast(tmp(3:4), 'uint16') tmp([2 1])];
+            out = obj.verArr2Str(tmp);
+        end
+        
+        function out = verArr2Str(~, in)
+            out = sprintf('%04d.%02d.%d', in(:));
+        end
+            
+        function out = verArr2Int(~, in)
+            out = [uint8(in([3 2])) typecast(uint16(in(1)), 'uint8')];
+            out = typecast(out, 'uint32');
         end
     end
 

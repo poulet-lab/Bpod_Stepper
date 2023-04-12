@@ -1,6 +1,6 @@
 /*
 Bpod_stepper
-Copyright (C) 2020 Florian Rau
+Copyright (C) 2023 Florian Rau
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -14,65 +14,41 @@ You should have received a copy of the GNU General Public License along with
 this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "EEstore.h"       // Import EEstore library
+#include "EEstoreStruct.h" // Parameters to be loaded from EEPROM (and default values)
+#include "SerialDebug.h"    // Some debugging tools
+#include "StepperWrapper.h" // Wrap stepper motor control
+#include <ArCOM.h>          // Import serial communication wrapper
 #include <Arduino.h>
-#include <avr/io.h>
-#include <limits>
-#include <ArCOM.h>                // Import serial communication wrapper
-#include "EEstore.h"              // Import EEstore library
-#include "EEstoreStruct.h"        // Parameters to be loaded from EEPROM (and default values)
-#include "StepperWrapper.h"       // Import StepperWrapper
-#include "SerialDebug.h"
 
-void throwError();
 void returnModuleInfo();
 
-// Module setup
-ArCOM usbCOM(Serial);             // Wrap Serial (USB on Teensy 3.X)
-ArCOM Serial1COM(Serial1);        // Wrap Serial1 (UART on Arduino M0, Due + Teensy 3.X)
-ArCOM *COM;                       // Pointer to ArCOM object
-char  moduleName[] = "Stepper";   // Name of module for manual override UI and state machine assembler
-const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
-#define FirmwareVersion 2
+// Serial communication
+ArCOM usbCOM(Serial);      // Wrap Serial (USB on Teensy 3.X)
+ArCOM Serial1COM(Serial1); // Wrap Serial1 (UART on Teensy 3.X)
+ArCOM *COM;                // Pointer to ArCOM object
 
 // Variables
-uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
-uint8_t opCode       = 0;
-extern const uint8_t PCBrev;      // PCB revision
-extern const teensyPins pin;      // pin numbers
-extern volatile uint8_t errorID;  // error ID
-storageVars p;                    // struct for EEPROM storage (see EEstoreStruct.h)
-
-// Pointer to StepperWrapper
-StepperWrapper* stepper;
+uint8_t opCode = 0;      // opCode for loop()
+storageVars p;           // struct for EEPROM storage (see EEstoreStruct.h)
+StepperWrapper *stepper; // Pointer to StepperWrapper
 
 void setup()
 {
-  Serial1.begin(1312500);                                         // Initialize serial communication
-  DEBUG_WAIT();
+  // Initialize serial communication
+  Serial1.begin(1312500);
 
-  DEBUG_PRINTLN("Welcome to BPOD_STEPPER");
-  DEBUG_PRINTF("Hardware revision: %g\n",PCBrev/10.0);
-  DEBUG_PRINTF("Firmware version:  %d\n",FirmwareVersion);
-  DEBUG_PRINTF("Driver version:    %s\n\n",stepper->name);
-
-  EEstore<storageVars>::getOrDefault(p);                          // Load parameters from EEPROM
-
-  // Manage error interrupt
-  pinMode(pin.Error, OUTPUT);
-  digitalWrite(pin.Error, LOW);
-  attachInterrupt(digitalPinToInterrupt(pin.Error), throwError, RISING);
+  // Load parameters from EEPROM
+  EEstore<storageVars>::getOrDefault(p);
 
   // Decide which implementation of StepperWrapper to use
-  if (StepperWrapper::is5160 && !StepperWrapper::SDmode())
+  if (!StepperWrapper::SDmode())
     stepper = new StepperWrapper_MotionControl();
   else
     stepper = new StepperWrapper_TeensyStep();
 
   // Initialize StepperWrapper
-  stepper->init(p.rms_current);
-
-  // Indicate successful start-up
-  StepperWrapper::blinkenlights();
+  stepper->init();
 }
 
 
@@ -155,7 +131,7 @@ void loop()
       stepper->holdRMS(COM->readUint16());
       p.hold_rms_current = stepper->holdRMS();
       return;
-    case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper)
+    case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper, 2 = constant off time)
       stepper->setChopper(COM->readUint8());
       p.chopper = stepper->getChopper();
       return;
@@ -240,7 +216,7 @@ void loop()
           COM->writeUint16(round(stepper->vMax()));
           break;
         case 'H':                                                 //   Return hardware revision
-          COM->writeUint8(PCBrev);
+          COM->writeUint8(stepper->PCBrev);
           break;
         case 'M':
           COM->writeUint8(stepper->getIOmode(COM->readByte()));
@@ -254,7 +230,7 @@ void loop()
         case 'i':
           COM->writeUint16(stepper->holdRMS());
           break;
-        case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper)
+        case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper, 2 = constant off time)
           COM->writeUint8(stepper->getChopper());
           break;
         case 'T':
@@ -272,7 +248,7 @@ void loop()
     case 212:                                                     // USB Handshake
       if (COM == &usbCOM) {                                       //   Check if connected via USB
         COM->writeByte(211);
-        COM->writeUint32(FirmwareVersion);
+        COM->writeUint32(FIRMWARE_VERSION);
       }
       break;
     case 255:                                                     // Return module information
@@ -283,12 +259,11 @@ void loop()
   }
 }
 
-void throwError() {
-  // TODO: Implement proper error handler
-  Serial1COM.writeByte(1);
-}
-
 void returnModuleInfo() {
+  char  moduleName[] = "Stepper";
+  const char* eventNames[] = {"Error", "Start", "Stop", "EStop"};
+  uint8_t nEventNames  = sizeof(eventNames) / sizeof(char *);
+
   // FSM firmware v23 or newer sends a second info request byte to indicate that
   // it supports additional ops
   delayMicroseconds(100);
@@ -296,7 +271,7 @@ void returnModuleInfo() {
     (Serial1COM.available() && Serial1COM.readByte() == 255) ? true : false;
 
   Serial1COM.writeByte(65);                                       // Acknowledge
-  Serial1COM.writeUint32(FirmwareVersion);                        // 4-byte firmware version
+  Serial1COM.writeUint32(FIRMWARE_VERSION);                       // 4-byte firmware version
   Serial1COM.writeByte(sizeof(moduleName) - 1);
   Serial1COM.writeCharArray(moduleName, sizeof(moduleName) - 1);  // Module name
   Serial1COM.writeByte(1);                                        // 1 if more info follows, 0 if not
@@ -314,10 +289,10 @@ void returnModuleInfo() {
   if (fsmSupportsHwInfo) {
     Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
     Serial1COM.writeByte('V');                                    // Op code for: Hardware major version
-    Serial1COM.writeByte(PCBrev/10);
+    Serial1COM.writeByte(stepper->PCBrev/10);
     Serial1COM.writeByte(1);                                      // 1 if more info follows, 0 if not
     Serial1COM.writeByte('v');                                    // Op code for: Hardware minor version
-    Serial1COM.writeByte(PCBrev%10);
+    Serial1COM.writeByte(stepper->PCBrev%10);
   }
   Serial1COM.writeByte(0);                                        // 1 if more info follows, 0 if not
 }

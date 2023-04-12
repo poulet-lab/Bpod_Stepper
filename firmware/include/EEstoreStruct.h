@@ -1,8 +1,8 @@
 #pragma once
 
 typedef struct{
-  uint16_t rms_current = 800;
-  uint16_t hold_rms_current = 100;
+  uint16_t rms_current = 400;
+  uint16_t hold_rms_current = 50;
   float vMax = 200;
   float a = 800;
   uint8_t chopper = 1;
