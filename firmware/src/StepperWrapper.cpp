@@ -380,7 +380,7 @@ template <class T> void StepperWrapper::init(T *stepper) {
     TMC5160->pwm_ofs(30);                 //   initial value: PWM amp offset
   }
   stepper->pwm_ampl(128);  // user defined max PWM amp offset
-  stepper->pwm_freq(0b01); // set PWM Frequency
+  stepper->pwm_freq(0b10); // set PWM Frequency
   delay(150);              // stand still for automatic tuning AT#1
 
   // Chopper configuration
