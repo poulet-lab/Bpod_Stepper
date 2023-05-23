@@ -18,9 +18,9 @@ methods
         obj.s.Port.BytesAvailableFcn = @obj.update;
 
         switch obj.s.DriverVersion
-            case 2130
+            case 'TMC2130'
                 obj.vDiv = 13.2E6 / 256;
-            case 5160
+            case 'TMC5160'
                 obj.vDiv = 12.0E6 / 256;
             otherwise
                 error('Driver IC is not supported.')

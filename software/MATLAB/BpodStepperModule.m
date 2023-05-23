@@ -1,35 +1,36 @@
-%{
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3.
-
-This program is distributed  WITHOUT ANY WARRANTY and without even the
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-%}
+% This program is free software: you can redistribute it and/or modify it
+% under the terms of the GNU General Public License as published by the
+% Free Software Foundation, version 3.
+%
+% This program is distributed  WITHOUT ANY WARRANTY and without even the
+% implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along
+% with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
     properties (SetAccess = protected)
         Port                        % ArCOM Serial port
+        HardwareRevision            % PCB revision of connected module
         FirmwareVersion             % firmware version of connected module
-        HardwareVersion             % PCB revision of connected module
         DriverVersion               % which TMC driver is installed?
     end
 
     properties (Dependent)
-        RMScurrent                  % RMS current (mA)
-        holdRMScurrent              % hold RMS current (mA)
-        ChopperMode                 % 0 = PWM chopper ("spreadCycle")
-                                    % 1 = voltage chopper ("stealthChop")
-                                    % 2 = constant off time
-        Acceleration                % acceleration (full steps / s^2)
-        MaxSpeed                    % peak velocity (full steps / s)
+        PeakCurrent     % peak current (mA)
+        RMScurrent      % RMS current (mA)
+        holdRMScurrent  % hold RMS current (mA)
+                        % ChopperMode
+                        % 0 = PWM chopper ("spreadCycle")
+                        % 1 = voltage chopper ("stealthChop")
+                        % 2 = constant off time
+        ChopperMode
+        Acceleration    % acceleration (full steps / s^2)
+        MaxSpeed        % peak velocity (full steps / s)
         MicroPosition
-        Position                    % absolute position
+        Position        % absolute position
         EncoderPosition
     end
 
@@ -76,15 +77,15 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
 
             % get non-dependent parameters from stepper module
             obj.Port.write('GH', 'uint8');
-            obj.HardwareVersion = double(obj.Port.read(1, 'uint8')) / 10;
+            obj.HardwareRevision = double(obj.Port.read(1, 'uint8')) / 10;
             obj.Port.write('GT', 'uint8');
             switch obj.Port.read(1, 'uint8')
                 case 17  % 0x11
-                    obj.DriverVersion = 2130;
+                    obj.DriverVersion = 'TMC2130';
                 case 48  % 0x30
-                    obj.DriverVersion = 5160;
+                    obj.DriverVersion = 'TMC5160';
                 otherwise
-                    obj.DriverVersion = NaN;
+                    obj.DriverVersion = 'unknown';
             end
             obj.Port.write('GA', 'uint8');
             obj.privAcceleration = obj.Port.read(1, 'uint16');
@@ -121,25 +122,32 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.pauseStreaming(false);
         end
 
+        function out = get.PeakCurrent(obj)
+            out = obj.RMScurrent * sqrt(2);
+        end
+        function set.PeakCurrent(obj, newCurrent)
+            obj.RMScurrent = newCurrent / sqrt(2);
+        end
+
         function out = get.RMScurrent(obj)
             out = obj.privRMScurrent;
         end
         function set.RMScurrent(obj, newCurrent)
             validateattributes(newCurrent,{'numeric'},...
-                {'scalar','integer','nonnegative'})
+                {'scalar','nonnegative','real'})
             obj.Port.write('I', 'uint8', newCurrent, 'uint16');
             obj.pauseStreaming(true);
             obj.Port.write('GI', 'uint8');
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
             obj.pauseStreaming(false);
         end
-        
+
         function out = get.holdRMScurrent(obj)
             out = obj.privHoldRMScurrent;
         end
         function set.holdRMScurrent(obj, newCurrent)
             validateattributes(newCurrent,{'numeric'},...
-                {'scalar','integer','nonnegative'})
+                {'scalar','nonnegative','real'})
             obj.Port.write('i', 'uint8', newCurrent, 'uint16');
             obj.pauseStreaming(true);
             obj.Port.write('Gi', 'uint8');
@@ -172,13 +180,13 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         end
         function out = get.Position(obj)
             obj.pauseStreaming(true);
-            obj.Port.write('GP', 'uint8');
-            out = obj.Port.read(1, 'int16');
+            obj.Port.write('Gp', 'uint8');
+            out = double(obj.Port.read(1, 'int32')) / 256;
             obj.pauseStreaming(false);
         end
         function set.Position(obj,position)
             validateattributes(position,{'numeric'},{'scalar','integer'})
-            obj.Port.write('P', 'int8', position, 'int16');
+            obj.Port.write('p', 'int8', round(position * 256), 'int32');
         end
         function resetPosition(obj)
             % Reset value of absolute position to zero.
@@ -205,7 +213,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             end
             obj.Port.write('S', 'uint8', nSteps, 'int16');
         end
-        
+
         function microStep(obj, nSteps)
             % Move stepper motor a set number of micro-steps. nSteps = positive
             % for clockwise steps, negative for counterclockwise
@@ -483,36 +491,71 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             tmp = [typecast(tmp(3:4), 'uint16') tmp([2 1])];
             out = obj.verArr2Str(tmp);
         end
-        
+
         function out = verArr2Str(~, in)
             out = sprintf('%04d.%02d.%d', in(:));
         end
-            
+
         function out = verArr2Int(~, in)
             out = [uint8(in([3 2])) typecast(uint16(in(1)), 'uint8')];
             out = typecast(out, 'uint32');
         end
-    end
-
-    methods (Access = protected)
-        function propgrp = getPropertyGroups(obj)
-            gTitle1 = '<strong>Module Information</strong>';
-            propList1 = {'HardwareVersion','DriverVersion','FirmwareVersion'};
-            gTitle2 = '<strong>Motor Configuration</strong>';
-            propList2 = {'RMScurrent','holdRMScurrent','ChopperMode','MaxSpeed','Acceleration'};
-            gTitle3 = '<strong>Movement Parameters</strong>';
-            if obj.privUseEncoder
-                propList3 = {'Position','EncoderPosition'};
-            else
-                propList3 = {'Position'};
+            
+        function displayPropGroup(obj, groups, fmts)
+            persistent nPad
+            persistent chopperModes
+            if isempty(nPad)
+                nPad = max(cellfun(@numel,[groups.PropertyList])) + 1;
+                chopperModes = {'PWM chopper', 'voltage chopper', 'constant off time chopper'};
             end
-            propgrp(1) = matlab.mixin.util.PropertyGroup(propList1,gTitle1);
-            propgrp(2) = matlab.mixin.util.PropertyGroup(propList2,gTitle2);
-            propgrp(3) = matlab.mixin.util.PropertyGroup(propList3,gTitle3);
+            for ii = 1:numel(groups)
+                padProps = pad(groups(ii).PropertyList, nPad, 'left');
+                fprintf('   <strong>%s</strong>\n',groups(ii).Title)
+                for jj = 1:groups(ii).NumProperties
+                    if strcmp(groups(ii).PropertyList{jj}, 'ChopperMode')
+                        fprintf(['   %s: ' fmts{ii}{jj} ' (%s)\n'], ...
+                            padProps{jj}, obj.(groups(ii).PropertyList{jj}), ...
+                            chopperModes{1+obj.(groups(ii).PropertyList{jj})})
+                    else
+                        fprintf(['   %s: ' fmts{ii}{jj} '\n'], ...
+                            padProps{jj}, obj.(groups(ii).PropertyList{jj}))
+                    end
+                end
+                fprintf('\n')
+            end
         end
 
-        function s = getFooter(obj)
-            s = matlab.mixin.CustomDisplay.getDetailedFooter(obj);
+        function [propgrp, fmt] = getPropGroups(obj)
+            gTitle{1} = 'Module Information';
+            gTitle{2} = 'Motor Configuration';
+            gTitle{3} = 'Movement Parameters';
+            
+            pList{1} = {'HardwareRevision','DriverVersion','FirmwareVersion'};
+            pList{2} = {'PeakCurrent','RMScurrent','holdRMScurrent','ChopperMode'};
+            pList{3} = {'MaxSpeed','Acceleration','Position'};
+            
+            fmt{1} = {'%.1f', '''%s''', '''%s'''};
+            fmt{2} = {'%d mA', '%d mA', '%d mA', '%d'};
+            fmt{3} = {'%d steps/s', '%d steps/s²', '%.1f steps'};
+            
+            if obj.privUseEncoder
+                pList{3} = [pList{3} {'EncoderPosition'}];
+                fmt{3}   = [fmt{3} {'%d'}];
+            end
+
+            propgrp(1) = matlab.mixin.util.PropertyGroup(pList{1},gTitle{1});
+            propgrp(2) = matlab.mixin.util.PropertyGroup(pList{2},gTitle{2});
+            propgrp(3) = matlab.mixin.util.PropertyGroup(pList{3},gTitle{3});
+        end
+    end
+    
+    methods (Access = protected)
+        function displayScalarObject(obj)
+            fprintf('%s with properties:\n\n', ...
+                matlab.mixin.CustomDisplay.getClassNameForHeader(obj));
+            [propgroup, fmt] = getPropGroups(obj);
+            displayPropGroup(obj,propgroup,fmt)
+            disp(matlab.mixin.CustomDisplay.getDetailedFooter(obj))
         end
     end
 end
