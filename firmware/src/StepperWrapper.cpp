@@ -870,13 +870,17 @@ bool StepperWrapper::writePosition(int32_t pos) {
 }
 
 void StepperWrapper::go2target(uint8_t id) {
-  if (this->isRunning() || this->position() == p.target[id]) {
+  if (this->isRunning()) {
     return;
   }
   DEBUG_PRINTF("Predefined target #%d\n", id);
   this->a((p.aTarget[id] > 0) ? p.aTarget[id] : p.a);
   this->vMax((p.vMaxTarget[id] > 0) ? p.vMaxTarget[id] : p.vMax);
-  this->position(p.target[id]);
+  if (p.relTargetPos[id]) {
+    this->moveSteps(p.target[id]);
+  } else {
+    this->position(p.target[id]);
+  }
 }
 
 void StepperWrapper::initEncoder() {

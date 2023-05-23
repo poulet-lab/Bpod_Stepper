@@ -169,9 +169,10 @@ void loop()
     {
       uint8_t idx = COM->readUint8() - 1;
       if (idx <= 8 && idx >= 0) {
-        p.target[idx]     = COM->readInt32();
-        p.aTarget[idx]    = COM->readUint16();
-        p.vMaxTarget[idx] = COM->readUint16();
+        p.target[idx]       = COM->readInt32();                   //   target position
+        p.aTarget[idx]      = COM->readUint16();                  //   acceleration
+        p.vMaxTarget[idx]   = COM->readUint16();                  //   speed
+        p.relTargetPos[idx] = COM->readUint8() > 0;               //   absolute / relative target
       }
       return;
     }
@@ -197,6 +198,7 @@ void loop()
         COM->writeInt32(p.target[idx]);
         COM->writeUint16(round(p.aTarget[idx]));
         COM->writeUint16(round(p.vMaxTarget[idx]));
+        COM->writeUint8(p.relTargetPos[idx]);
         return;
       }
       switch (opCode) {
