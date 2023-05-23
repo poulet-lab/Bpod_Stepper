@@ -25,7 +25,6 @@ _______________________________________________________________________________
 #include <TMCStepper.h>     // https://github.com/teemuatlut/TMCStepper
 #include <TeensyStep.h>     // https://github.com/luni64/TeensyStep
 #include "EEstoreStruct.h"
-#include "SmoothStepper.h"
 
 #define STEPPER_ERROR___NO_DRIVER_FOUND 1
 #define STEPPER_ERROR___VM_UNPLUGGED 2
@@ -158,7 +157,7 @@ protected:
   float ticks2speed(uint32_t ticks);
 
 private:
-  storageVars p; // EEPROM store
+  // storageVars p; // EEPROM store
 
   // interrupt service routines
   static void ISRchangeVM();   // called when VM was (dis)connected
