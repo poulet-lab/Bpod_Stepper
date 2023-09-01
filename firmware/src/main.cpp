@@ -131,6 +131,10 @@ void loop()
       stepper->holdRMS(COM->readUint16());
       p.hold_rms_current = stepper->holdRMS();
       return;
+    case 'f':                                                     // Set freewheel mode
+      stepper->freewheel(COM->readUint8());
+      p.freewheel = (enumFreewheel) stepper->freewheel();
+      return;
     case 'C':                                                     // Set chopper mode (0 = PWM chopper, 1 = voltage chopper, 2 = constant off time)
       stepper->setChopper(COM->readUint8());
       p.chopper = stepper->getChopper();
@@ -232,6 +236,8 @@ void loop()
         case 'i':
           COM->writeUint16(stepper->holdRMS());
           break;
+        case 'f':
+          COM->writeUint8(stepper->freewheel());
         case 'C':                                                 //   Return chopper mode (0 = PWM chopper, 1 = voltage chopper, 2 = constant off time)
           COM->writeUint8(stepper->getChopper());
           break;

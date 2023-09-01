@@ -27,6 +27,12 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
                         % 1 = voltage chopper ("stealthChop")
                         % 2 = constant off time
         ChopperMode
+                        % freewheel mode
+                        % 0 = normal operation
+                        % 1 = freewheeling
+                        % 2 = coil shorted using LS drivers
+                        % 3 = coil shorted using HS drivers
+        freewheel
         Acceleration    % acceleration (full steps / s^2)
         MaxSpeed        % peak velocity (full steps / s)
         MicroPosition
@@ -44,6 +50,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
         privAcceleration                    % private: acceleration
         privRMScurrent                      % private: RMS current
         privHoldRMScurrent                  % private: hold RMS current
+        privFreewheel                       % private: freewheel mode
         privChopper                         % private: Chopper mode
         privStreamingMode = false           % private: streaming mode
         CurrentFirmwareVersion = [2023 4 1] % most recent firmware version
@@ -95,6 +102,8 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.privRMScurrent = obj.Port.read(1, 'uint16');
             obj.Port.write('Gi', 'uint8');
             obj.privHoldRMScurrent = obj.Port.read(1, 'uint16');
+            obj.Port.read('Gf', 'uint8');
+            obj.privFreewheel = obj.Port.read(1, 'uint8');
             obj.Port.write('GC', 'uint8');
             obj.privChopper = obj.Port.read(1, 'uint8');
             obj.privUseEncoder = isequal(obj.getMode(1:2),'ab');
@@ -152,6 +161,19 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             obj.pauseStreaming(true);
             obj.Port.write('Gi', 'uint8');
             obj.privHoldRMScurrent = obj.Port.read(1, 'uint16');
+            obj.pauseStreaming(false);
+        end
+
+        function out = get.freewheel(obj)
+            out = obj.privFreewheel;
+        end
+        function set.freewheel(obj, newMode)
+            validateattributes(newMode,{'numeric'},...
+                {'scalar','nonnegative','real'})
+            obj.Port.write('f', 'uint8', newMode, 'uint8');
+            obj.pauseStreaming(true);
+            obj.Port.write('Gf', 'uint8');
+            obj.privFreewheel = obj.Port.read(1, 'uint8');
             obj.pauseStreaming(false);
         end
 
@@ -500,7 +522,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             out = [uint8(in([3 2])) typecast(uint16(in(1)), 'uint8')];
             out = typecast(out, 'uint32');
         end
-            
+
         function displayPropGroup(obj, groups, fmts)
             persistent nPad
             persistent chopperModes
@@ -529,15 +551,15 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             gTitle{1} = 'Module Information';
             gTitle{2} = 'Motor Configuration';
             gTitle{3} = 'Movement Parameters';
-            
+
             pList{1} = {'HardwareRevision','DriverVersion','FirmwareVersion'};
             pList{2} = {'PeakCurrent','RMScurrent','holdRMScurrent','ChopperMode'};
             pList{3} = {'MaxSpeed','Acceleration','Position'};
-            
+
             fmt{1} = {'%.1f', '''%s''', '''%s'''};
             fmt{2} = {'%d mA', '%d mA', '%d mA', '%d'};
             fmt{3} = {'%d steps/s', '%d steps/s²', '%.1f steps'};
-            
+
             if obj.privUseEncoder
                 pList{3} = [pList{3} {'EncoderPosition'}];
                 fmt{3}   = [fmt{3} {'%d'}];
@@ -548,7 +570,7 @@ classdef BpodStepperModule < handle & matlab.mixin.CustomDisplay
             propgrp(3) = matlab.mixin.util.PropertyGroup(pList{3},gTitle{3});
         end
     end
-    
+
     methods (Access = protected)
         function displayScalarObject(obj)
             fprintf('%s with properties:\n\n', ...

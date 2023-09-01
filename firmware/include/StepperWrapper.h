@@ -115,6 +115,8 @@ struct StepperWrapper {
   void RMS(uint16_t rms_current);   // set RMS current
   void holdRMS(uint16_t val);       // set hold current
   uint16_t holdRMS();               // get hold current
+  void freewheel(uint8_t val);      // set passive braking mode
+  uint8_t freewheel();              // get passive braking mode
   void setChopper(uint8_t chopper); // set chopper mode
   uint8_t getChopper();             // get chopper mode
   void setIOmode(uint8_t mode[6], uint8_t l); // set IO mode (all IO ports)
@@ -210,8 +212,8 @@ private:
   std::function<void(bool)> set_en_pwm_mode;
   std::function<uint8_t()> get_ihold;
   std::function<void(uint8_t)> set_ihold;
-  std::function<bool()> get_freewheel;
-  std::function<void(bool)> set_freewheel;
+  std::function<uint8_t()> get_freewheel;
+  std::function<void(uint8_t)> set_freewheel;
   std::function<uint16_t()> get_microsteps;
   std::function<void(uint16_t)> set_microsteps;
   std::function<uint16_t()> get_rms_current;

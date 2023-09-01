@@ -1,8 +1,11 @@
 #pragma once
 
+enum enumFreewheel : uint8_t { normal, freewheeling, coilShortLS, coildShortHS };
+
 typedef struct{
   uint16_t rms_current = 400;
   uint16_t hold_rms_current = 50;
+  enumFreewheel freewheel = freewheeling;
   float vMax = 200;
   float a = 800;
   uint8_t chopper = 1;

@@ -38,8 +38,8 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
   set_chm           = [](bool val)     {        DRV->chm(val); };              \
   get_en_pwm_mode   = []()             { return DRV->en_pwm_mode(); };         \
   set_en_pwm_mode   = [](bool val)     {        DRV->en_pwm_mode(val); };      \
-  get_freewheel     = []()             { return DRV->freewheel() == 0x01; };   \
-  set_freewheel     = [](bool val)     {        DRV->freewheel(val); };        \
+  get_freewheel     = []()             { return DRV->freewheel(); };           \
+  set_freewheel     = [](uint8_t val)  {        DRV->freewheel(val); };        \
   get_ihold         = []()             { return DRV->ihold(); };               \
   set_ihold         = [](uint8_t CS)   {        DRV->ihold(CS); };             \
   get_microsteps    = []()             { return DRV->microsteps(); };          \
@@ -335,6 +335,7 @@ void StepperWrapper::init() {
   DEBUG_PRINTLN("Loading parameters from EEPROM:");
   RMS(p.rms_current);
   holdRMS(p.hold_rms_current);
+  freewheel(p.freewheel);
   vMax(p.vMax);
   a(p.a);
   setIOresistor(p.IOresistor, sizeof(p.IOresistor));
@@ -622,9 +623,7 @@ void StepperWrapper::holdRMS(uint16_t rms) {
   uint8_t CS = 31;
   if (rms == 0) {
     set_ihold(0);
-    set_freewheel(true);
   } else {
-    set_freewheel(false);
     while (cs2rms(CS) > rms && CS > 0) {
       CS--;
     }
@@ -636,11 +635,19 @@ void StepperWrapper::holdRMS(uint16_t rms) {
 
 uint16_t StepperWrapper::holdRMS() {
   uint8_t cs = get_ihold();
-  if (get_freewheel() && cs == 0) {
+  if (cs == 0) {
     return 0;
   } else {
     return cs2rms(cs);
   }
+}
+
+void StepperWrapper::freewheel(uint8_t value) {
+  set_freewheel(value);
+}
+
+uint8_t StepperWrapper::freewheel() {
+  return get_freewheel();
 }
 
 uint16_t StepperWrapper::getMicrosteps() { return _microsteps; }
